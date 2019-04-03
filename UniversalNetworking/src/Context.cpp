@@ -134,29 +134,6 @@ void Unet::Context::GetLobbyList()
 	for (auto service : m_services) {
 		service->GetLobbyList();
 	}
-
-	/*
-	LobbyListResult res;
-	res.Result = Result::OK;
-
-	LobbyInfo newLobbyInfo;
-	newLobbyInfo.Name = "Fake lobby Steam & Gog";
-	newLobbyInfo.Privacy = LobbyPrivacy::Public;
-
-	ServiceEntryPoint newEntryPointSteam;
-	newEntryPointSteam.Service = ServiceType::Steam;
-	newEntryPointSteam.ID = 0x11111111;
-	newLobbyInfo.EntryPoints.emplace_back(newEntryPointSteam);
-
-	ServiceEntryPoint newEntryPointGalaxy;
-	newEntryPointGalaxy.Service = ServiceType::Galaxy;
-	newEntryPointGalaxy.ID = 0x22222222;
-	newLobbyInfo.EntryPoints.emplace_back(newEntryPointGalaxy);
-
-	res.Lobbies.emplace_back(newLobbyInfo);
-
-	OnLobbyList(res);
-	*/
 }
 
 void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
