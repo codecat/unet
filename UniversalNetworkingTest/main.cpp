@@ -230,6 +230,8 @@ int main(int argc, const char* argv[])
 	g_ctx = new Unet::Context;
 	g_ctx->SetCallbacks(new TestCallbacks);
 
+	std::vector<s2::string> delayedCommands;
+
 	for (int i = 1; i < argc; i++) {
 		s2::string arg = argv[i];
 
@@ -273,8 +275,7 @@ int main(int argc, const char* argv[])
 			continue;
 		}
 
-		HandleCommand(arg);
-		printf("\n");
+		delayedCommands.emplace_back(arg);
 	}
 
 	RunCallbacks();
@@ -295,6 +296,12 @@ int main(int argc, const char* argv[])
 			RunCallbacks();
 		}
 	}
+
+	for (auto &cmd : delayedCommands) {
+		HandleCommand(cmd);
+		printf("\n");
+	}
+	delayedCommands.clear();
 
 	while (g_keepRunning) {
 		HandleCommand(ReadLine());

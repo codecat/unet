@@ -35,6 +35,7 @@ namespace Unet
 		void GetLobbyList();
 		void JoinLobby(LobbyInfo &lobbyInfo);
 		void LeaveLobby();
+
 		Lobby* CurrentLobby();
 
 	private:

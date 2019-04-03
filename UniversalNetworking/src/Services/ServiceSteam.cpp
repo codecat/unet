@@ -2,6 +2,7 @@
 #include <Unet/Services/ServiceSteam.h>
 
 Unet::ServiceSteam::ServiceSteam(Context* ctx) :
+	m_callLobbyDataUpdate(this, &ServiceSteam::OnLobbyDataUpdate),
 	m_callLobbyKicked(this, &ServiceSteam::OnLobbyKicked)
 {
 	m_ctx = ctx;
@@ -29,6 +30,13 @@ void Unet::ServiceSteam::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	m_callLobbyCreated.Set(call, this, &ServiceSteam::OnLobbyCreated);
 }
 
+void Unet::ServiceSteam::GetLobbyList()
+{
+	SteamAPICall_t call = SteamMatchmaking()->RequestLobbyList();
+	m_requestLobbyList = m_ctx->m_callbackLobbyList.AddServiceRequest(this);
+	m_callLobbyList.Set(call, this, &ServiceSteam::OnLobbyList);
+}
+
 void Unet::ServiceSteam::LeaveLobby()
 {
 	auto lobby = m_ctx->CurrentLobby();
@@ -53,13 +61,13 @@ void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 {
 	if (bIOFailure) {
 		m_requestLobbyCreated->Result = Result::Error;
-		printf("[Steam] IO Failure while creating lobby\n");
+		LOG_DEBUG("[Steam] IO Failure while creating lobby");
 		return;
 	}
 
 	if (result->m_eResult != k_EResultOK) {
 		m_requestLobbyCreated->Result = Result::Error;
-		printf("[Steam] Failed creating lobby, error %d\n", (int)result->m_eResult);
+		LOG_DEBUG("[Steam] Failed creating lobby, error %d", (int)result->m_eResult);
 		return;
 	}
 
@@ -73,7 +81,66 @@ void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 
 	m_requestLobbyCreated->Result = Result::OK;
 
-	printf("[Steam] Lobby created\n");
+	LOG_DEBUG("[Steam] Lobby created");
+}
+
+void Unet::ServiceSteam::OnLobbyList(LobbyMatchList_t* result, bool bIOFailure)
+{
+	LOG_DEBUG("[Steam] Lobby list received (%d)", (int)result->m_nLobbiesMatching);
+
+	if (result->m_nLobbiesMatching == 0) {
+		m_requestLobbyList->Result = Result::OK;
+		return;
+	}
+
+	int numDataRequested = 0;
+	for (int i = 0; i < (int)result->m_nLobbiesMatching; i++) {
+		CSteamID lobbyId = SteamMatchmaking()->GetLobbyByIndex(i);
+		if (!lobbyId.IsValid()) {
+			continue;
+		}
+
+		if (SteamMatchmaking()->RequestLobbyData(lobbyId)) {
+			numDataRequested++;
+		}
+	}
+
+	if (numDataRequested == 0) {
+		m_requestLobbyList->Result = Result::Error;
+	}
+}
+
+void Unet::ServiceSteam::OnLobbyDataUpdate(LobbyDataUpdate_t* result)
+{
+	if (result->m_ulSteamIDMember == result->m_ulSteamIDLobby) {
+		// Lobby data
+
+		auto it = std::find(m_listDataFetch.begin(), m_listDataFetch.end(), result->m_ulSteamIDLobby);
+		if (it != m_listDataFetch.end()) {
+			// Server list data request
+			m_listDataFetch.erase(it);
+
+			//TODO: Match unique Unet ID of existing lobbies, and then only add entrypoint to it
+			LobbyInfo newLobbyInfo;
+			newLobbyInfo.MaxPlayers = SteamMatchmaking()->GetLobbyMemberLimit(result->m_ulSteamIDLobby);
+			newLobbyInfo.Name = SteamMatchmaking()->GetLobbyData(result->m_ulSteamIDLobby, "name");
+
+			ServiceEntryPoint newEntryPoint;
+			newEntryPoint.Service = ServiceType::Steam;
+			newEntryPoint.ID = result->m_ulSteamIDLobby;
+			newLobbyInfo.EntryPoints.emplace_back(newEntryPoint);
+
+			m_requestLobbyList->Data->Lobbies.emplace_back(newLobbyInfo);
+
+		} else {
+			// Regular lobby data update
+
+		}
+
+	} else {
+		// Member data
+
+	}
 }
 
 void Unet::ServiceSteam::OnLobbyKicked(LobbyKicked_t* result)

@@ -129,7 +129,13 @@ void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char
 
 void Unet::Context::GetLobbyList()
 {
-	//TODO
+	m_callbackLobbyList.Begin();
+
+	for (auto service : m_services) {
+		service->GetLobbyList();
+	}
+
+	/*
 	LobbyListResult res;
 	res.Result = Result::OK;
 
@@ -150,6 +156,7 @@ void Unet::Context::GetLobbyList()
 	res.Lobbies.emplace_back(newLobbyInfo);
 
 	OnLobbyList(res);
+	*/
 }
 
 void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
