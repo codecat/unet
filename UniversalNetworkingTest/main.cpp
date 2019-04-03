@@ -298,9 +298,8 @@ int main(int argc, const char* argv[])
 
 	while (g_keepRunning) {
 		HandleCommand(ReadLine());
-		printf("\n");
-
 		RunCallbacks();
+		printf("\n");
 	}
 
 	delete g_ctx;
