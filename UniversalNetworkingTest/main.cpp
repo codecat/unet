@@ -164,6 +164,8 @@ static void HandleCommand(const s2::string &line)
 		} else {
 			auto &lobbyInfo = currentLobby->GetInfo();
 			LOG_INFO("  Lobby name: \"%s\"", lobbyInfo.Name.c_str());
+			auto unetGuid = lobbyInfo.UnetGuid.str();
+			LOG_INFO("  Lobby Guid: %s", unetGuid.c_str());
 			LOG_INFO("  Entry points: %d", (int)lobbyInfo.EntryPoints.size());
 			for (auto &entry : lobbyInfo.EntryPoints) {
 				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
