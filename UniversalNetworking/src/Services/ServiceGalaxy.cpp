@@ -40,7 +40,6 @@ void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::Lobb
 		return;
 	}
 
-	int numDataRequested = 0;
 	for (uint32_t i = 0; i < lobbyCount; i++) {
 		auto lobbyId = galaxy::api::Matchmaking()->GetLobbyByIndex(i);
 		if (!lobbyId.IsValid()) {
@@ -48,15 +47,14 @@ void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::Lobb
 		}
 
 		try {
-			m_dataFetch.emplace_back(lobbyId);
 			galaxy::api::Matchmaking()->RequestLobbyData(lobbyId, this);
-			numDataRequested++;
+			m_dataFetch.emplace_back(lobbyId);
 		} catch (const galaxy::api::IError &error) {
 			m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Couldn't get lobby data: %s", error.GetMsg()));
 		}
 	}
 
-	if (numDataRequested == 0) {
+	if (m_dataFetch.size() == 0) {
 		m_self->m_requestLobbyList->Result = Result::Error;
 	}
 }

@@ -113,12 +113,13 @@ void Unet::ServiceSteam::OnLobbyList(LobbyMatchList_t* result, bool bIOFailure)
 {
 	m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Lobby list received (%d)", (int)result->m_nLobbiesMatching));
 
+	m_listDataFetch.clear();
+
 	if (result->m_nLobbiesMatching == 0) {
 		m_requestLobbyList->Result = Result::OK;
 		return;
 	}
 
-	int numDataRequested = 0;
 	for (int i = 0; i < (int)result->m_nLobbiesMatching; i++) {
 		CSteamID lobbyId = SteamMatchmaking()->GetLobbyByIndex(i);
 		if (!lobbyId.IsValid()) {
@@ -126,11 +127,11 @@ void Unet::ServiceSteam::OnLobbyList(LobbyMatchList_t* result, bool bIOFailure)
 		}
 
 		if (SteamMatchmaking()->RequestLobbyData(lobbyId)) {
-			numDataRequested++;
+			m_listDataFetch.emplace_back(lobbyId.ConvertToUint64());
 		}
 	}
 
-	if (numDataRequested == 0) {
+	if (m_listDataFetch.size() == 0) {
 		m_requestLobbyList->Result = Result::Error;
 	}
 }
@@ -156,6 +157,10 @@ void Unet::ServiceSteam::OnLobbyDataUpdate(LobbyDataUpdate_t* result)
 			newLobbyInfo.EntryPoints.emplace_back(newEntryPoint);
 
 			m_requestLobbyList->Data->Lobbies.emplace_back(newLobbyInfo);
+
+			if (m_listDataFetch.size() == 0) {
+				m_requestLobbyList->Result = Result::OK;
+			}
 
 		} else {
 			// Regular lobby data update
