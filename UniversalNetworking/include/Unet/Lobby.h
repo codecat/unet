@@ -7,8 +7,12 @@ namespace Unet
 {
 	class Lobby
 	{
+	private:
+		Context* m_ctx;
+		LobbyInfo m_info;
+
 	public:
-		Lobby(const LobbyInfo &lobbyInfo);
+		Lobby(Context* ctx, const LobbyInfo &lobbyInfo);
 		~Lobby();
 
 		const LobbyInfo &GetInfo();
@@ -16,8 +20,5 @@ namespace Unet
 
 		void AddEntryPoint(ServiceEntryPoint entryPoint);
 		void ServiceDisconnected(ServiceType service);
-
-	private:
-		LobbyInfo m_info;
 	};
 }

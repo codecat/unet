@@ -11,8 +11,6 @@ namespace Unet
 	class ServiceSteam : public Service
 	{
 	private:
-		Context* m_ctx;
-
 		std::vector<uint64_t> m_listDataFetch;
 
 		MultiCallback<CreateLobbyResult>::ServiceRequest* m_requestLobbyCreated = nullptr;

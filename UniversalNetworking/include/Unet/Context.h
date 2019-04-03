@@ -26,6 +26,7 @@ namespace Unet
 
 		/// Context takes ownership of the callbacks object
 		void SetCallbacks(Callbacks* callbacks);
+		Callbacks* GetCallbacks();
 		void RunCallbacks();
 
 		void SetPrimaryService(ServiceType service);

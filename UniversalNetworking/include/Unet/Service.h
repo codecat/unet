@@ -9,6 +9,9 @@ namespace Unet
 	class Service
 	{
 	public:
+		Context* m_ctx = nullptr;
+
+	public:
 		virtual ServiceType GetType() = 0;
 
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) = 0;

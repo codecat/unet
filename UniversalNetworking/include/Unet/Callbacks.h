@@ -11,6 +11,11 @@ namespace Unet
 	class Callbacks
 	{
 	public:
+		virtual void OnLogError(const std::string &str) {}
+		virtual void OnLogWarn(const std::string &str) {}
+		virtual void OnLogInfo(const std::string &str) {}
+		virtual void OnLogDebug(const std::string &str) {}
+
 		virtual void OnLobbyCreated(const CreateLobbyResult &result) {}
 		virtual void OnLobbyList(const LobbyListResult &result) {}
 		virtual void OnLobbyJoined(const LobbyJoinResult &result) {}

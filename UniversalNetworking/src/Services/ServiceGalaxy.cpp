@@ -1,11 +1,12 @@
-#include <Unet.h>
+#include <Unet_common.h>
 #include <Unet/Services/ServiceGalaxy.h>
+#include <Unet/Utils.h>
 
 void Unet::LobbyCreatedListener::OnLobbyCreated(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyCreateResult result)
 {
 	if (result != galaxy::api::LOBBY_CREATE_RESULT_SUCCESS) {
 		m_self->m_requestLobbyCreated->Result = Result::Error;
-		LOG_DEBUG("[Galaxy] Error %d while creating lobby", (int)result);
+		m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Error %d while creating lobby", (int)result));
 		return;
 	}
 
@@ -19,18 +20,18 @@ void Unet::LobbyCreatedListener::OnLobbyCreated(const galaxy::api::GalaxyID& lob
 
 	m_self->m_requestLobbyCreated->Result = Result::OK;
 
-	LOG_DEBUG("[Galaxy] Lobby created");
+	m_self->m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby created");
 }
 
 void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::LobbyListResult result)
 {
-	LOG_DEBUG("[Galaxy] Lobby list received (%d)", (int)lobbyCount);
+	m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Lobby list received (%d)", (int)lobbyCount));
 
 	m_dataFetch.clear();
 
 	if (result != galaxy::api::LOBBY_LIST_RESULT_SUCCESS) {
 		m_self->m_requestLobbyList->Result = Result::Error;
-		LOG_DEBUG("[Galaxy] Couldn't get lobby list due to error %d", (int)result);
+		m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Couldn't get lobby list due to error %d", (int)result));
 		return;
 	}
 
@@ -51,7 +52,7 @@ void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::Lobb
 			galaxy::api::Matchmaking()->RequestLobbyData(lobbyId, this);
 			numDataRequested++;
 		} catch (const galaxy::api::IError &error) {
-			LOG_DEBUG("[Galaxy] Couldn't get lobby data: %s", error.GetMsg());
+			m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Couldn't get lobby data: %s", error.GetMsg()));
 		}
 	}
 
@@ -97,7 +98,7 @@ void Unet::LobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Gala
 		m_dataFetch.erase(it);
 	}
 
-	LOG_DEBUG("[Galaxy] Failed to retrieve lobby data, error %d", (int)failureReason);
+	m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to retrieve lobby data, error %d", (int)failureReason));
 
 	LobbyDataUpdated();
 }
@@ -161,7 +162,7 @@ void Unet::ServiceGalaxy::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 		galaxy::api::Matchmaking()->CreateLobby(type, maxPlayers, true, galaxy::api::LOBBY_TOPOLOGY_TYPE_FCM, &m_lobbyCreatedListener);
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyCreated->Result = Result::Error;
-		LOG_DEBUG("[Galaxy] Failed to create lobby: %s", error.GetMsg());
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to create lobby: %s", error.GetMsg()));
 	}
 }
 
@@ -173,7 +174,7 @@ void Unet::ServiceGalaxy::GetLobbyList()
 		galaxy::api::Matchmaking()->RequestLobbyList(false, &m_lobbyListListener);
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyList->Result = Result::Error;
-		LOG_DEBUG("[Galaxy] Failed to list lobbies: %s", error.GetMsg());
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to list lobbies: %s", error.GetMsg()));
 	}
 }
 
@@ -196,6 +197,6 @@ void Unet::ServiceGalaxy::LeaveLobby()
 		galaxy::api::Matchmaking()->LeaveLobby(entryPoint->ID, &m_lobbyLeftListener);
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyLeft->Result = Result::Error;
-		LOG_DEBUG("[Galaxy] Failed to leave lobby: %s", error.GetMsg());
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to leave lobby: %s", error.GetMsg()));
 	}
 }

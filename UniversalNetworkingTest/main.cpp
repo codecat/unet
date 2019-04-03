@@ -5,6 +5,17 @@
 
 #include <Unet.h>
 
+#include "termcolor.hpp"
+#define LOG_TYPE(prefix, func) func(); printf("[" prefix "] "); termcolor::reset()
+#define LOG_ERROR(fmt, ...) LOG_TYPE("ERROR", termcolor::red); printf(fmt "\n", ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...) LOG_TYPE(" WARN", termcolor::yellow); printf(fmt "\n", ##__VA_ARGS__)
+#if defined(DEBUG)
+# define LOG_DEBUG(fmt, ...) LOG_TYPE("DEBUG", termcolor::blue); printf(fmt "\n", ##__VA_ARGS__)
+#else
+# define LOG_DEBUG(fmt, ...)
+#endif
+
 #define S2_IMPL
 #include "s2string.h"
 
@@ -25,42 +36,65 @@ static bool g_galaxyEnabled = false;
 class TestCallbacks : public Unet::Callbacks
 {
 public:
+	virtual void OnLogError(const std::string &str) override
+	{
+		LOG_ERROR("%s", str.c_str());
+	}
+
+	virtual void OnLogWarn(const std::string &str) override
+	{
+		LOG_WARN("%s", str.c_str());
+	}
+
+	virtual void OnLogInfo(const std::string &str) override
+	{
+		LOG_INFO("%s", str.c_str());
+	}
+
+	virtual void OnLogDebug(const std::string &str) override
+	{
+		LOG_DEBUG("%s", str.c_str());
+	}
+
 	virtual void OnLobbyCreated(const Unet::CreateLobbyResult &result) override
 	{
 		if (result.Result != Unet::Result::OK) {
-			printf("Couldn't create lobby!\n");
+			LOG_ERROR("Couldn't create lobby!");
 			return;
 		}
 
 		auto &info = result.Lobby->GetInfo();
-		printf("Lobby created: \"%s\"\n", info.Name.c_str());
+		LOG_INFO("Lobby created: \"%s\"", info.Name.c_str());
 	}
 
 	virtual void OnLobbyList(const Unet::LobbyListResult &result) override
 	{
 		if (result.Result != Unet::Result::OK) {
-			printf("Couldn't get lobby list!\n");
+			LOG_ERROR("Couldn't get lobby list!");
 			return;
 		}
 
 		g_lastLobbyList = result;
 
-		printf("%d lobbies:\n", (int)result.Lobbies.size());
+		LOG_INFO("%d lobbies:", (int)result.Lobbies.size());
 		for (size_t i = 0; i < result.Lobbies.size(); i++) {
 			auto &lobbyInfo = result.Lobbies[i];
-			printf("  [%d] %s\n", i, lobbyInfo.Name.c_str());
+			LOG_INFO("  [%d] %s", i, lobbyInfo.Name.c_str());
+			for (auto &entry : lobbyInfo.EntryPoints) {
+				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
+			}
 		}
 	}
 
 	virtual void OnLobbyJoined(const Unet::LobbyJoinResult &result) override
 	{
 		if (result.Result != Unet::Result::OK) {
-			printf("Couldn't join lobby!\n");
+			LOG_ERROR("Couldn't join lobby!");
 			return;
 		}
 
 		auto &info = result.Lobby->GetInfo();
-		printf("Joined lobby: \"%s\"\n", info.Name.c_str());
+		LOG_INFO("Joined lobby: \"%s\"", info.Name.c_str());
 	}
 
 	virtual void OnLobbyLeft(const Unet::LobbyLeftResult &result) override
@@ -70,7 +104,7 @@ public:
 		case Unet::LeaveReason::UserLeave: reasonStr = "User leave"; break;
 		case Unet::LeaveReason::Disconnected: reasonStr = "Lost connection"; break;
 		}
-		printf("Left lobby: %s\n", reasonStr);
+		LOG_INFO("Left lobby: %s", reasonStr);
 	}
 };
 
@@ -84,7 +118,7 @@ static void RunCallbacks()
 		try {
 			galaxy::api::ProcessData();
 		} catch (const galaxy::api::IError &error) {
-			printf("Failed to run Galaxy callbacks: %s\n", error.GetMsg());
+			LOG_ERROR("Failed to run Galaxy callbacks: %s", error.GetMsg());
 		}
 	}
 
@@ -102,15 +136,17 @@ static void HandleCommand(const s2::string &line)
 		g_keepRunning = false;
 
 	} else if (parse[0] == "help") {
-		printf("Available commands:\n\n");
-		printf("  exit\n");
-		printf("  help\n");
-		printf("  status        - Prints current network status\n");
-		printf("  create        - Creates a public lobby\n");
-		printf("  list          - Requests all available lobbies\n");
-		printf("  join <num>    - Joins a lobby by the number in the list\n");
-		printf("  leave         - Leaves the current lobby or cancels the join request\n");
-		printf("\nOr just hit Enter to run callbacks.\n");
+		LOG_INFO("Available commands:");
+		LOG_INFO("  exit");
+		LOG_INFO("  help");
+		LOG_INFO("  status        - Prints current network status");
+		LOG_INFO("  create        - Creates a public lobby");
+		LOG_INFO("  list          - Requests all available lobbies");
+		LOG_INFO("  data [num]    - Show all lobby data by the number in the list, or the current lobby");
+		LOG_INFO("  join <num>    - Joins a lobby by the number in the list");
+		LOG_INFO("  leave         - Leaves the current lobby or cancels the join request");
+		LOG_INFO("");
+		LOG_INFO("Or just hit Enter to run callbacks.");
 
 	} else if (parse[0] == "status") {
 		auto status = g_ctx->GetStatus();
@@ -121,16 +157,16 @@ static void HandleCommand(const s2::string &line)
 		case Unet::ContextStatus::Connected: statusStr = "Connected"; break;
 		}
 
-		printf("Status: %s\n", statusStr);
+		LOG_INFO("Status: %s", statusStr);
 		auto currentLobby = g_ctx->CurrentLobby();
 		if (currentLobby == nullptr) {
-			printf("  No lobby\n");
+			LOG_INFO("  No lobby");
 		} else {
 			auto &lobbyInfo = currentLobby->GetInfo();
-			printf("  Lobby name: \"%s\"\n", lobbyInfo.Name.c_str());
-			printf("  Entry points: %d\n", (int)lobbyInfo.EntryPoints.size());
+			LOG_INFO("  Lobby name: \"%s\"", lobbyInfo.Name.c_str());
+			LOG_INFO("  Entry points: %d", (int)lobbyInfo.EntryPoints.size());
 			for (auto &entry : lobbyInfo.EntryPoints) {
-				printf("    %s (0x%08llX)\n", Unet::GetServiceNameByType(entry.Service), entry.ID);
+				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
 			}
 		}
 
@@ -140,33 +176,57 @@ static void HandleCommand(const s2::string &line)
 	} else if (parse[0] == "list") {
 		g_ctx->GetLobbyList();
 
+	} else if (parse[0] == "data") {
+		if (parse.len() == 2) {
+			if (g_lastLobbyList.Result != Unet::Result::OK) {
+				LOG_ERROR("Previous lobby list request failed! Use the \"list\" command again.");
+				return;
+			}
+
+			//TODO
+
+		} else {
+			auto currentLobby = g_ctx->CurrentLobby();
+			if (currentLobby == nullptr) {
+				LOG_ERROR("Not in a lobby. Use \"data <num>\" instead.");
+			} else {
+				//TODO
+			}
+		}
+
 	} else if (parse[0] == "join" && parse.len() == 2) {
 		if (g_lastLobbyList.Result != Unet::Result::OK) {
-			printf("Previous lobby list request failed! Use the \"list\" command again.\n");
+			LOG_ERROR("Previous lobby list request failed! Use the \"list\" command again.");
 			return;
 		}
 
 		int num = atoi(parse[1]);
 		if (num < 0 || num >= (int)g_lastLobbyList.Lobbies.size()) {
-			printf("Number %d is out of range of last lobby list!\n", num);
+			LOG_INFO("Number %d is out of range of last lobby list!", num);
 			return;
 		}
 
 		auto lobbyInfo = g_lastLobbyList.Lobbies[num];
 
-		printf("Joining \"%s\"\n", lobbyInfo.Name.c_str());
+		LOG_INFO("Joining \"%s\"", lobbyInfo.Name.c_str());
 		g_ctx->JoinLobby(lobbyInfo);
 
 	} else if (parse[0] == "leave") {
 		g_ctx->LeaveLobby();
 
 	} else {
-		printf("Unknown command \"%s\"! Try \"help\".\n", parse[0].c_str());
+		LOG_ERROR("Unknown command \"%s\"! Try \"help\".", parse[0].c_str());
 	}
 }
 
 static s2::string ReadLine()
 {
+	auto currentLobby = g_ctx->CurrentLobby();
+	if (currentLobby != nullptr) {
+		auto &lobbyInfo = currentLobby->GetInfo();
+		std::cout << "[" << lobbyInfo.Name << "] ";
+	}
+
 	std::cout << "> ";
 
 	std::string line;
@@ -179,18 +239,18 @@ class GalaxyAuthListener : public galaxy::api::GlobalAuthListener
 public:
 	virtual void OnAuthSuccess() override
 	{
-		printf("[Galaxy] Signed in successfully\n");
+		LOG_INFO("[Galaxy] Signed in successfully");
 	}
 
 	virtual void OnAuthFailure(FailureReason failureReason) override
 	{
-		printf("[Galaxy] Failed to sign in, error %d\n", (int)failureReason);
+		LOG_ERROR("[Galaxy] Failed to sign in, error %d", (int)failureReason);
 		g_galaxyEnabled = false;
 	}
 
 	virtual void OnAuthLost() override
 	{
-		printf("[Galaxy] Authentication lost\n");
+		LOG_ERROR("[Galaxy] Authentication lost");
 		g_galaxyEnabled = false;
 	}
 };
@@ -208,7 +268,7 @@ public:
 
 		uint32 ticketSz;
 		if (!SteamUser()->GetEncryptedAppTicket(steamAppTicket, sizeof(steamAppTicket), &ticketSz)) {
-			printf("[Galaxy] Failed to get encrypted app ticket from Steam\n");
+			LOG_ERROR("[Galaxy] Failed to get encrypted app ticket from Steam");
 			g_galaxyEnabled = false;
 			return;
 		}
@@ -218,7 +278,7 @@ public:
 		try {
 			galaxy::api::User()->SignInSteam(steamAppTicket, ticketSz, personaName);
 		} catch (const galaxy::api::IError &error) {
-			printf("[Galaxy] Failed to begin Steam sign in: %s\n", error.GetMsg());
+			LOG_ERROR("[Galaxy] Failed to begin Steam sign in: %s", error.GetMsg());
 			g_galaxyEnabled = false;
 		}
 	}
@@ -237,14 +297,14 @@ int main(int argc, const char* argv[])
 
 		if (arg == "--steam" && i + 1 < argc) {
 			const char* appIdStr = argv[++i];
-			printf("Enabling Steam service (App ID %s)\n", appIdStr);
+			LOG_INFO("Enabling Steam service (App ID %s)", appIdStr);
 
 #if defined(_MSC_VER)
 			SetEnvironmentVariableA("SteamAppID", appIdStr);
 #endif
 			g_steamEnabled = SteamAPI_Init();
 			if (!g_steamEnabled) {
-				printf("Failed to initialize Steam API!\n");
+				LOG_ERROR("Failed to initialize Steam API!");
 				continue;
 			}
 
@@ -255,14 +315,14 @@ int main(int argc, const char* argv[])
 		if (arg == "--galaxy" && i + 2 < argc) {
 			const char* clientId = argv[++i];
 			const char* clientSecret = argv[++i];
-			printf("Enabling Galaxy service\n");
+			LOG_INFO("Enabling Galaxy service");
 
 			g_authListener = new GalaxyAuthListener;
 
 			try {
 				galaxy::api::Init(galaxy::api::InitOptions(clientId, clientSecret));
 			} catch (const galaxy::api::IError &error) {
-				printf("Failed to initiailize Galaxy API: %s\n", error.GetMsg());
+				LOG_ERROR("Failed to initiailize Galaxy API: %s", error.GetMsg());
 			}
 			g_galaxyEnabled = true;
 
@@ -291,7 +351,7 @@ int main(int argc, const char* argv[])
 	}
 
 	if (g_galaxyEnabled) {
-		printf("Waiting for Galaxy sign in...\n");
+		LOG_INFO("Waiting for Galaxy sign in...");
 		while (g_galaxyEnabled && !galaxy::api::User()->SignedIn()) {
 			RunCallbacks();
 		}

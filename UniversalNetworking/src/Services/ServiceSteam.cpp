@@ -1,5 +1,6 @@
-#include <Unet.h>
+#include <Unet_common.h>
 #include <Unet/Services/ServiceSteam.h>
+#include <Unet/Utils.h>
 
 Unet::ServiceSteam::ServiceSteam(Context* ctx) :
 	m_callLobbyDataUpdate(this, &ServiceSteam::OnLobbyDataUpdate),
@@ -61,13 +62,13 @@ void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 {
 	if (bIOFailure) {
 		m_requestLobbyCreated->Result = Result::Error;
-		LOG_DEBUG("[Steam] IO Failure while creating lobby");
+		m_ctx->GetCallbacks()->OnLogDebug("[Steam] IO Failure while creating lobby");
 		return;
 	}
 
 	if (result->m_eResult != k_EResultOK) {
 		m_requestLobbyCreated->Result = Result::Error;
-		LOG_DEBUG("[Steam] Failed creating lobby, error %d", (int)result->m_eResult);
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Failed creating lobby, error %d", (int)result->m_eResult));
 		return;
 	}
 
@@ -81,12 +82,12 @@ void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 
 	m_requestLobbyCreated->Result = Result::OK;
 
-	LOG_DEBUG("[Steam] Lobby created");
+	m_ctx->GetCallbacks()->OnLogDebug("[Steam] Lobby created");
 }
 
 void Unet::ServiceSteam::OnLobbyList(LobbyMatchList_t* result, bool bIOFailure)
 {
-	LOG_DEBUG("[Steam] Lobby list received (%d)", (int)result->m_nLobbiesMatching);
+	m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Lobby list received (%d)", (int)result->m_nLobbiesMatching));
 
 	if (result->m_nLobbiesMatching == 0) {
 		m_requestLobbyList->Result = Result::OK;

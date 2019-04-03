@@ -10,8 +10,10 @@
 #include <vector>
 #include <algorithm>
 
-#if defined(DEBUG)
-#	define LOG_DEBUG(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
-#else
-#	define LOG_DEBUG(fmt, ...)
-#endif
+namespace Unet
+{
+	class Callbacks;
+	class Context;
+	class Lobby;
+	class Service;
+}

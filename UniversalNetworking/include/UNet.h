@@ -4,6 +4,7 @@
 
 #include <Unet/Callbacks.h>
 #include <Unet/Context.h>
+#include <Unet/Utils.h>
 
 namespace Unet
 {

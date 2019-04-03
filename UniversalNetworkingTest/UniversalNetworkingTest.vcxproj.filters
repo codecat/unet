@@ -23,5 +23,8 @@
     <ClInclude Include="s2string.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="termcolor.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,8 +1,11 @@
 #include <Unet_common.h>
 #include <Unet/Lobby.h>
+#include <Unet/Utils.h>
+#include <Unet/Context.h>
 
-Unet::Lobby::Lobby(const LobbyInfo &lobbyInfo)
+Unet::Lobby::Lobby(Context* ctx, const LobbyInfo &lobbyInfo)
 {
+	m_ctx = ctx;
 	m_info = lobbyInfo;
 }
 
@@ -38,8 +41,8 @@ void Unet::Lobby::ServiceDisconnected(ServiceType service)
 	m_info.EntryPoints.erase(it);
 
 	if (IsConnected()) {
-		printf("Lost connection to entry point %s (%d points still open)\n", GetServiceNameByType(service), (int)m_info.EntryPoints.size());
+		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Lost connection to entry point %s (%d points still open)", GetServiceNameByType(service), (int)m_info.EntryPoints.size()));
 	} else {
-		printf("Lost connection to all entry points\n");
+		m_ctx->GetCallbacks()->OnLogError("Lost connection to all entry points!");
 	}
 }

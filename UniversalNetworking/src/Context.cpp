@@ -2,6 +2,7 @@
 #include <Unet/Context.h>
 #include <Unet/Services/ServiceSteam.h>
 #include <Unet/Services/ServiceGalaxy.h>
+#include <Unet/Utils.h>
 
 Unet::Context::Context()
 {
@@ -48,7 +49,7 @@ void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &callback, T
 	}
 
 	if (numOK < numRequests) {
-		printf("There were some errors in the multi-service callback: %d errors\n", numRequests - numOK);
+		ctx->GetCallbacks()->OnLogDebug(Unet::strPrintF("There were some errors in the multi-service callback: %d errors", numRequests - numOK));
 	}
 
 	(ctx->*func)(result);
@@ -61,6 +62,11 @@ void Unet::Context::SetCallbacks(Callbacks* callbacks)
 	m_callbacks = callbacks;
 }
 
+Unet::Callbacks* Unet::Context::GetCallbacks()
+{
+	return m_callbacks;
+}
+
 void Unet::Context::RunCallbacks()
 {
 	CheckCallback(this, m_callbackCreateLobby, &Context::OnLobbyCreated);
@@ -71,7 +77,7 @@ void Unet::Context::RunCallbacks()
 	if (m_status == ContextStatus::Connected && m_currentLobby != nullptr) {
 		auto &lobbyInfo = m_currentLobby->GetInfo();
 		if (lobbyInfo.EntryPoints.size() == 0) {
-			printf("Connection to lobby was lost (no more remaining entry points)\n");
+			m_callbacks->OnLogError("Connection to lobby was lost (no more remaining entry points)");
 
 			LobbyLeftResult result;
 			result.Result = Result::OK;
@@ -95,7 +101,7 @@ void Unet::Context::EnableService(ServiceType service)
 	}
 
 	if (newService == nullptr) {
-		printf("Couldn't make new \"%s\" service!\n", GetServiceNameByType(service));
+		m_callbacks->OnLogError(strPrintF("Couldn't make new \"%s\" service!", GetServiceNameByType(service)));
 		return;
 	}
 
@@ -120,7 +126,7 @@ void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char
 	if (name != nullptr) {
 		newLobbyInfo.Name = name;
 	}
-	result.Lobby = new Lobby(newLobbyInfo);
+	result.Lobby = new Lobby(this, newLobbyInfo);
 
 	for (auto service : m_services) {
 		service->CreateLobby(privacy, maxPlayers);
@@ -145,7 +151,7 @@ void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 	m_status = ContextStatus::Connecting;
 
 	//TODO
-
+	/*
 	auto newLobby = new Lobby(lobbyInfo);
 	m_currentLobby = newLobby;
 
@@ -155,6 +161,7 @@ void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 	res.Result = Result::OK;
 	res.Lobby = newLobby;
 	OnLobbyJoined(res);
+	*/
 }
 
 void Unet::Context::LeaveLobby()

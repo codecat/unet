@@ -138,6 +138,7 @@
     <ClInclude Include="include\Unet\ResultObject.h" />
     <ClInclude Include="include\Unet\ServiceEntryPoint.h" />
     <ClInclude Include="include\Unet\ServiceType.h" />
+    <ClInclude Include="include\Unet\Utils.h" />
     <ClInclude Include="include\Unet_common.h" />
     <ClInclude Include="include\Unet\Services\ServiceSteam.h" />
   </ItemGroup>
@@ -149,6 +150,7 @@
     <ClCompile Include="src\Services\ServiceSteam.cpp" />
     <ClCompile Include="src\ServiceType.cpp" />
     <ClCompile Include="src\Unet.cpp" />
+    <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

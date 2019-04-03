@@ -46,8 +46,6 @@ namespace Unet
 		friend class LobbyLeftListener;
 
 	private:
-		Context* m_ctx;
-
 		LobbyCreatedListener m_lobbyCreatedListener;
 		LobbyListListener m_lobbyListListener;
 		LobbyLeftListener m_lobbyLeftListener;
