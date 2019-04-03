@@ -122,15 +122,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\Services\ServiceGalaxy.h" />
-    <ClInclude Include="include\UNet.h" />
-    <ClInclude Include="include\UNet_common.h" />
-    <ClInclude Include="include\Services\ServiceSteam.h" />
+    <ClInclude Include="include\Unet\Callbacks.h" />
+    <ClInclude Include="include\Unet\Context.h" />
+    <ClInclude Include="include\Unet\MultiCallback.h" />
+    <ClInclude Include="include\Unet\Results\CreateLobbyResult.h" />
+    <ClInclude Include="include\Unet\Results\LobbyJoinResult.h" />
+    <ClInclude Include="include\Unet\Results\LobbyLeftResult.h" />
+    <ClInclude Include="include\Unet\Results\LobbyListResult.h" />
+    <ClInclude Include="include\Unet\Service.h" />
+    <ClInclude Include="include\Unet\Services\ServiceGalaxy.h" />
+    <ClInclude Include="include\Unet.h" />
+    <ClInclude Include="include\Unet\Lobby.h" />
+    <ClInclude Include="include\Unet\LobbyInfo.h" />
+    <ClInclude Include="include\Unet\Result.h" />
+    <ClInclude Include="include\Unet\ResultObject.h" />
+    <ClInclude Include="include\Unet\ServiceEntryPoint.h" />
+    <ClInclude Include="include\Unet\ServiceType.h" />
+    <ClInclude Include="include\Unet_common.h" />
+    <ClInclude Include="include\Unet\Services\ServiceSteam.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Context.cpp" />
+    <ClCompile Include="src\Lobby.cpp" />
+    <ClCompile Include="src\LobbyInfo.cpp" />
     <ClCompile Include="src\Services\ServiceGalaxy.cpp" />
     <ClCompile Include="src\Services\ServiceSteam.cpp" />
-    <ClCompile Include="src\UNet.cpp" />
+    <ClCompile Include="src\ServiceType.cpp" />
+    <ClCompile Include="src\Unet.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,6 +1,8 @@
 #pragma once
 
-#include <UNet.h>
+#include <Unet_common.h>
+#include <Unet/Service.h>
+#include <Unet/Context.h>
 
 #include <galaxy/GalaxyApi.h>
 

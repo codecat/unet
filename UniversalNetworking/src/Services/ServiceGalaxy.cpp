@@ -1,5 +1,5 @@
-#include <UNet.h>
-#include <Services/ServiceGalaxy.h>
+#include <Unet.h>
+#include <Unet/Services/ServiceGalaxy.h>
 
 Unet::LobbyCreatedListener::LobbyCreatedListener(ServiceGalaxy* self)
 {

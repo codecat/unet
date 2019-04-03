@@ -1,5 +1,5 @@
-#include <UNet.h>
-#include <Services/ServiceSteam.h>
+#include <Unet.h>
+#include <Unet/Services/ServiceSteam.h>
 
 Unet::ServiceSteam::ServiceSteam(Context* ctx) :
 	m_callLobbyKicked(this, &ServiceSteam::OnLobbyKicked)
