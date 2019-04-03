@@ -140,7 +140,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  exit");
 		LOG_INFO("  help");
 		LOG_INFO("  status        - Prints current network status");
-		LOG_INFO("  create        - Creates a public lobby");
+		LOG_INFO("  create [name] - Creates a public lobby");
 		LOG_INFO("  list          - Requests all available lobbies");
 		LOG_INFO("  data [num]    - Show all lobby data by the number in the list, or the current lobby");
 		LOG_INFO("  join <num>    - Joins a lobby by the number in the list");
@@ -171,7 +171,11 @@ static void HandleCommand(const s2::string &line)
 		}
 
 	} else if (parse[0] == "create") {
-		g_ctx->CreateLobby(Unet::LobbyPrivacy::Public, 16);
+		std::string name = "Unet Test Lobby";
+		if (parse.len() == 2) {
+			name = parse[1];
+		}
+		g_ctx->CreateLobby(Unet::LobbyPrivacy::Public, 16, name.c_str());
 
 	} else if (parse[0] == "list") {
 		g_ctx->GetLobbyList();
