@@ -27,5 +27,7 @@ namespace Unet
 		virtual std::string GetLobbyData(uint64_t lobbyId, const char* name) = 0;
 		virtual int GetLobbyDataCount(uint64_t lobbyId) = 0;
 		virtual LobbyData GetLobbyData(uint64_t lobbyId, int index) = 0;
+
+		virtual void SetLobbyData(const char* name, const char* value) = 0;
 	};
 }

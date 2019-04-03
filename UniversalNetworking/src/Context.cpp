@@ -124,6 +124,7 @@ void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char
 	newLobbyInfo.IsHosting = true;
 	newLobbyInfo.Privacy = privacy;
 	newLobbyInfo.MaxPlayers = maxPlayers;
+	newLobbyInfo.UnetGuid = xg::newGuid();
 	if (name != nullptr) {
 		newLobbyInfo.Name = name;
 	}
@@ -259,6 +260,13 @@ std::vector<Unet::LobbyData> Unet::Context::GetLobbyData(const LobbyInfo &lobbyI
 	return ret;
 }
 
+void Unet::Context::SetLobbyData(const char* name, const char* value)
+{
+	for (auto service : m_services) {
+		service->SetLobbyData(name, value);
+	}
+}
+
 Unet::Lobby* Unet::Context::CurrentLobby()
 {
 	return m_currentLobby;
@@ -282,6 +290,12 @@ void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 	} else {
 		m_status = ContextStatus::Connected;
 		m_currentLobby = result.Lobby;
+
+		auto &lobbyInfo = m_currentLobby->GetInfo();
+
+		auto unetGuid = lobbyInfo.UnetGuid.str();
+		SetLobbyData("unet-guid", unetGuid.c_str());
+		SetLobbyData("unet-name", lobbyInfo.Name.c_str());
 	}
 
 	if (m_callbacks != nullptr) {

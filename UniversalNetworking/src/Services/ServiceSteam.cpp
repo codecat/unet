@@ -82,6 +82,21 @@ Unet::LobbyData Unet::ServiceSteam::GetLobbyData(uint64_t lobbyId, int index)
 	return ret;
 }
 
+void Unet::ServiceSteam::SetLobbyData(const char* name, const char* value)
+{
+	auto currentLobby = m_ctx->CurrentLobby();
+	if (currentLobby == nullptr) {
+		return;
+	}
+
+	auto entry = currentLobby->GetInfo().GetEntryPoint(ServiceType::Steam);
+	if (entry == nullptr) {
+		return;
+	}
+
+	SteamMatchmaking()->SetLobbyData(entry->ID, name, value);
+}
+
 void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 {
 	if (bIOFailure) {
@@ -95,9 +110,6 @@ void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Failed creating lobby, error %d", (int)result->m_eResult));
 		return;
 	}
-
-	auto &lobbyInfo = m_requestLobbyCreated->Data->Lobby->GetInfo();
-	SteamMatchmaking()->SetLobbyData(result->m_ulSteamIDLobby, "name", lobbyInfo.Name.c_str());
 
 	ServiceEntryPoint newEntryPoint;
 	newEntryPoint.Service = GetType();
@@ -149,7 +161,6 @@ void Unet::ServiceSteam::OnLobbyDataUpdate(LobbyDataUpdate_t* result)
 			//TODO: Match unique Unet ID of existing lobbies, and then only add entrypoint to it
 			LobbyInfo newLobbyInfo;
 			newLobbyInfo.MaxPlayers = SteamMatchmaking()->GetLobbyMemberLimit(result->m_ulSteamIDLobby);
-			newLobbyInfo.Name = SteamMatchmaking()->GetLobbyData(result->m_ulSteamIDLobby, "name");
 
 			ServiceEntryPoint newEntryPoint;
 			newEntryPoint.Service = ServiceType::Steam;

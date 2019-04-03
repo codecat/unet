@@ -40,6 +40,8 @@ namespace Unet
 		std::string GetLobbyData(const LobbyInfo &lobbyInfo, const char* name);
 		std::vector<LobbyData> GetLobbyData(const LobbyInfo &lobbyInfo);
 
+		void SetLobbyData(const char* name, const char* value);
+
 		Lobby* CurrentLobby();
 
 	private:

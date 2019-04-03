@@ -2,6 +2,7 @@
 
 #include <Unet_common.h>
 #include <Unet/ServiceEntryPoint.h>
+#include <guid.hpp>
 
 namespace Unet
 {
@@ -18,6 +19,8 @@ namespace Unet
 		bool IsHosting = false;
 		LobbyPrivacy Privacy = LobbyPrivacy::Public;
 		int MaxPlayers = 0;
+
+		xg::Guid UnetGuid;
 
 		std::string Name;
 		std::vector<ServiceEntryPoint> EntryPoints;

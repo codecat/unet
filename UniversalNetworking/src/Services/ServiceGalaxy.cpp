@@ -10,9 +10,6 @@ void Unet::LobbyCreatedListener::OnLobbyCreated(const galaxy::api::GalaxyID& lob
 		return;
 	}
 
-	auto &info = m_self->m_requestLobbyCreated->Data->Lobby->GetInfo();
-	galaxy::api::Matchmaking()->SetLobbyData(lobbyID, "name", info.Name.c_str());
-
 	ServiceEntryPoint newEntryPoint;
 	newEntryPoint.Service = m_self->GetType();
 	newEntryPoint.ID = lobbyID.ToUint64();
@@ -77,7 +74,6 @@ void Unet::LobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Gala
 
 	LobbyInfo newLobbyInfo;
 	newLobbyInfo.MaxPlayers = galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(lobbyID);
-	newLobbyInfo.Name = galaxy::api::Matchmaking()->GetLobbyData(lobbyID, "name");
 
 	ServiceEntryPoint newEntryPoint;
 	newEntryPoint.Service = ServiceType::Galaxy;
@@ -221,4 +217,19 @@ Unet::LobbyData Unet::ServiceGalaxy::GetLobbyData(uint64_t lobbyId, int index)
 	}
 
 	return ret;
+}
+
+void Unet::ServiceGalaxy::SetLobbyData(const char* name, const char* value)
+{
+	auto currentLobby = m_ctx->CurrentLobby();
+	if (currentLobby == nullptr) {
+		return;
+	}
+
+	auto entry = currentLobby->GetInfo().GetEntryPoint(ServiceType::Steam);
+	if (entry == nullptr) {
+		return;
+	}
+
+	galaxy::api::Matchmaking()->SetLobbyData(entry->ID, name, value);
 }
