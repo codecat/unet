@@ -70,17 +70,17 @@ void Unet::LobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Gala
 		m_dataFetch.erase(it);
 	}
 
-	//TODO: Match unique Unet ID of existing lobbies, and then only add entrypoint to it
-
-	LobbyInfo newLobbyInfo;
-	newLobbyInfo.MaxPlayers = galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(lobbyID);
+	xg::Guid unetGuid(galaxy::api::Matchmaking()->GetLobbyData(lobbyID, "unet-guid"));
+	if (!unetGuid.isValid()) {
+		m_self->m_ctx->GetCallbacks()->OnLogWarn("[Galaxy] unet-guid is not valid!");
+		LobbyDataUpdated();
+		return;
+	}
 
 	ServiceEntryPoint newEntryPoint;
 	newEntryPoint.Service = ServiceType::Galaxy;
 	newEntryPoint.ID = lobbyID.ToUint64();
-	newLobbyInfo.EntryPoints.emplace_back(newEntryPoint);
-
-	m_self->m_requestLobbyList->Data->Lobbies.emplace_back(newLobbyInfo);
+	m_self->m_requestLobbyList->Data->AddEntryPoint(unetGuid, newEntryPoint);
 
 	LobbyDataUpdated();
 }
@@ -226,7 +226,7 @@ void Unet::ServiceGalaxy::SetLobbyData(const char* name, const char* value)
 		return;
 	}
 
-	auto entry = currentLobby->GetInfo().GetEntryPoint(ServiceType::Steam);
+	auto entry = currentLobby->GetInfo().GetEntryPoint(ServiceType::Galaxy);
 	if (entry == nullptr) {
 		return;
 	}

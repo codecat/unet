@@ -305,8 +305,15 @@ void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 
 void Unet::Context::OnLobbyList(const LobbyListResult &result)
 {
+	LobbyListResult newResult(result);
+
+	for (auto &lobbyInfo : newResult.Lobbies) {
+		//lobbyInfo.MaxPlayers = //TODO
+		lobbyInfo.Name = GetLobbyData(lobbyInfo, "unet-name");
+	}
+
 	if (m_callbacks != nullptr) {
-		m_callbacks->OnLobbyList(result);
+		m_callbacks->OnLobbyList(newResult);
 	}
 }
 

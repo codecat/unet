@@ -42,6 +42,7 @@ namespace Unet
 		void OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure);
 		void OnLobbyList(LobbyMatchList_t* result, bool bIOFailure);
 
+		void LobbyListDataUpdated();
 		void OnLobbyDataUpdate(LobbyDataUpdate_t* result);
 		void OnLobbyKicked(LobbyKicked_t* result);
 	};

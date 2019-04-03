@@ -150,6 +150,7 @@
     <ClCompile Include="src\guid.cpp" />
     <ClCompile Include="src\Lobby.cpp" />
     <ClCompile Include="src\LobbyInfo.cpp" />
+    <ClCompile Include="src\Results\LobbyListResult.cpp" />
     <ClCompile Include="src\Services\ServiceGalaxy.cpp" />
     <ClCompile Include="src\Services\ServiceSteam.cpp" />
     <ClCompile Include="src\ServiceType.cpp" />

@@ -148,6 +148,13 @@ void Unet::ServiceSteam::OnLobbyList(LobbyMatchList_t* result, bool bIOFailure)
 	}
 }
 
+void Unet::ServiceSteam::LobbyListDataUpdated()
+{
+	if (m_listDataFetch.size() == 0) {
+		m_requestLobbyList->Result = Result::OK;
+	}
+}
+
 void Unet::ServiceSteam::OnLobbyDataUpdate(LobbyDataUpdate_t* result)
 {
 	if (result->m_ulSteamIDMember == result->m_ulSteamIDLobby) {
@@ -158,20 +165,19 @@ void Unet::ServiceSteam::OnLobbyDataUpdate(LobbyDataUpdate_t* result)
 			// Server list data request
 			m_listDataFetch.erase(it);
 
-			//TODO: Match unique Unet ID of existing lobbies, and then only add entrypoint to it
-			LobbyInfo newLobbyInfo;
-			newLobbyInfo.MaxPlayers = SteamMatchmaking()->GetLobbyMemberLimit(result->m_ulSteamIDLobby);
+			xg::Guid unetGuid(SteamMatchmaking()->GetLobbyData(result->m_ulSteamIDLobby, "unet-guid"));
+			if (!unetGuid.isValid()) {
+				m_ctx->GetCallbacks()->OnLogDebug("[Steam] unet-guid is not valid!");
+				LobbyListDataUpdated();
+				return;
+			}
 
 			ServiceEntryPoint newEntryPoint;
 			newEntryPoint.Service = ServiceType::Steam;
 			newEntryPoint.ID = result->m_ulSteamIDLobby;
-			newLobbyInfo.EntryPoints.emplace_back(newEntryPoint);
+			m_requestLobbyList->Data->AddEntryPoint(unetGuid, newEntryPoint);
 
-			m_requestLobbyList->Data->Lobbies.emplace_back(newLobbyInfo);
-
-			if (m_listDataFetch.size() == 0) {
-				m_requestLobbyList->Result = Result::OK;
-			}
+			LobbyListDataUpdated();
 
 		} else {
 			// Regular lobby data update

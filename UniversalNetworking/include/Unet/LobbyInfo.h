@@ -14,8 +14,6 @@ namespace Unet
 
 	struct LobbyInfo
 	{
-		//TODO: Some unique ID so that it can be identified across services
-
 		bool IsHosting = false;
 		LobbyPrivacy Privacy = LobbyPrivacy::Public;
 		int MaxPlayers = 0;
