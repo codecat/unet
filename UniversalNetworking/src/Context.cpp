@@ -1,5 +1,6 @@
 #include <Unet_common.h>
 #include <Unet/Context.h>
+#include <Unet/Service.h>
 #include <Unet/Services/ServiceSteam.h>
 #include <Unet/Services/ServiceGalaxy.h>
 #include <Unet/Utils.h>
@@ -186,9 +187,91 @@ void Unet::Context::LeaveLobby()
 	}
 }
 
+std::string Unet::Context::GetLobbyData(const LobbyInfo &lobbyInfo, const char* name)
+{
+	ServiceType firstService;
+	std::string ret;
+
+	for (size_t i = 0; i < lobbyInfo.EntryPoints.size(); i++) {
+		auto &entry = lobbyInfo.EntryPoints[i];
+
+		auto service = GetService(entry.Service);
+		if (service == nullptr) {
+			continue;
+		}
+
+		std::string str = service->GetLobbyData(entry.ID, name);
+		if (str == "") {
+			continue;
+		}
+
+		if (i == 0) {
+			firstService = entry.Service;
+			ret = str;
+		} else if (ret != str) {
+			m_callbacks->OnLogWarn(strPrintF("Data \"%s\" is different between service %s and %s! (\"%s\" and \"%s\")",
+				name,
+				GetServiceNameByType(firstService), GetServiceNameByType(entry.Service),
+				ret.c_str(), str.c_str()
+			));
+		}
+	}
+
+	return ret;
+}
+
+std::vector<Unet::LobbyData> Unet::Context::GetLobbyData(const LobbyInfo &lobbyInfo)
+{
+	std::vector<std::pair<ServiceType, LobbyData>> items;
+
+	for (auto &entry : lobbyInfo.EntryPoints) {
+		auto service = GetService(entry.Service);
+		if (service == nullptr) {
+			continue;
+		}
+
+		int numData = service->GetLobbyDataCount(entry.ID);
+		for (int i = 0; i < numData; i++) {
+			auto data = service->GetLobbyData(entry.ID, i);
+
+			auto it = std::find_if(items.begin(), items.end(), [&data](const std::pair<ServiceType, LobbyData> &d) {
+				return d.second.Name == data.Name;
+			});
+
+			if (it == items.end()) {
+				items.emplace_back(std::make_pair(entry.Service, data));
+			} else {
+				if (it->second.Value != data.Value) {
+					m_callbacks->OnLogWarn(strPrintF("Data \"%s\" is different between service %s and %s! (\"%s\" and \"%s\")",
+						data.Name.c_str(),
+						GetServiceNameByType(it->first), GetServiceNameByType(entry.Service),
+						it->second.Value.c_str(), data.Value.c_str()
+					));
+				}
+			}
+		}
+	}
+
+	std::vector<LobbyData> ret;
+	for (auto &pair : items) {
+		ret.emplace_back(pair.second);
+	}
+	return ret;
+}
+
 Unet::Lobby* Unet::Context::CurrentLobby()
 {
 	return m_currentLobby;
+}
+
+Unet::Service* Unet::Context::GetService(ServiceType type)
+{
+	for (auto service : m_services) {
+		if (service->GetType() == type) {
+			return service;
+		}
+	}
+	return nullptr;
 }
 
 void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)

@@ -37,7 +37,13 @@ namespace Unet
 		void JoinLobby(LobbyInfo &lobbyInfo);
 		void LeaveLobby();
 
+		std::string GetLobbyData(const LobbyInfo &lobbyInfo, const char* name);
+		std::vector<LobbyData> GetLobbyData(const LobbyInfo &lobbyInfo);
+
 		Lobby* CurrentLobby();
+
+	private:
+		Service* GetService(ServiceType type);
 
 	private:
 		void OnLobbyCreated(const CreateLobbyResult &result);

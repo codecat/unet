@@ -32,6 +32,10 @@ namespace Unet
 		virtual void GetLobbyList() override;
 		virtual void LeaveLobby() override;
 
+		virtual std::string GetLobbyData(uint64_t lobbyId, const char* name) override;
+		virtual int GetLobbyDataCount(uint64_t lobbyId) override;
+		virtual LobbyData GetLobbyData(uint64_t lobbyId, int index) override;
+
 	private:
 		void OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure);
 		void OnLobbyList(LobbyMatchList_t* result, bool bIOFailure);

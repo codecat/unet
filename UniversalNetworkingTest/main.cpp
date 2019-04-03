@@ -183,7 +183,19 @@ static void HandleCommand(const s2::string &line)
 				return;
 			}
 
-			//TODO
+			int num = atoi(parse[1]);
+			if (num < 0 || num >= (int)g_lastLobbyList.Lobbies.size()) {
+				LOG_INFO("Number %d is out of range of last lobby list!", num);
+				return;
+			}
+
+			auto &lobbyInfo = g_lastLobbyList.Lobbies[num];
+			auto lobbyData = g_ctx->GetLobbyData(lobbyInfo);
+
+			LOG_INFO("%d keys:", (int)lobbyData.size());
+			for (auto &data : lobbyData) {
+				LOG_INFO("  \"%s\" = \"%s\"", data.Name.c_str(), data.Value.c_str());
+			}
 
 		} else {
 			auto currentLobby = g_ctx->CurrentLobby();

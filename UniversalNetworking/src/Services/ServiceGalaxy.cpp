@@ -200,3 +200,27 @@ void Unet::ServiceGalaxy::LeaveLobby()
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to leave lobby: %s", error.GetMsg()));
 	}
 }
+
+std::string Unet::ServiceGalaxy::GetLobbyData(uint64_t lobbyId, const char* name)
+{
+	return galaxy::api::Matchmaking()->GetLobbyData(lobbyId, name);
+}
+
+int Unet::ServiceGalaxy::GetLobbyDataCount(uint64_t lobbyId)
+{
+	return galaxy::api::Matchmaking()->GetLobbyDataCount(lobbyId);
+}
+
+Unet::LobbyData Unet::ServiceGalaxy::GetLobbyData(uint64_t lobbyId, int index)
+{
+	char szKey[512];
+	char szValue[512];
+
+	LobbyData ret;
+	if (galaxy::api::Matchmaking()->GetLobbyDataByIndex(lobbyId, index, szKey, 512, szValue, 512)) {
+		ret.Name = szKey;
+		ret.Value = szValue;
+	}
+
+	return ret;
+}

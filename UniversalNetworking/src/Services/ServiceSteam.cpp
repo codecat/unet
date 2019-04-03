@@ -58,6 +58,30 @@ void Unet::ServiceSteam::LeaveLobby()
 	serviceRequest->Data->Reason = Unet::LeaveReason::UserLeave;
 }
 
+std::string Unet::ServiceSteam::GetLobbyData(uint64_t lobbyId, const char* name)
+{
+	return SteamMatchmaking()->GetLobbyData(lobbyId, name);
+}
+
+int Unet::ServiceSteam::GetLobbyDataCount(uint64_t lobbyId)
+{
+	return SteamMatchmaking()->GetLobbyDataCount(lobbyId);
+}
+
+Unet::LobbyData Unet::ServiceSteam::GetLobbyData(uint64_t lobbyId, int index)
+{
+	char szKey[512];
+	char szValue[512];
+
+	LobbyData ret;
+	if (SteamMatchmaking()->GetLobbyDataByIndex(lobbyId, index, szKey, 512, szValue, 512)) {
+		ret.Name = szKey;
+		ret.Value = szValue;
+	}
+
+	return ret;
+}
+
 void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 {
 	if (bIOFailure) {
