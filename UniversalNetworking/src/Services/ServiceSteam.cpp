@@ -38,14 +38,9 @@ void Unet::ServiceSteam::GetLobbyList()
 	m_callLobbyList.Set(call, this, &ServiceSteam::OnLobbyList);
 }
 
-void Unet::ServiceSteam::JoinLobby(const LobbyInfo &lobbyInfo)
+void Unet::ServiceSteam::JoinLobby(uint64_t lobbyId)
 {
-	auto entry = lobbyInfo.GetEntryPoint(ServiceType::Steam);
-	if (entry == nullptr) {
-		return;
-	}
-
-	SteamAPICall_t call = SteamMatchmaking()->JoinLobby((uint64)entry->ID);
+	SteamAPICall_t call = SteamMatchmaking()->JoinLobby((uint64)lobbyId);
 	m_requestLobbyJoin = m_ctx->m_callbackLobbyJoin.AddServiceRequest(this);
 	m_callLobbyJoin.Set(call, this, &ServiceSteam::OnLobbyJoin);
 }

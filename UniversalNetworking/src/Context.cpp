@@ -160,7 +160,10 @@ void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 	result.JoinedLobby = new Lobby(this, lobbyInfo);
 
 	for (auto service : m_services) {
-		service->JoinLobby(lobbyInfo);
+		auto entry = lobbyInfo.GetEntryPoint(service->GetType());
+		if (entry != nullptr) {
+			service->JoinLobby(entry->ID);
+		}
 	}
 }
 

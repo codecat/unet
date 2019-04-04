@@ -191,17 +191,12 @@ void Unet::ServiceGalaxy::GetLobbyList()
 	}
 }
 
-void Unet::ServiceGalaxy::JoinLobby(const LobbyInfo &lobbyInfo)
+void Unet::ServiceGalaxy::JoinLobby(uint64_t lobbyId)
 {
-	auto entry = lobbyInfo.GetEntryPoint(ServiceType::Steam);
-	if (entry == nullptr) {
-		return;
-	}
-
 	m_requestLobbyJoin = m_ctx->m_callbackLobbyJoin.AddServiceRequest(this);
 
 	try {
-		galaxy::api::Matchmaking()->JoinLobby(entry->ID, &m_lobbyJoinListener);
+		galaxy::api::Matchmaking()->JoinLobby(lobbyId, &m_lobbyJoinListener);
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyJoin->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to join lobby: %s", error.GetMsg()));

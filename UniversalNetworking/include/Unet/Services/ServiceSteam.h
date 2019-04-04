@@ -33,7 +33,7 @@ namespace Unet
 
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) override;
 		virtual void GetLobbyList() override;
-		virtual void JoinLobby(const LobbyInfo &lobbyInfo) override;
+		virtual void JoinLobby(uint64_t lobbyId) override;
 		virtual void LeaveLobby() override;
 
 		virtual int GetLobbyMaxPlayers(uint64_t lobbyId) override;

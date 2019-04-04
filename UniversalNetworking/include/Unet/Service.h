@@ -16,7 +16,7 @@ namespace Unet
 
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) = 0;
 		virtual void GetLobbyList() = 0;
-		virtual void JoinLobby(const LobbyInfo &lobbyInfo) = 0; //TODO: Change this to take a uint64_t lobby ID?
+		virtual void JoinLobby(uint64_t lobbyId) = 0;
 		virtual void LeaveLobby() = 0;
 
 		virtual int GetLobbyMaxPlayers(uint64_t lobbyId) = 0;

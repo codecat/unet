@@ -7,6 +7,7 @@ Unet::Lobby::Lobby(Context* ctx, const LobbyInfo &lobbyInfo)
 {
 	m_ctx = ctx;
 	m_info = lobbyInfo;
+	m_info.EntryPoints.clear();
 
 	m_data = m_ctx->GetLobbyData(m_info);
 }
