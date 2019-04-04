@@ -44,9 +44,9 @@ void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &callback, T
 
 	auto &result = callback.GetResult();
 	if (numOK > 0) {
-		result.Result = Unet::Result::OK;
+		result.Code = Unet::Result::OK;
 	} else {
-		result.Result = Unet::Result::Error;
+		result.Code = Unet::Result::Error;
 	}
 
 	if (numOK < numRequests) {
@@ -81,7 +81,7 @@ void Unet::Context::RunCallbacks()
 			m_callbacks->OnLogError("Connection to lobby was lost (no more remaining entry points)");
 
 			LobbyLeftResult result;
-			result.Result = Result::OK;
+			result.Code = Result::OK;
 			result.Reason = LeaveReason::Disconnected;
 			OnLobbyLeft(result);
 		}
@@ -128,7 +128,7 @@ void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char
 	if (name != nullptr) {
 		newLobbyInfo.Name = name;
 	}
-	result.Lobby = new Lobby(this, newLobbyInfo);
+	result.CreatedLobby = new Lobby(this, newLobbyInfo);
 
 	for (auto service : m_services) {
 		service->CreateLobby(privacy, maxPlayers);
@@ -284,12 +284,12 @@ Unet::Service* Unet::Context::GetService(ServiceType type)
 
 void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 {
-	if (result.Result != Result::OK) {
+	if (result.Code != Result::OK) {
 		m_status = ContextStatus::Idle;
 		LeaveLobby();
 	} else {
 		m_status = ContextStatus::Connected;
-		m_currentLobby = result.Lobby;
+		m_currentLobby = result.CreatedLobby;
 
 		auto &lobbyInfo = m_currentLobby->GetInfo();
 
@@ -319,12 +319,12 @@ void Unet::Context::OnLobbyList(const LobbyListResult &result)
 
 void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 {
-	if (result.Result != Result::OK) {
+	if (result.Code != Result::OK) {
 		m_status = ContextStatus::Idle;
 		LeaveLobby();
 	} else {
 		m_status = ContextStatus::Connected;
-		m_currentLobby = result.Lobby;
+		m_currentLobby = result.JoinedLobby;
 	}
 
 	if (m_callbacks != nullptr) {

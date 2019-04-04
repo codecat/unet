@@ -58,18 +58,18 @@ public:
 
 	virtual void OnLobbyCreated(const Unet::CreateLobbyResult &result) override
 	{
-		if (result.Result != Unet::Result::OK) {
+		if (result.Code != Unet::Result::OK) {
 			LOG_ERROR("Couldn't create lobby!");
 			return;
 		}
 
-		auto &info = result.Lobby->GetInfo();
+		auto &info = result.CreatedLobby->GetInfo();
 		LOG_INFO("Lobby created: \"%s\"", info.Name.c_str());
 	}
 
 	virtual void OnLobbyList(const Unet::LobbyListResult &result) override
 	{
-		if (result.Result != Unet::Result::OK) {
+		if (result.Code != Unet::Result::OK) {
 			LOG_ERROR("Couldn't get lobby list!");
 			return;
 		}
@@ -88,12 +88,12 @@ public:
 
 	virtual void OnLobbyJoined(const Unet::LobbyJoinResult &result) override
 	{
-		if (result.Result != Unet::Result::OK) {
+		if (result.Code != Unet::Result::OK) {
 			LOG_ERROR("Couldn't join lobby!");
 			return;
 		}
 
-		auto &info = result.Lobby->GetInfo();
+		auto &info = result.JoinedLobby->GetInfo();
 		LOG_INFO("Joined lobby: \"%s\"", info.Name.c_str());
 	}
 
@@ -125,131 +125,17 @@ static void RunCallbacks()
 	g_ctx->RunCallbacks();
 }
 
-static void HandleCommand(const s2::string &line)
+static void InitializeSteam(const char* appId)
 {
-	auto parse = line.commandlinesplit();
+	LOG_INFO("Enabling Steam service (App ID %s)", appId);
 
-	if (parse[0] == "") {
-		return;
-
-	} else if (parse[0] == "exit") {
-		g_keepRunning = false;
-
-	} else if (parse[0] == "help") {
-		LOG_INFO("Available commands:");
-		LOG_INFO("  exit");
-		LOG_INFO("  help");
-		LOG_INFO("  status        - Prints current network status");
-		LOG_INFO("  create [name] - Creates a public lobby");
-		LOG_INFO("  list          - Requests all available lobbies");
-		LOG_INFO("  data [num]    - Show all lobby data by the number in the list, or the current lobby");
-		LOG_INFO("  join <num>    - Joins a lobby by the number in the list");
-		LOG_INFO("  leave         - Leaves the current lobby or cancels the join request");
-		LOG_INFO("");
-		LOG_INFO("Or just hit Enter to run callbacks.");
-
-	} else if (parse[0] == "status") {
-		auto status = g_ctx->GetStatus();
-		const char* statusStr = "Undefined";
-		switch (status) {
-		case Unet::ContextStatus::Idle: statusStr = "Idle"; break;
-		case Unet::ContextStatus::Connecting: statusStr = "Connecting"; break;
-		case Unet::ContextStatus::Connected: statusStr = "Connected"; break;
-		}
-
-		LOG_INFO("Status: %s", statusStr);
-		auto currentLobby = g_ctx->CurrentLobby();
-		if (currentLobby == nullptr) {
-			LOG_INFO("  No lobby");
-		} else {
-			auto &lobbyInfo = currentLobby->GetInfo();
-			LOG_INFO("  Lobby name: \"%s\"", lobbyInfo.Name.c_str());
-			auto unetGuid = lobbyInfo.UnetGuid.str();
-			LOG_INFO("  Lobby Guid: %s", unetGuid.c_str());
-			LOG_INFO("  Entry points: %d", (int)lobbyInfo.EntryPoints.size());
-			for (auto &entry : lobbyInfo.EntryPoints) {
-				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
-			}
-		}
-
-	} else if (parse[0] == "create") {
-		std::string name = "Unet Test Lobby";
-		if (parse.len() == 2) {
-			name = parse[1];
-		}
-		g_ctx->CreateLobby(Unet::LobbyPrivacy::Public, 16, name.c_str());
-
-	} else if (parse[0] == "list") {
-		g_ctx->GetLobbyList();
-
-	} else if (parse[0] == "data") {
-		if (parse.len() == 2) {
-			if (g_lastLobbyList.Result != Unet::Result::OK) {
-				LOG_ERROR("Previous lobby list request failed! Use the \"list\" command again.");
-				return;
-			}
-
-			int num = atoi(parse[1]);
-			if (num < 0 || num >= (int)g_lastLobbyList.Lobbies.size()) {
-				LOG_INFO("Number %d is out of range of last lobby list!", num);
-				return;
-			}
-
-			auto &lobbyInfo = g_lastLobbyList.Lobbies[num];
-			auto lobbyData = g_ctx->GetLobbyData(lobbyInfo);
-
-			LOG_INFO("%d keys:", (int)lobbyData.size());
-			for (auto &data : lobbyData) {
-				LOG_INFO("  \"%s\" = \"%s\"", data.Name.c_str(), data.Value.c_str());
-			}
-
-		} else {
-			auto currentLobby = g_ctx->CurrentLobby();
-			if (currentLobby == nullptr) {
-				LOG_ERROR("Not in a lobby. Use \"data <num>\" instead.");
-			} else {
-				//TODO
-			}
-		}
-
-	} else if (parse[0] == "join" && parse.len() == 2) {
-		if (g_lastLobbyList.Result != Unet::Result::OK) {
-			LOG_ERROR("Previous lobby list request failed! Use the \"list\" command again.");
-			return;
-		}
-
-		int num = atoi(parse[1]);
-		if (num < 0 || num >= (int)g_lastLobbyList.Lobbies.size()) {
-			LOG_INFO("Number %d is out of range of last lobby list!", num);
-			return;
-		}
-
-		auto lobbyInfo = g_lastLobbyList.Lobbies[num];
-
-		LOG_INFO("Joining \"%s\"", lobbyInfo.Name.c_str());
-		g_ctx->JoinLobby(lobbyInfo);
-
-	} else if (parse[0] == "leave") {
-		g_ctx->LeaveLobby();
-
-	} else {
-		LOG_ERROR("Unknown command \"%s\"! Try \"help\".", parse[0].c_str());
+#if defined(PLATFORM_WINDOWS)
+	SetEnvironmentVariableA("SteamAppID", appId);
+#endif
+	g_steamEnabled = SteamAPI_Init();
+	if (!g_steamEnabled) {
+		LOG_ERROR("Failed to initialize Steam API!");
 	}
-}
-
-static s2::string ReadLine()
-{
-	auto currentLobby = g_ctx->CurrentLobby();
-	if (currentLobby != nullptr) {
-		auto &lobbyInfo = currentLobby->GetInfo();
-		std::cout << "[" << lobbyInfo.Name << "] ";
-	}
-
-	std::cout << "> ";
-
-	std::string line;
-	std::getline(std::cin, line);
-	return line.c_str();
 }
 
 class GalaxyAuthListener : public galaxy::api::GlobalAuthListener
@@ -303,6 +189,209 @@ public:
 };
 static SteamTicketCallback g_steamTicketCallback;
 
+static void InitializeGalaxy(const char* clientId, const char* clientSecret)
+{
+	LOG_INFO("Enabling Galaxy service (client ID %s)", clientId);
+
+	g_authListener = new GalaxyAuthListener;
+
+	try {
+		galaxy::api::Init(galaxy::api::InitOptions(clientId, clientSecret));
+	} catch (const galaxy::api::IError &error) {
+		LOG_ERROR("Failed to initiailize Galaxy API: %s", error.GetMsg());
+	}
+
+	g_galaxyEnabled = true;
+
+	if (g_steamEnabled) {
+		uint32 secretData = 0;
+		SteamAPICall_t hSteamAPICall = SteamUser()->RequestEncryptedAppTicket(&secretData, sizeof(secretData));
+		g_steamTicketCallback.m_callback.Set(hSteamAPICall, &g_steamTicketCallback, &SteamTicketCallback::OnCallback);
+	} else {
+		try {
+			galaxy::api::User()->SignInGalaxy(true);
+		} catch (const galaxy::api::IError &error) {
+			LOG_ERROR("Failed to sign in to Galaxy: %s", error.GetMsg());
+		}
+	}
+
+	LOG_INFO("Waiting for Galaxy sign in...");
+	while (g_galaxyEnabled && !galaxy::api::User()->SignedIn()) {
+		RunCallbacks();
+	}
+}
+
+static void HandleCommand(const s2::string &line)
+{
+	auto parse = line.commandlinesplit();
+
+	if (parse[0] == "") {
+		return;
+
+	} else if (parse[0] == "exit") {
+		g_keepRunning = false;
+
+	} else if (parse[0] == "help") {
+		LOG_INFO("Available commands:");
+		LOG_INFO("  exit");
+		LOG_INFO("  help");
+		LOG_INFO("  run <filename>      - Runs commands from a file");
+		LOG_INFO("  enable <name> [...] - Enables a service by the given name, including optional parameters");
+		LOG_INFO("  status              - Prints current network status");
+		LOG_INFO("  create [name]       - Creates a public lobby");
+		LOG_INFO("  list                - Requests all available lobbies");
+		LOG_INFO("  data [num]          - Show all lobby data by the number in the list, or the current lobby");
+		LOG_INFO("  join <num>          - Joins a lobby by the number in the list");
+		LOG_INFO("  leave               - Leaves the current lobby or cancels the join request");
+		LOG_INFO("");
+		LOG_INFO("Or just hit Enter to run callbacks.");
+
+	} else if (parse[0] == "run" && parse.len() == 2) {
+		auto filename = parse[1];
+		FILE* fh = fopen(filename, "rb");
+		if (fh == nullptr) {
+			LOG_ERROR("Couldn't find file \"%s\"", filename.c_str());
+			return;
+		}
+
+		char lineBuffer[1024];
+		while (!feof(fh)) {
+			char* line = fgets(lineBuffer, 1024, fh);
+			if (line == nullptr) {
+				break;
+			}
+
+			s2::string strLine(line);
+			HandleCommand(strLine.trim());
+		}
+
+		fclose(fh);
+
+	} else if (parse[0] == "enable" && parse.len() >= 2) {
+		auto serviceName = parse[1];
+		auto serviceType = Unet::GetServiceTypeByName(serviceName);
+		if (!g_steamEnabled && serviceType == Unet::ServiceType::Steam && parse.len() == 3) {
+			InitializeSteam(parse[2]);
+
+			if (g_steamEnabled) {
+				g_ctx->EnableService(Unet::ServiceType::Steam);
+			}
+
+		} else if (!g_galaxyEnabled && serviceType == Unet::ServiceType::Galaxy && parse.len() == 4) {
+			InitializeGalaxy(parse[2], parse[3]);
+
+			if (g_galaxyEnabled) {
+				g_ctx->EnableService(Unet::ServiceType::Galaxy);
+			}
+
+		} else {
+			LOG_ERROR("Unable to find service by the name of '%s' that takes %d parameters", serviceName.c_str(), (int)parse.len() - 2);
+		}
+
+	} else if (parse[0] == "status") {
+		auto status = g_ctx->GetStatus();
+		const char* statusStr = "Undefined";
+		switch (status) {
+		case Unet::ContextStatus::Idle: statusStr = "Idle"; break;
+		case Unet::ContextStatus::Connecting: statusStr = "Connecting"; break;
+		case Unet::ContextStatus::Connected: statusStr = "Connected"; break;
+		}
+
+		LOG_INFO("Status: %s", statusStr);
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_INFO("  No lobby");
+		} else {
+			auto &lobbyInfo = currentLobby->GetInfo();
+			LOG_INFO("  Lobby name: \"%s\"", lobbyInfo.Name.c_str());
+			auto unetGuid = lobbyInfo.UnetGuid.str();
+			LOG_INFO("  Lobby Guid: %s", unetGuid.c_str());
+			LOG_INFO("  Entry points: %d", (int)lobbyInfo.EntryPoints.size());
+			for (auto &entry : lobbyInfo.EntryPoints) {
+				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
+			}
+		}
+
+	} else if (parse[0] == "create") {
+		std::string name = "Unet Test Lobby";
+		if (parse.len() == 2) {
+			name = parse[1];
+		}
+		g_ctx->CreateLobby(Unet::LobbyPrivacy::Public, 16, name.c_str());
+
+	} else if (parse[0] == "list") {
+		g_ctx->GetLobbyList();
+
+	} else if (parse[0] == "data") {
+		if (parse.len() == 2) {
+			if (g_lastLobbyList.Code != Unet::Result::OK) {
+				LOG_ERROR("Previous lobby list request failed! Use the \"list\" command again.");
+				return;
+			}
+
+			int num = atoi(parse[1]);
+			if (num < 0 || num >= (int)g_lastLobbyList.Lobbies.size()) {
+				LOG_INFO("Number %d is out of range of last lobby list!", num);
+				return;
+			}
+
+			auto &lobbyInfo = g_lastLobbyList.Lobbies[num];
+			auto lobbyData = g_ctx->GetLobbyData(lobbyInfo);
+
+			LOG_INFO("%d keys:", (int)lobbyData.size());
+			for (auto &data : lobbyData) {
+				LOG_INFO("  \"%s\" = \"%s\"", data.Name.c_str(), data.Value.c_str());
+			}
+
+		} else {
+			auto currentLobby = g_ctx->CurrentLobby();
+			if (currentLobby == nullptr) {
+				LOG_ERROR("Not in a lobby. Use \"data <num>\" instead.");
+			} else {
+				//TODO
+			}
+		}
+
+	} else if (parse[0] == "join" && parse.len() == 2) {
+		if (g_lastLobbyList.Code != Unet::Result::OK) {
+			LOG_ERROR("Previous lobby list request failed! Use the \"list\" command again.");
+			return;
+		}
+
+		int num = atoi(parse[1]);
+		if (num < 0 || num >= (int)g_lastLobbyList.Lobbies.size()) {
+			LOG_INFO("Number %d is out of range of last lobby list!", num);
+			return;
+		}
+
+		auto lobbyInfo = g_lastLobbyList.Lobbies[num];
+
+		LOG_INFO("Joining \"%s\"", lobbyInfo.Name.c_str());
+		g_ctx->JoinLobby(lobbyInfo);
+
+	} else if (parse[0] == "leave") {
+		g_ctx->LeaveLobby();
+
+	} else {
+		LOG_ERROR("Unknown command \"%s\"! Try \"help\".", parse[0].c_str());
+	}
+}
+
+static s2::string ReadLine()
+{
+	auto currentLobby = g_ctx->CurrentLobby();
+	if (currentLobby != nullptr) {
+		auto &lobbyInfo = currentLobby->GetInfo();
+		std::cout << "[" << lobbyInfo.Name << "] ";
+	}
+
+	std::cout << "> ";
+
+	std::string line;
+	std::getline(std::cin, line);
+	return line.c_str();
+}
+
 int main(int argc, const char* argv[])
 {
 	g_ctx = new Unet::Context;
@@ -315,36 +404,22 @@ int main(int argc, const char* argv[])
 
 		if (arg == "--steam" && i + 1 < argc) {
 			const char* appIdStr = argv[++i];
-			LOG_INFO("Enabling Steam service (App ID %s)", appIdStr);
+			InitializeSteam(appIdStr);
 
-#if defined(_MSC_VER)
-			SetEnvironmentVariableA("SteamAppID", appIdStr);
-#endif
-			g_steamEnabled = SteamAPI_Init();
-			if (!g_steamEnabled) {
-				LOG_ERROR("Failed to initialize Steam API!");
-				continue;
+			if (g_steamEnabled) {
+				g_ctx->EnableService(Unet::ServiceType::Steam);
 			}
-
-			g_ctx->EnableService(Unet::ServiceType::Steam);
 			continue;
 		}
 
 		if (arg == "--galaxy" && i + 2 < argc) {
 			const char* clientId = argv[++i];
 			const char* clientSecret = argv[++i];
-			LOG_INFO("Enabling Galaxy service");
+			InitializeGalaxy(clientId, clientSecret);
 
-			g_authListener = new GalaxyAuthListener;
-
-			try {
-				galaxy::api::Init(galaxy::api::InitOptions(clientId, clientSecret));
-			} catch (const galaxy::api::IError &error) {
-				LOG_ERROR("Failed to initiailize Galaxy API: %s", error.GetMsg());
+			if (g_galaxyEnabled) {
+				g_ctx->EnableService(Unet::ServiceType::Galaxy);
 			}
-			g_galaxyEnabled = true;
-
-			g_ctx->EnableService(Unet::ServiceType::Galaxy);
 			continue;
 		}
 
@@ -357,23 +432,6 @@ int main(int argc, const char* argv[])
 	}
 
 	RunCallbacks();
-
-	if (g_galaxyEnabled) {
-		if (g_steamEnabled) {
-			uint32 secretData = 0;
-			SteamAPICall_t hSteamAPICall = SteamUser()->RequestEncryptedAppTicket(&secretData, sizeof(secretData));
-			g_steamTicketCallback.m_callback.Set(hSteamAPICall, &g_steamTicketCallback, &SteamTicketCallback::OnCallback);
-		} else {
-			galaxy::api::User()->SignInGalaxy(true);
-		}
-	}
-
-	if (g_galaxyEnabled) {
-		LOG_INFO("Waiting for Galaxy sign in...");
-		while (g_galaxyEnabled && !galaxy::api::User()->SignedIn()) {
-			RunCallbacks();
-		}
-	}
 
 	for (auto &cmd : delayedCommands) {
 		HandleCommand(cmd);

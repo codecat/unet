@@ -33,7 +33,6 @@ THE SOFTWARE.
 #include <iostream>
 #include <array>
 #include <sstream>
-#include <string_view>
 #include <utility>
 #include <iomanip>
 
@@ -52,7 +51,7 @@ public:
 	explicit Guid(const std::array<unsigned char, 16> &bytes);
 	explicit Guid(std::array<unsigned char, 16> &&bytes);
 
-	explicit Guid(std::string_view fromString);
+	explicit Guid(const std::string &fromString);
 	Guid();
 	
 	Guid(const Guid &other) = default;

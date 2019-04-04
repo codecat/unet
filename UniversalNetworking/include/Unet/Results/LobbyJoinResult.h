@@ -8,6 +8,6 @@ namespace Unet
 {
 	struct LobbyJoinResult : public ResultObject
 	{
-		Lobby* Lobby;
+		Lobby* JoinedLobby;
 	};
 }

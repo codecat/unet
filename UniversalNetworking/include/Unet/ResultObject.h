@@ -7,6 +7,6 @@ namespace Unet
 {
 	struct ResultObject
 	{
-		Result Result = Result::None;
+		Result Code = Result::None;
 	};
 }

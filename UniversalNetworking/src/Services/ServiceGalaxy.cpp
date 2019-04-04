@@ -5,7 +5,7 @@
 void Unet::LobbyCreatedListener::OnLobbyCreated(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyCreateResult result)
 {
 	if (result != galaxy::api::LOBBY_CREATE_RESULT_SUCCESS) {
-		m_self->m_requestLobbyCreated->Result = Result::Error;
+		m_self->m_requestLobbyCreated->Code = Result::Error;
 		m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Error %d while creating lobby", (int)result));
 		return;
 	}
@@ -13,9 +13,9 @@ void Unet::LobbyCreatedListener::OnLobbyCreated(const galaxy::api::GalaxyID& lob
 	ServiceEntryPoint newEntryPoint;
 	newEntryPoint.Service = m_self->GetType();
 	newEntryPoint.ID = lobbyID.ToUint64();
-	m_self->m_requestLobbyCreated->Data->Lobby->AddEntryPoint(newEntryPoint);
+	m_self->m_requestLobbyCreated->Data->CreatedLobby->AddEntryPoint(newEntryPoint);
 
-	m_self->m_requestLobbyCreated->Result = Result::OK;
+	m_self->m_requestLobbyCreated->Code = Result::OK;
 
 	m_self->m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby created");
 }
@@ -27,13 +27,13 @@ void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::Lobb
 	m_dataFetch.clear();
 
 	if (result != galaxy::api::LOBBY_LIST_RESULT_SUCCESS) {
-		m_self->m_requestLobbyList->Result = Result::Error;
+		m_self->m_requestLobbyList->Code = Result::Error;
 		m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Couldn't get lobby list due to error %d", (int)result));
 		return;
 	}
 
 	if (lobbyCount == 0) {
-		m_self->m_requestLobbyList->Result = Result::OK;
+		m_self->m_requestLobbyList->Code = Result::OK;
 		return;
 	}
 
@@ -52,14 +52,14 @@ void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::Lobb
 	}
 
 	if (m_dataFetch.size() == 0) {
-		m_self->m_requestLobbyList->Result = Result::Error;
+		m_self->m_requestLobbyList->Code = Result::Error;
 	}
 }
 
 void Unet::LobbyListListener::LobbyDataUpdated()
 {
 	if (m_dataFetch.size() == 0) {
-		m_self->m_requestLobbyList->Result = Result::OK;
+		m_self->m_requestLobbyList->Code = Result::OK;
 	}
 }
 
@@ -115,7 +115,7 @@ void Unet::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& lobbyID, 
 	}
 
 	if (leaveReason == LOBBY_LEAVE_REASON_USER_LEFT) {
-		m_self->m_requestLobbyLeft->Result = Result::OK;
+		m_self->m_requestLobbyLeft->Code = Result::OK;
 		m_self->m_requestLobbyLeft->Data->Reason = LeaveReason::UserLeave;
 	} else {
 		currentLobby->ServiceDisconnected(ServiceType::Galaxy);
@@ -155,7 +155,7 @@ void Unet::ServiceGalaxy::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	try {
 		galaxy::api::Matchmaking()->CreateLobby(type, maxPlayers, true, galaxy::api::LOBBY_TOPOLOGY_TYPE_FCM, &m_lobbyCreatedListener);
 	} catch (const galaxy::api::IError &error) {
-		m_requestLobbyCreated->Result = Result::Error;
+		m_requestLobbyCreated->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to create lobby: %s", error.GetMsg()));
 	}
 }
@@ -167,7 +167,7 @@ void Unet::ServiceGalaxy::GetLobbyList()
 	try {
 		galaxy::api::Matchmaking()->RequestLobbyList(false, &m_lobbyListListener);
 	} catch (const galaxy::api::IError &error) {
-		m_requestLobbyList->Result = Result::Error;
+		m_requestLobbyList->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to list lobbies: %s", error.GetMsg()));
 	}
 }
@@ -190,7 +190,7 @@ void Unet::ServiceGalaxy::LeaveLobby()
 	try {
 		galaxy::api::Matchmaking()->LeaveLobby(entryPoint->ID, &m_lobbyLeftListener);
 	} catch (const galaxy::api::IError &error) {
-		m_requestLobbyLeft->Result = Result::Error;
+		m_requestLobbyLeft->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to leave lobby: %s", error.GetMsg()));
 	}
 }

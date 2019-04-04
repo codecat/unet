@@ -12,8 +12,7 @@ namespace Unet
 	public:
 		struct ServiceRequest
 		{
-			Result Result = Result::None;
-			Service* Service = nullptr;
+			Result Code = Result::None;
 			TResult* Data = nullptr;
 		};
 
@@ -53,7 +52,7 @@ namespace Unet
 			}
 
 			for (auto serviceRequest : m_requests) {
-				if (serviceRequest->Result == Result::None) {
+				if (serviceRequest->Code == Result::None) {
 					return false;
 				}
 			}
@@ -64,7 +63,7 @@ namespace Unet
 		{
 			int ret = 0;
 			for (auto serviceRequest : m_requests) {
-				if (serviceRequest->Result == Result::OK) {
+				if (serviceRequest->Code == Result::OK) {
 					ret++;
 				}
 			}
@@ -79,7 +78,6 @@ namespace Unet
 		ServiceRequest* AddServiceRequest(Service* service)
 		{
 			auto newServiceRequest = new ServiceRequest;
-			newServiceRequest->Service = service;
 			newServiceRequest->Data = &m_result;
 			m_requests.emplace_back(newServiceRequest);
 			return newServiceRequest;
