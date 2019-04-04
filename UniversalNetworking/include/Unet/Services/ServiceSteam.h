@@ -19,6 +19,9 @@ namespace Unet
 		MultiCallback<LobbyListResult>::ServiceRequest* m_requestLobbyList = nullptr;
 		CCallResult<ServiceSteam, LobbyMatchList_t> m_callLobbyList;
 
+		MultiCallback<LobbyJoinResult>::ServiceRequest* m_requestLobbyJoin = nullptr;
+		CCallResult<ServiceSteam, LobbyEnter_t> m_callLobbyJoin;
+
 		CCallback<ServiceSteam, LobbyDataUpdate_t> m_callLobbyDataUpdate;
 		CCallback<ServiceSteam, LobbyKicked_t> m_callLobbyKicked;
 
@@ -30,17 +33,21 @@ namespace Unet
 
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) override;
 		virtual void GetLobbyList() override;
+		virtual void JoinLobby(const LobbyInfo &lobbyInfo) override;
 		virtual void LeaveLobby() override;
+
+		virtual int GetLobbyMaxPlayers(uint64_t lobbyId) override;
 
 		virtual std::string GetLobbyData(uint64_t lobbyId, const char* name) override;
 		virtual int GetLobbyDataCount(uint64_t lobbyId) override;
 		virtual LobbyData GetLobbyData(uint64_t lobbyId, int index) override;
 
-		virtual void SetLobbyData(const char* name, const char* value) override;
+		virtual void SetLobbyData(const LobbyInfo &lobbyInfo, const char* name, const char* value) override;
 
 	private:
 		void OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure);
 		void OnLobbyList(LobbyMatchList_t* result, bool bIOFailure);
+		void OnLobbyJoin(LobbyEnter_t* result, bool bIOFailure);
 
 		void LobbyListDataUpdated();
 		void OnLobbyDataUpdate(LobbyDataUpdate_t* result);

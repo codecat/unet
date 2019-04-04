@@ -5,11 +5,20 @@
 
 namespace Unet
 {
+	struct LobbyData
+	{
+		std::string Name;
+		std::string Value;
+	};
+
 	class Lobby
 	{
 	private:
 		Context* m_ctx;
 		LobbyInfo m_info;
+
+		//TODO: Remove this? It's not super useful
+		std::vector<LobbyData> m_data;
 
 	public:
 		Lobby(Context* ctx, const LobbyInfo &lobbyInfo);
@@ -20,5 +29,9 @@ namespace Unet
 
 		void AddEntryPoint(ServiceEntryPoint entryPoint);
 		void ServiceDisconnected(ServiceType service);
+
+		void SetData(const char* name, const std::string &value);
+		std::string GetData(const char* name);
+		const std::vector<LobbyData> &GetData();
 	};
 }

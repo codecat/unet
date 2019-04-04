@@ -97,6 +97,24 @@ void Unet::LobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Gala
 	LobbyDataUpdated();
 }
 
+void Unet::LobbyJoinListener::OnLobbyEntered(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyEnterResult result)
+{
+	if (result != galaxy::api::LOBBY_ENTER_RESULT_SUCCESS) {
+		m_self->m_requestLobbyJoin->Code = Result::Error;
+		m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Couldn't join lobby due to error %d", (int)result));
+		return;
+	}
+
+	ServiceEntryPoint newEntryPoint;
+	newEntryPoint.Service = ServiceType::Galaxy;
+	newEntryPoint.ID = lobbyID.ToUint64();
+	m_self->m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(newEntryPoint);
+
+	m_self->m_requestLobbyJoin->Code = Result::OK;
+
+	m_self->m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby joined");
+}
+
 void Unet::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& lobbyID, LobbyLeaveReason leaveReason)
 {
 	auto currentLobby = m_self->m_ctx->CurrentLobby();
@@ -125,6 +143,7 @@ void Unet::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& lobbyID, 
 Unet::ServiceGalaxy::ServiceGalaxy(Context* ctx) :
 	m_lobbyCreatedListener(this),
 	m_lobbyListListener(this),
+	m_lobbyJoinListener(this),
 	m_lobbyLeftListener(this)
 {
 	m_ctx = ctx;
@@ -172,6 +191,23 @@ void Unet::ServiceGalaxy::GetLobbyList()
 	}
 }
 
+void Unet::ServiceGalaxy::JoinLobby(const LobbyInfo &lobbyInfo)
+{
+	auto entry = lobbyInfo.GetEntryPoint(ServiceType::Steam);
+	if (entry == nullptr) {
+		return;
+	}
+
+	m_requestLobbyJoin = m_ctx->m_callbackLobbyJoin.AddServiceRequest(this);
+
+	try {
+		galaxy::api::Matchmaking()->JoinLobby(entry->ID, &m_lobbyJoinListener);
+	} catch (const galaxy::api::IError &error) {
+		m_requestLobbyJoin->Code = Result::Error;
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to join lobby: %s", error.GetMsg()));
+	}
+}
+
 void Unet::ServiceGalaxy::LeaveLobby()
 {
 	auto lobby = m_ctx->CurrentLobby();
@@ -193,6 +229,11 @@ void Unet::ServiceGalaxy::LeaveLobby()
 		m_requestLobbyLeft->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to leave lobby: %s", error.GetMsg()));
 	}
+}
+
+int Unet::ServiceGalaxy::GetLobbyMaxPlayers(uint64_t lobbyId)
+{
+	return (int)galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(lobbyId);
 }
 
 std::string Unet::ServiceGalaxy::GetLobbyData(uint64_t lobbyId, const char* name)
@@ -219,17 +260,10 @@ Unet::LobbyData Unet::ServiceGalaxy::GetLobbyData(uint64_t lobbyId, int index)
 	return ret;
 }
 
-void Unet::ServiceGalaxy::SetLobbyData(const char* name, const char* value)
+void Unet::ServiceGalaxy::SetLobbyData(const LobbyInfo &lobbyInfo, const char* name, const char* value)
 {
-	auto currentLobby = m_ctx->CurrentLobby();
-	if (currentLobby == nullptr) {
-		return;
+	auto entry = lobbyInfo.GetEntryPoint(ServiceType::Galaxy);
+	if (entry != nullptr) {
+		galaxy::api::Matchmaking()->SetLobbyData(entry->ID, name, value);
 	}
-
-	auto entry = currentLobby->GetInfo().GetEntryPoint(ServiceType::Galaxy);
-	if (entry == nullptr) {
-		return;
-	}
-
-	galaxy::api::Matchmaking()->SetLobbyData(entry->ID, name, value);
 }

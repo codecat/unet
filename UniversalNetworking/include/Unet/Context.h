@@ -18,6 +18,8 @@ namespace Unet
 
 	class Context
 	{
+		friend class Lobby;
+
 	public:
 		Context();
 		virtual ~Context();
@@ -37,10 +39,12 @@ namespace Unet
 		void JoinLobby(LobbyInfo &lobbyInfo);
 		void LeaveLobby();
 
+		/// Get maximum number of players as reported by services.
+		int GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo);
+		/// Get lobby data as reported by services.
 		std::string GetLobbyData(const LobbyInfo &lobbyInfo, const char* name);
+		/// Get all lobby data as reported by services.
 		std::vector<LobbyData> GetLobbyData(const LobbyInfo &lobbyInfo);
-
-		void SetLobbyData(const char* name, const char* value);
 
 		Lobby* CurrentLobby();
 

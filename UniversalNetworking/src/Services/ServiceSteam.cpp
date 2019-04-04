@@ -38,6 +38,18 @@ void Unet::ServiceSteam::GetLobbyList()
 	m_callLobbyList.Set(call, this, &ServiceSteam::OnLobbyList);
 }
 
+void Unet::ServiceSteam::JoinLobby(const LobbyInfo &lobbyInfo)
+{
+	auto entry = lobbyInfo.GetEntryPoint(ServiceType::Steam);
+	if (entry == nullptr) {
+		return;
+	}
+
+	SteamAPICall_t call = SteamMatchmaking()->JoinLobby((uint64)entry->ID);
+	m_requestLobbyJoin = m_ctx->m_callbackLobbyJoin.AddServiceRequest(this);
+	m_callLobbyJoin.Set(call, this, &ServiceSteam::OnLobbyJoin);
+}
+
 void Unet::ServiceSteam::LeaveLobby()
 {
 	auto lobby = m_ctx->CurrentLobby();
@@ -56,6 +68,11 @@ void Unet::ServiceSteam::LeaveLobby()
 	auto serviceRequest = m_ctx->m_callbackLobbyLeft.AddServiceRequest(this);
 	serviceRequest->Code = Result::OK;
 	serviceRequest->Data->Reason = Unet::LeaveReason::UserLeave;
+}
+
+int Unet::ServiceSteam::GetLobbyMaxPlayers(uint64_t lobbyId)
+{
+	return SteamMatchmaking()->GetLobbyMemberLimit((uint64)lobbyId);
 }
 
 std::string Unet::ServiceSteam::GetLobbyData(uint64_t lobbyId, const char* name)
@@ -82,19 +99,12 @@ Unet::LobbyData Unet::ServiceSteam::GetLobbyData(uint64_t lobbyId, int index)
 	return ret;
 }
 
-void Unet::ServiceSteam::SetLobbyData(const char* name, const char* value)
+void Unet::ServiceSteam::SetLobbyData(const LobbyInfo &lobbyInfo, const char* name, const char* value)
 {
-	auto currentLobby = m_ctx->CurrentLobby();
-	if (currentLobby == nullptr) {
-		return;
+	auto entry = lobbyInfo.GetEntryPoint(ServiceType::Steam);
+	if (entry != nullptr) {
+		SteamMatchmaking()->SetLobbyData((uint64)entry->ID, name, value);
 	}
-
-	auto entry = currentLobby->GetInfo().GetEntryPoint(ServiceType::Steam);
-	if (entry == nullptr) {
-		return;
-	}
-
-	SteamMatchmaking()->SetLobbyData((uint64)entry->ID, name, value);
 }
 
 void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
@@ -123,6 +133,12 @@ void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 
 void Unet::ServiceSteam::OnLobbyList(LobbyMatchList_t* result, bool bIOFailure)
 {
+	if (bIOFailure) {
+		m_requestLobbyList->Code = Result::Error;
+		m_ctx->GetCallbacks()->OnLogDebug("[Steam] IO Failure while listing lobbies");
+		return;
+	}
+
 	m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Lobby list received (%d)", (int)result->m_nLobbiesMatching));
 
 	m_listDataFetch.clear();
@@ -146,6 +162,30 @@ void Unet::ServiceSteam::OnLobbyList(LobbyMatchList_t* result, bool bIOFailure)
 	if (m_listDataFetch.size() == 0) {
 		m_requestLobbyList->Code = Result::Error;
 	}
+}
+
+void Unet::ServiceSteam::OnLobbyJoin(LobbyEnter_t* result, bool bIOFailure)
+{
+	if (bIOFailure) {
+		m_requestLobbyJoin->Code = Result::Error;
+		m_ctx->GetCallbacks()->OnLogDebug("[Steam] IO Failure while joining lobby");
+		return;
+	}
+
+	if (result->m_EChatRoomEnterResponse != k_EChatRoomEnterResponseSuccess) {
+		m_requestLobbyJoin->Code = Result::Error;
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Failed joining lobby, error %d", (int)result->m_EChatRoomEnterResponse));
+		return;
+	}
+
+	ServiceEntryPoint newEntryPoint;
+	newEntryPoint.Service = GetType();
+	newEntryPoint.ID = result->m_ulSteamIDLobby;
+	m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(newEntryPoint);
+
+	m_requestLobbyJoin->Code = Result::OK;
+
+	m_ctx->GetCallbacks()->OnLogDebug("[Steam] Lobby joined");
 }
 
 void Unet::ServiceSteam::LobbyListDataUpdated()

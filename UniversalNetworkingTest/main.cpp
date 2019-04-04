@@ -79,7 +79,7 @@ public:
 		LOG_INFO("%d lobbies:", (int)result.Lobbies.size());
 		for (size_t i = 0; i < result.Lobbies.size(); i++) {
 			auto &lobbyInfo = result.Lobbies[i];
-			LOG_INFO("  [%d] %s", (int)i, lobbyInfo.Name.c_str());
+			LOG_INFO("  [%d] \"%s\" (max %d)", (int)i, lobbyInfo.Name.c_str(), lobbyInfo.MaxPlayers);
 			for (auto &entry : lobbyInfo.EntryPoints) {
 				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
 			}
@@ -326,6 +326,8 @@ static void HandleCommand(const s2::string &line)
 		g_ctx->GetLobbyList();
 
 	} else if (parse[0] == "data") {
+		std::vector<Unet::LobbyData> lobbyData;
+
 		if (parse.len() == 2) {
 			if (g_lastLobbyList.Code != Unet::Result::OK) {
 				LOG_ERROR("Previous lobby list request failed! Use the \"list\" command again.");
@@ -334,25 +336,26 @@ static void HandleCommand(const s2::string &line)
 
 			int num = atoi(parse[1]);
 			if (num < 0 || num >= (int)g_lastLobbyList.Lobbies.size()) {
-				LOG_INFO("Number %d is out of range of last lobby list!", num);
+				LOG_ERROR("Number %d is out of range of last lobby list!", num);
 				return;
 			}
 
 			auto &lobbyInfo = g_lastLobbyList.Lobbies[num];
-			auto lobbyData = g_ctx->GetLobbyData(lobbyInfo);
-
-			LOG_INFO("%d keys:", (int)lobbyData.size());
-			for (auto &data : lobbyData) {
-				LOG_INFO("  \"%s\" = \"%s\"", data.Name.c_str(), data.Value.c_str());
-			}
+			lobbyData = g_ctx->GetLobbyData(lobbyInfo);
 
 		} else {
 			auto currentLobby = g_ctx->CurrentLobby();
 			if (currentLobby == nullptr) {
 				LOG_ERROR("Not in a lobby. Use \"data <num>\" instead.");
-			} else {
-				//TODO
+				return;
 			}
+
+			lobbyData = currentLobby->GetData();
+		}
+
+		LOG_INFO("%d keys:", (int)lobbyData.size());
+		for (auto &data : lobbyData) {
+			LOG_INFO("  \"%s\" = \"%s\"", data.Name.c_str(), data.Value.c_str());
 		}
 
 	} else if (parse[0] == "join" && parse.len() == 2) {

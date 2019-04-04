@@ -34,6 +34,13 @@ namespace Unet
 		virtual void OnLobbyDataRetrieveFailure(const galaxy::api::GalaxyID& lobbyID, FailureReason failureReason) override;
 	};
 
+	class LobbyJoinListener : public GalaxyListener, public galaxy::api::ILobbyEnteredListener
+	{
+	public:
+		LobbyJoinListener(ServiceGalaxy* self) { m_self = self; }
+		virtual void OnLobbyEntered(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyEnterResult result) override;
+	};
+
 	class LobbyLeftListener : public GalaxyListener, public galaxy::api::ILobbyLeftListener
 	{
 	public:
@@ -48,11 +55,13 @@ namespace Unet
 	private:
 		LobbyCreatedListener m_lobbyCreatedListener;
 		LobbyListListener m_lobbyListListener;
+		LobbyJoinListener m_lobbyJoinListener;
 		LobbyLeftListener m_lobbyLeftListener;
 
 	public:
 		MultiCallback<CreateLobbyResult>::ServiceRequest* m_requestLobbyCreated = nullptr;
 		MultiCallback<LobbyListResult>::ServiceRequest* m_requestLobbyList = nullptr;
+		MultiCallback<LobbyJoinResult>::ServiceRequest* m_requestLobbyJoin = nullptr;
 		MultiCallback<LobbyLeftResult>::ServiceRequest* m_requestLobbyLeft = nullptr;
 
 	public:
@@ -63,12 +72,15 @@ namespace Unet
 
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) override;
 		virtual void GetLobbyList() override;
+		virtual void JoinLobby(const LobbyInfo &lobbyInfo) override;
 		virtual void LeaveLobby() override;
+
+		virtual int GetLobbyMaxPlayers(uint64_t lobbyId) override;
 
 		virtual std::string GetLobbyData(uint64_t lobbyId, const char* name) override;
 		virtual int GetLobbyDataCount(uint64_t lobbyId) override;
 		virtual LobbyData GetLobbyData(uint64_t lobbyId, int index) override;
 
-		virtual void SetLobbyData(const char* name, const char* value) override;
+		virtual void SetLobbyData(const LobbyInfo &lobbyInfo, const char* name, const char* value) override;
 	};
 }

@@ -148,23 +148,20 @@ void Unet::Context::GetLobbyList()
 void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 {
 	if (m_status != ContextStatus::Idle) {
-		LeaveLobby();
+		m_callbacks->OnLogWarn("Can't join new lobby while still in a lobby!");
+		return;
 	}
 
 	m_status = ContextStatus::Connecting;
 
-	//TODO
-	/*
-	auto newLobby = new Lobby(lobbyInfo);
-	m_currentLobby = newLobby;
+	m_callbackLobbyJoin.Begin();
 
-	m_status = ContextStatus::Connected;
+	auto &result = m_callbackLobbyJoin.GetResult();
+	result.JoinedLobby = new Lobby(this, lobbyInfo);
 
-	LobbyJoinResult res;
-	res.Result = Result::OK;
-	res.Lobby = newLobby;
-	OnLobbyJoined(res);
-	*/
+	for (auto service : m_services) {
+		service->JoinLobby(lobbyInfo);
+	}
 }
 
 void Unet::Context::LeaveLobby()
@@ -187,6 +184,40 @@ void Unet::Context::LeaveLobby()
 
 		m_status = ContextStatus::Idle;
 	}
+}
+
+int Unet::Context::GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo)
+{
+	std::vector<std::pair<ServiceType, int>> items;
+
+	for (auto service : m_services) {
+		auto entry = lobbyInfo.GetEntryPoint(service->GetType());
+		if (entry == nullptr) {
+			continue;
+		}
+
+		int maxPlayers = service->GetLobbyMaxPlayers(entry->ID);
+		items.emplace_back(std::make_pair(entry->Service, maxPlayers));
+	}
+
+	ServiceType lowestService = ServiceType::None;
+	int lowest = 0;
+
+	for (auto &pair : items) {
+		if (lowest > 0 && pair.second != lowest) {
+			m_callbacks->OnLogWarn(strPrintF("Max players is different between service %s and %s! (%d and %d)",
+				GetServiceNameByType(lowestService), GetServiceNameByType(pair.first),
+				lowest, pair.second
+			));
+		}
+
+		if (lowest == 0 || pair.second < lowest) {
+			lowestService = pair.first;
+			lowest = pair.second;
+		}
+	}
+
+	return lowest;
 }
 
 std::string Unet::Context::GetLobbyData(const LobbyInfo &lobbyInfo, const char* name)
@@ -261,13 +292,6 @@ std::vector<Unet::LobbyData> Unet::Context::GetLobbyData(const LobbyInfo &lobbyI
 	return ret;
 }
 
-void Unet::Context::SetLobbyData(const char* name, const char* value)
-{
-	for (auto service : m_services) {
-		service->SetLobbyData(name, value);
-	}
-}
-
 Unet::Lobby* Unet::Context::CurrentLobby()
 {
 	return m_currentLobby;
@@ -293,10 +317,10 @@ void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 		m_currentLobby = result.CreatedLobby;
 
 		auto &lobbyInfo = m_currentLobby->GetInfo();
-
 		auto unetGuid = lobbyInfo.UnetGuid.str();
-		SetLobbyData("unet-guid", unetGuid.c_str());
-		SetLobbyData("unet-name", lobbyInfo.Name.c_str());
+
+		m_currentLobby->SetData("unet-guid", unetGuid.c_str());
+		m_currentLobby->SetData("unet-name", lobbyInfo.Name.c_str());
 	}
 
 	if (m_callbacks != nullptr) {
@@ -309,7 +333,7 @@ void Unet::Context::OnLobbyList(const LobbyListResult &result)
 	LobbyListResult newResult(result);
 
 	for (auto &lobbyInfo : newResult.Lobbies) {
-		//lobbyInfo.MaxPlayers = //TODO
+		lobbyInfo.MaxPlayers = GetLobbyMaxPlayers(lobbyInfo);
 		lobbyInfo.Name = GetLobbyData(lobbyInfo, "unet-name");
 	}
 
