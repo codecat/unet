@@ -25,6 +25,6 @@ namespace Unet
 		virtual int GetLobbyDataCount(uint64_t lobbyId) = 0;
 		virtual LobbyData GetLobbyData(uint64_t lobbyId, int index) = 0;
 
-		virtual void SetLobbyData(const LobbyInfo &lobbyInfo, const char* name, const char* value) = 0; //TODO: Change this to take a uint64_t lobby ID?
+		virtual void SetLobbyData(uint64_t lobbyId, const char* name, const char* value) = 0;
 	};
 }

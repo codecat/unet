@@ -94,12 +94,9 @@ Unet::LobbyData Unet::ServiceSteam::GetLobbyData(uint64_t lobbyId, int index)
 	return ret;
 }
 
-void Unet::ServiceSteam::SetLobbyData(const LobbyInfo &lobbyInfo, const char* name, const char* value)
+void Unet::ServiceSteam::SetLobbyData(uint64_t lobbyId, const char* name, const char* value)
 {
-	auto entry = lobbyInfo.GetEntryPoint(ServiceType::Steam);
-	if (entry != nullptr) {
-		SteamMatchmaking()->SetLobbyData((uint64)entry->ID, name, value);
-	}
+	SteamMatchmaking()->SetLobbyData((uint64)lobbyId, name, value);
 }
 
 void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)

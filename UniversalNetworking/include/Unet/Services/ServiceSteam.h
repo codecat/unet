@@ -42,7 +42,7 @@ namespace Unet
 		virtual int GetLobbyDataCount(uint64_t lobbyId) override;
 		virtual LobbyData GetLobbyData(uint64_t lobbyId, int index) override;
 
-		virtual void SetLobbyData(const LobbyInfo &lobbyInfo, const char* name, const char* value) override;
+		virtual void SetLobbyData(uint64_t lobbyId, const char* name, const char* value) override;
 
 	private:
 		void OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure);

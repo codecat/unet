@@ -17,7 +17,6 @@ namespace Unet
 		Context* m_ctx;
 		LobbyInfo m_info;
 
-		//TODO: Remove this? It's not super useful
 		std::vector<LobbyData> m_data;
 
 	public:

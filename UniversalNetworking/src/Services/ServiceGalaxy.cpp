@@ -255,10 +255,7 @@ Unet::LobbyData Unet::ServiceGalaxy::GetLobbyData(uint64_t lobbyId, int index)
 	return ret;
 }
 
-void Unet::ServiceGalaxy::SetLobbyData(const LobbyInfo &lobbyInfo, const char* name, const char* value)
+void Unet::ServiceGalaxy::SetLobbyData(uint64_t lobbyId, const char* name, const char* value)
 {
-	auto entry = lobbyInfo.GetEntryPoint(ServiceType::Galaxy);
-	if (entry != nullptr) {
-		galaxy::api::Matchmaking()->SetLobbyData(entry->ID, name, value);
-	}
+	galaxy::api::Matchmaking()->SetLobbyData(lobbyId, name, value);
 }

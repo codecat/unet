@@ -88,7 +88,7 @@ void Unet::Lobby::SetData(const char* name, const std::string &value)
 	for (auto &entry : m_info.EntryPoints) {
 		auto service = m_ctx->GetService(entry.Service);
 		if (service != nullptr) {
-			service->SetLobbyData(m_info, name, value.c_str());
+			service->SetLobbyData(entry.ID, name, value.c_str());
 		}
 	}
 }
