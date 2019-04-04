@@ -15,9 +15,11 @@ project 'unet'
 		defines { 'GUID_CFUUID' }
 	end
 
-	-- Linux links
+	-- Guid links
 	if os.get() == 'linux' then
 		links { 'uuid' }
+	elseif os.get() == 'macosx' then
+		links { 'CoreFoundation.framework' }
 	end
 
 	-- Files

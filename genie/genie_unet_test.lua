@@ -35,7 +35,14 @@ project 'unet_test'
 		'unet',
 	}
 
-	-- Linux links
+	-- Guid links
 	if os.get() == 'linux' then
 		links { 'uuid' }
+	elseif os.get() == 'macosx' then
+		links { 'CoreFoundation.framework' }
+	end
+
+	-- MacOS rpath
+	if os.get() == 'macosx' then
+		linkoptions { '-Wl,-rpath,"@loader_path",-rpath,.' }
 	end

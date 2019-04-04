@@ -390,14 +390,3 @@ Guid newGuid()
 
 
 END_XG_NAMESPACE
-
-// Specialization for std::swap<Guid>() --
-// call member swap function of lhs, passing rhs
-namespace std
-{
-	template <>
-	void swap(xg::Guid &lhs, xg::Guid &rhs) noexcept
-	{
-		lhs.swap(rhs);
-	}
-}

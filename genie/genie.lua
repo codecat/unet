@@ -12,15 +12,16 @@ solution 'UniversalNetworking'
 	}
 
 	-- Platforms
-	platforms {
-		'x32',
-		'x64',
-	}
+	if os.get() ~= 'macosx' then
+		platforms { 'x32' }
+	end
+	platforms { 'x64' }
 
 	-- Flags
 	flags {
 		'NoRTTI',
-		--'Cpp17',
+		'NoEditAndContinue',
+		'Cpp11',
 
 		-- Generate a pdb on Windows
 		'FullSymbols',

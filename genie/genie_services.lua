@@ -54,10 +54,16 @@ else
 		links { 'steam_api' }
 end
 
-configuration 'x64'
-	links { 'Galaxy64' }
+-- Link to Galaxy
+if os.get() == 'linux' then
+	configuration 'x64'
+		links { 'Galaxy64' }
 
-configuration 'x32'
-	links { 'Galaxy' }
+	configuration 'x32'
+		links { 'Galaxy' }
+else
+	configuration {}
+		links { 'Galaxy' }
+end
 
 configuration {}

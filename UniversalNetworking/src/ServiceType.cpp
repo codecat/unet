@@ -16,6 +16,6 @@ const char* Unet::GetServiceNameByType(ServiceType type)
 	switch (type) {
 	case ServiceType::Steam: return "steam";
 	case ServiceType::Galaxy: return "galaxy";
+	default: return "none";
 	}
-	return "none";
 }

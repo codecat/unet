@@ -79,7 +79,7 @@ public:
 		LOG_INFO("%d lobbies:", (int)result.Lobbies.size());
 		for (size_t i = 0; i < result.Lobbies.size(); i++) {
 			auto &lobbyInfo = result.Lobbies[i];
-			LOG_INFO("  [%d] %s", i, lobbyInfo.Name.c_str());
+			LOG_INFO("  [%d] %s", (int)i, lobbyInfo.Name.c_str());
 			for (auto &entry : lobbyInfo.EntryPoints) {
 				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
 			}
@@ -130,8 +130,11 @@ static void InitializeSteam(const char* appId)
 	LOG_INFO("Enabling Steam service (App ID %s)", appId);
 
 #if defined(PLATFORM_WINDOWS)
-	SetEnvironmentVariableA("SteamAppID", appId);
+	SetEnvironmentVariableA("SteamAppId", appId);
+#elif defined(PLATFORM_LINUX) || defined(PLATFORM_MACOS)
+	setenv("SteamAppId", appId, 1);
 #endif
+
 	g_steamEnabled = SteamAPI_Init();
 	if (!g_steamEnabled) {
 		LOG_ERROR("Failed to initialize Steam API!");

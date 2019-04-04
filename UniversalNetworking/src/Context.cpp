@@ -99,6 +99,7 @@ void Unet::Context::EnableService(ServiceType service)
 	switch (service) {
 	case ServiceType::Steam: newService = new ServiceSteam(this); break;
 	case ServiceType::Galaxy: newService = new ServiceGalaxy(this); break;
+	default: assert(false);
 	}
 
 	if (newService == nullptr) {
