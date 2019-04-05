@@ -10,7 +10,7 @@ void Unet::LobbyCreatedListener::OnLobbyCreated(const galaxy::api::GalaxyID& lob
 		return;
 	}
 
-	ServiceEntryPoint newEntryPoint;
+	ServiceID newEntryPoint;
 	newEntryPoint.Service = m_self->GetType();
 	newEntryPoint.ID = lobbyID.ToUint64();
 	m_self->m_requestLobbyCreated->Data->CreatedLobby->AddEntryPoint(newEntryPoint);
@@ -77,7 +77,7 @@ void Unet::LobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Gala
 		return;
 	}
 
-	ServiceEntryPoint newEntryPoint;
+	ServiceID newEntryPoint;
 	newEntryPoint.Service = ServiceType::Galaxy;
 	newEntryPoint.ID = lobbyID.ToUint64();
 	m_self->m_requestLobbyList->Data->AddEntryPoint(unetGuid, newEntryPoint);
@@ -105,7 +105,7 @@ void Unet::LobbyJoinListener::OnLobbyEntered(const galaxy::api::GalaxyID& lobbyI
 		return;
 	}
 
-	ServiceEntryPoint newEntryPoint;
+	ServiceID newEntryPoint;
 	newEntryPoint.Service = ServiceType::Galaxy;
 	newEntryPoint.ID = lobbyID.ToUint64();
 	m_self->m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(newEntryPoint);

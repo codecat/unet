@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Unet_common.h>
-#include <Unet/ServiceEntryPoint.h>
+#include <Unet/ServiceID.h>
 #include <guid.hpp>
 
 namespace Unet
@@ -21,8 +21,8 @@ namespace Unet
 		xg::Guid UnetGuid;
 
 		std::string Name;
-		std::vector<ServiceEntryPoint> EntryPoints;
+		std::vector<ServiceID> EntryPoints;
 
-		const ServiceEntryPoint* GetEntryPoint(ServiceType service) const;
+		const ServiceID* GetEntryPoint(ServiceType service) const;
 	};
 }

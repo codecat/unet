@@ -11,6 +11,11 @@ namespace Unet
 		std::string Value;
 	};
 
+	struct LobbyMember
+	{
+
+	};
+
 	class Lobby
 	{
 	private:
@@ -26,7 +31,7 @@ namespace Unet
 		const LobbyInfo &GetInfo();
 		bool IsConnected();
 
-		void AddEntryPoint(ServiceEntryPoint entryPoint);
+		void AddEntryPoint(ServiceID id);
 		void ServiceDisconnected(ServiceType service);
 
 		void SetData(const char* name, const std::string &value);

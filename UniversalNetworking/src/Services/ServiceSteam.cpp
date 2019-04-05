@@ -146,7 +146,7 @@ void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 		return;
 	}
 
-	ServiceEntryPoint newEntryPoint;
+	ServiceID newEntryPoint;
 	newEntryPoint.Service = GetType();
 	newEntryPoint.ID = result->m_ulSteamIDLobby;
 	m_requestLobbyCreated->Data->CreatedLobby->AddEntryPoint(newEntryPoint);
@@ -203,7 +203,7 @@ void Unet::ServiceSteam::OnLobbyJoin(LobbyEnter_t* result, bool bIOFailure)
 		return;
 	}
 
-	ServiceEntryPoint newEntryPoint;
+	ServiceID newEntryPoint;
 	newEntryPoint.Service = GetType();
 	newEntryPoint.ID = result->m_ulSteamIDLobby;
 	m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(newEntryPoint);
@@ -237,7 +237,7 @@ void Unet::ServiceSteam::OnLobbyDataUpdate(LobbyDataUpdate_t* result)
 				return;
 			}
 
-			ServiceEntryPoint newEntryPoint;
+			ServiceID newEntryPoint;
 			newEntryPoint.Service = ServiceType::Steam;
 			newEntryPoint.ID = result->m_ulSteamIDLobby;
 			m_requestLobbyList->Data->AddEntryPoint(unetGuid, newEntryPoint);

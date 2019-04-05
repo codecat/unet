@@ -26,7 +26,7 @@ bool Unet::Lobby::IsConnected()
 	return m_info.EntryPoints.size() > 0;
 }
 
-void Unet::Lobby::AddEntryPoint(ServiceEntryPoint entryPoint)
+void Unet::Lobby::AddEntryPoint(ServiceID entryPoint)
 {
 	auto entry = m_info.GetEntryPoint(entryPoint.Service);
 	if (entry != nullptr) {
@@ -43,7 +43,7 @@ void Unet::Lobby::AddEntryPoint(ServiceEntryPoint entryPoint)
 
 void Unet::Lobby::ServiceDisconnected(ServiceType service)
 {
-	auto it = std::find_if(m_info.EntryPoints.begin(), m_info.EntryPoints.end(), [service](const ServiceEntryPoint &entryPoint) {
+	auto it = std::find_if(m_info.EntryPoints.begin(), m_info.EntryPoints.end(), [service](const ServiceID &entryPoint) {
 		return entryPoint.Service == service;
 	});
 

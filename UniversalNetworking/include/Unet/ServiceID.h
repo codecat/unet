@@ -5,7 +5,7 @@
 
 namespace Unet
 {
-	struct ServiceEntryPoint
+	struct ServiceID
 	{
 		ServiceType Service;
 		uint64_t ID;

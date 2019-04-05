@@ -11,6 +11,6 @@ namespace Unet
 		std::vector<LobbyInfo> Lobbies;
 
 		/// Adds an entry point to an existing lobby by Guid, or if the lobby doesn't exist, adds a new lobby to the list.
-		LobbyInfo* AddEntryPoint(const xg::Guid &guid, const ServiceEntryPoint &newEntryPoint);
+		LobbyInfo* AddEntryPoint(const xg::Guid &guid, const ServiceID &newEntryPoint);
 	};
 }

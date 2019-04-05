@@ -1,7 +1,7 @@
 #include <Unet_common.h>
 #include <Unet/Results/LobbyListResult.h>
 
-Unet::LobbyInfo* Unet::LobbyListResult::AddEntryPoint(const xg::Guid &guid, const ServiceEntryPoint &newEntryPoint)
+Unet::LobbyInfo* Unet::LobbyListResult::AddEntryPoint(const xg::Guid &guid, const ServiceID &newEntryPoint)
 {
 	for (auto &lobbyInfo : Lobbies) {
 		if (lobbyInfo.UnetGuid != guid) {
