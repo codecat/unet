@@ -38,9 +38,11 @@ void Unet::ServiceSteam::GetLobbyList()
 	m_callLobbyList.Set(call, this, &ServiceSteam::OnLobbyList);
 }
 
-void Unet::ServiceSteam::JoinLobby(uint64_t lobbyId)
+void Unet::ServiceSteam::JoinLobby(const ServiceID &id)
 {
-	SteamAPICall_t call = SteamMatchmaking()->JoinLobby((uint64)lobbyId);
+	assert(id.Service == ServiceType::Steam);
+
+	SteamAPICall_t call = SteamMatchmaking()->JoinLobby((uint64)id.ID);
 	m_requestLobbyJoin = m_ctx->m_callbackLobbyJoin.AddServiceRequest(this);
 	m_callLobbyJoin.Set(call, this, &ServiceSteam::OnLobbyJoin);
 }
@@ -65,28 +67,36 @@ void Unet::ServiceSteam::LeaveLobby()
 	serviceRequest->Data->Reason = Unet::LeaveReason::UserLeave;
 }
 
-int Unet::ServiceSteam::GetLobbyMaxPlayers(uint64_t lobbyId)
+int Unet::ServiceSteam::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 {
-	return SteamMatchmaking()->GetLobbyMemberLimit((uint64)lobbyId);
+	assert(lobbyId.Service == ServiceType::Steam);
+
+	return SteamMatchmaking()->GetLobbyMemberLimit((uint64)lobbyId.ID);
 }
 
-std::string Unet::ServiceSteam::GetLobbyData(uint64_t lobbyId, const char* name)
+std::string Unet::ServiceSteam::GetLobbyData(const ServiceID &lobbyId, const char* name)
 {
-	return SteamMatchmaking()->GetLobbyData((uint64)lobbyId, name);
+	assert(lobbyId.Service == ServiceType::Steam);
+
+	return SteamMatchmaking()->GetLobbyData((uint64)lobbyId.ID, name);
 }
 
-int Unet::ServiceSteam::GetLobbyDataCount(uint64_t lobbyId)
+int Unet::ServiceSteam::GetLobbyDataCount(const ServiceID &lobbyId)
 {
-	return SteamMatchmaking()->GetLobbyDataCount((uint64)lobbyId);
+	assert(lobbyId.Service == ServiceType::Steam);
+
+	return SteamMatchmaking()->GetLobbyDataCount((uint64)lobbyId.ID);
 }
 
-Unet::LobbyData Unet::ServiceSteam::GetLobbyData(uint64_t lobbyId, int index)
+Unet::LobbyData Unet::ServiceSteam::GetLobbyData(const ServiceID &lobbyId, int index)
 {
+	assert(lobbyId.Service == ServiceType::Steam);
+
 	char szKey[512];
 	char szValue[512];
 
 	LobbyData ret;
-	if (SteamMatchmaking()->GetLobbyDataByIndex((uint64)lobbyId, index, szKey, 512, szValue, 512)) {
+	if (SteamMatchmaking()->GetLobbyDataByIndex((uint64)lobbyId.ID, index, szKey, 512, szValue, 512)) {
 		ret.Name = szKey;
 		ret.Value = szValue;
 	}
@@ -94,29 +104,33 @@ Unet::LobbyData Unet::ServiceSteam::GetLobbyData(uint64_t lobbyId, int index)
 	return ret;
 }
 
-void Unet::ServiceSteam::SetLobbyData(uint64_t lobbyId, const char* name, const char* value)
+void Unet::ServiceSteam::SetLobbyData(const ServiceID &lobbyId, const char* name, const char* value)
 {
-	SteamMatchmaking()->SetLobbyData((uint64)lobbyId, name, value);
+	assert(lobbyId.Service == ServiceType::Steam);
+
+	SteamMatchmaking()->SetLobbyData((uint64)lobbyId.ID, name, value);
 }
 
-void Unet::ServiceSteam::SendPacket(uint64_t peerId, const void* data, size_t size, PacketType type, uint8_t channel)
+void Unet::ServiceSteam::SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel)
 {
+	assert(peerId.Service == ServiceType::Steam);
+
 	EP2PSend sendType = k_EP2PSendUnreliable;
 	switch (type) {
 	case PacketType::Unreliable: sendType = k_EP2PSendUnreliable; break;
 	case PacketType::Reliable: sendType = k_EP2PSendReliable; break;
 	}
-	SteamNetworking()->SendP2PPacket((uint64)peerId, data, size, sendType, (int)channel);
+	SteamNetworking()->SendP2PPacket((uint64)peerId.ID, data, size, sendType, (int)channel);
 }
 
-size_t Unet::ServiceSteam::ReadPacket(void* data, size_t maxSize, uint64_t* peerId, uint8_t channel)
+size_t Unet::ServiceSteam::ReadPacket(void* data, size_t maxSize, ServiceID* peerId, uint8_t channel)
 {
 	uint32 readSize;
 	CSteamID peer;
 	SteamNetworking()->ReadP2PPacket(data, maxSize, &readSize, &peer, (int)channel);
 
 	if (peerId != nullptr) {
-		*peerId = peer.ConvertToUint64();
+		*peerId = ServiceID(ServiceType::Steam, peer.ConvertToUint64());
 	}
 	return (size_t)readSize;
 }

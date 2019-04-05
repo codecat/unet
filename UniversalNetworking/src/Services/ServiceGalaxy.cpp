@@ -191,12 +191,14 @@ void Unet::ServiceGalaxy::GetLobbyList()
 	}
 }
 
-void Unet::ServiceGalaxy::JoinLobby(uint64_t lobbyId)
+void Unet::ServiceGalaxy::JoinLobby(const ServiceID &id)
 {
+	assert(id.Service == ServiceType::Galaxy);
+
 	m_requestLobbyJoin = m_ctx->m_callbackLobbyJoin.AddServiceRequest(this);
 
 	try {
-		galaxy::api::Matchmaking()->JoinLobby(lobbyId, &m_lobbyJoinListener);
+		galaxy::api::Matchmaking()->JoinLobby(id.ID, &m_lobbyJoinListener);
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyJoin->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to join lobby: %s", error.GetMsg()));
@@ -226,28 +228,36 @@ void Unet::ServiceGalaxy::LeaveLobby()
 	}
 }
 
-int Unet::ServiceGalaxy::GetLobbyMaxPlayers(uint64_t lobbyId)
+int Unet::ServiceGalaxy::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 {
-	return (int)galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(lobbyId);
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
+	return (int)galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(lobbyId.ID);
 }
 
-std::string Unet::ServiceGalaxy::GetLobbyData(uint64_t lobbyId, const char* name)
+std::string Unet::ServiceGalaxy::GetLobbyData(const ServiceID &lobbyId, const char* name)
 {
-	return galaxy::api::Matchmaking()->GetLobbyData(lobbyId, name);
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
+	return galaxy::api::Matchmaking()->GetLobbyData(lobbyId.ID, name);
 }
 
-int Unet::ServiceGalaxy::GetLobbyDataCount(uint64_t lobbyId)
+int Unet::ServiceGalaxy::GetLobbyDataCount(const ServiceID &lobbyId)
 {
-	return galaxy::api::Matchmaking()->GetLobbyDataCount(lobbyId);
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
+	return galaxy::api::Matchmaking()->GetLobbyDataCount(lobbyId.ID);
 }
 
-Unet::LobbyData Unet::ServiceGalaxy::GetLobbyData(uint64_t lobbyId, int index)
+Unet::LobbyData Unet::ServiceGalaxy::GetLobbyData(const ServiceID &lobbyId, int index)
 {
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
 	char szKey[512];
 	char szValue[512];
 
 	LobbyData ret;
-	if (galaxy::api::Matchmaking()->GetLobbyDataByIndex(lobbyId, index, szKey, 512, szValue, 512)) {
+	if (galaxy::api::Matchmaking()->GetLobbyDataByIndex(lobbyId.ID, index, szKey, 512, szValue, 512)) {
 		ret.Name = szKey;
 		ret.Value = szValue;
 	}
@@ -255,29 +265,33 @@ Unet::LobbyData Unet::ServiceGalaxy::GetLobbyData(uint64_t lobbyId, int index)
 	return ret;
 }
 
-void Unet::ServiceGalaxy::SetLobbyData(uint64_t lobbyId, const char* name, const char* value)
+void Unet::ServiceGalaxy::SetLobbyData(const ServiceID &lobbyId, const char* name, const char* value)
 {
-	galaxy::api::Matchmaking()->SetLobbyData(lobbyId, name, value);
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
+	galaxy::api::Matchmaking()->SetLobbyData(lobbyId.ID, name, value);
 }
 
-void Unet::ServiceGalaxy::SendPacket(uint64_t peerId, const void* data, size_t size, PacketType type, uint8_t channel)
+void Unet::ServiceGalaxy::SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel)
 {
+	assert(peerId.Service == ServiceType::Galaxy);
+
 	galaxy::api::P2PSendType sendType = galaxy::api::P2P_SEND_UNRELIABLE;
 	switch (type) {
 	case PacketType::Unreliable: sendType = galaxy::api::P2P_SEND_UNRELIABLE; break;
 	case PacketType::Reliable: sendType = galaxy::api::P2P_SEND_RELIABLE; break;
 	}
-	galaxy::api::Networking()->SendP2PPacket(peerId, data, size, sendType, channel);
+	galaxy::api::Networking()->SendP2PPacket(peerId.ID, data, size, sendType, channel);
 }
 
-size_t Unet::ServiceGalaxy::ReadPacket(void* data, size_t maxSize, uint64_t* peerId, uint8_t channel)
+size_t Unet::ServiceGalaxy::ReadPacket(void* data, size_t maxSize, ServiceID* peerId, uint8_t channel)
 {
 	uint32_t readSize;
 	galaxy::api::GalaxyID peer;
 	galaxy::api::Networking()->ReadP2PPacket(data, maxSize, &readSize, peer, channel);
 
 	if (peerId != nullptr) {
-		*peerId = peer.ToUint64();
+		*peerId = ServiceID(ServiceType::Galaxy, peer.ToUint64());
 	}
 	return (size_t)readSize;
 }

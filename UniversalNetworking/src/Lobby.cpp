@@ -88,7 +88,7 @@ void Unet::Lobby::SetData(const char* name, const std::string &value)
 	for (auto &entry : m_info.EntryPoints) {
 		auto service = m_ctx->GetService(entry.Service);
 		if (service != nullptr) {
-			service->SetLobbyData(entry.ID, name, value.c_str());
+			service->SetLobbyData(entry, name, value.c_str());
 		}
 	}
 }
@@ -101,7 +101,7 @@ std::string Unet::Lobby::GetData(const char* name)
 		}
 	}
 
-	ServiceType firstService;
+	ServiceType firstService = ServiceType::None;
 	std::string ret;
 
 	for (size_t i = 0; i < m_info.EntryPoints.size(); i++) {
@@ -112,7 +112,7 @@ std::string Unet::Lobby::GetData(const char* name)
 			continue;
 		}
 
-		std::string str = service->GetLobbyData(entry.ID, name);
+		std::string str = service->GetLobbyData(entry, name);
 		if (str == "") {
 			continue;
 		}

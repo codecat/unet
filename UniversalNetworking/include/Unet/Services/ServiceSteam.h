@@ -33,19 +33,19 @@ namespace Unet
 
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) override;
 		virtual void GetLobbyList() override;
-		virtual void JoinLobby(uint64_t lobbyId) override;
+		virtual void JoinLobby(const ServiceID &id) override;
 		virtual void LeaveLobby() override;
 
-		virtual int GetLobbyMaxPlayers(uint64_t lobbyId) override;
+		virtual int GetLobbyMaxPlayers(const ServiceID &lobbyId) override;
 
-		virtual std::string GetLobbyData(uint64_t lobbyId, const char* name) override;
-		virtual int GetLobbyDataCount(uint64_t lobbyId) override;
-		virtual LobbyData GetLobbyData(uint64_t lobbyId, int index) override;
+		virtual std::string GetLobbyData(const ServiceID &lobbyId, const char* name) override;
+		virtual int GetLobbyDataCount(const ServiceID &lobbyId) override;
+		virtual LobbyData GetLobbyData(const ServiceID &lobbyId, int index) override;
 
-		virtual void SetLobbyData(uint64_t lobbyId, const char* name, const char* value) override;
+		virtual void SetLobbyData(const ServiceID &lobbyId, const char* name, const char* value) override;
 
-		virtual void SendPacket(uint64_t peerId, const void* data, size_t size, PacketType type, uint8_t channel) override;
-		virtual size_t ReadPacket(void* data, size_t maxSize, uint64_t* peerId, uint8_t channel) override;
+		virtual void SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel) override;
+		virtual size_t ReadPacket(void* data, size_t maxSize, ServiceID* peerId, uint8_t channel) override;
 		virtual bool IsPacketAvailable(size_t* outPacketSize, uint8_t channel) override;
 
 	private:

@@ -162,7 +162,7 @@ void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 	for (auto service : m_services) {
 		auto entry = lobbyInfo.GetEntryPoint(service->GetType());
 		if (entry != nullptr) {
-			service->JoinLobby(entry->ID);
+			service->JoinLobby(*entry);
 		}
 	}
 }
@@ -199,7 +199,7 @@ int Unet::Context::GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo)
 			continue;
 		}
 
-		int maxPlayers = service->GetLobbyMaxPlayers(entry->ID);
+		int maxPlayers = service->GetLobbyMaxPlayers(*entry);
 		items.emplace_back(std::make_pair(entry->Service, maxPlayers));
 	}
 
@@ -236,7 +236,7 @@ std::string Unet::Context::GetLobbyData(const LobbyInfo &lobbyInfo, const char* 
 			continue;
 		}
 
-		std::string str = service->GetLobbyData(entry.ID, name);
+		std::string str = service->GetLobbyData(entry, name);
 		if (str == "") {
 			continue;
 		}
@@ -266,9 +266,9 @@ std::vector<Unet::LobbyData> Unet::Context::GetLobbyData(const LobbyInfo &lobbyI
 			continue;
 		}
 
-		int numData = service->GetLobbyDataCount(entry.ID);
+		int numData = service->GetLobbyDataCount(entry);
 		for (int i = 0; i < numData; i++) {
-			auto data = service->GetLobbyData(entry.ID, i);
+			auto data = service->GetLobbyData(entry, i);
 
 			auto it = std::find_if(items.begin(), items.end(), [&data](const std::pair<ServiceType, LobbyData> &d) {
 				return d.second.Name == data.Name;
