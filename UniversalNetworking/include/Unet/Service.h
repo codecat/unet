@@ -6,6 +6,12 @@
 
 namespace Unet
 {
+	enum class PacketType
+	{
+		Unreliable,
+		Reliable,
+	};
+
 	class Service
 	{
 	public:
@@ -26,5 +32,10 @@ namespace Unet
 		virtual LobbyData GetLobbyData(uint64_t lobbyId, int index) = 0;
 
 		virtual void SetLobbyData(uint64_t lobbyId, const char* name, const char* value) = 0;
+
+		virtual void BeginConnection() = 0;
+		virtual void SendPacket(uint64_t peerId, const void* data, size_t size, PacketType type, int channel) = 0;
+		virtual size_t ReadPacket(void* data, size_t maxSize, uint64_t* peerId, int channel) = 0;
+		virtual void IsPacketAvailable(size_t* outPacketSize, int channel) = 0;
 	};
 }
