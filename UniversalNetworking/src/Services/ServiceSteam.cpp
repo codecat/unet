@@ -99,6 +99,39 @@ void Unet::ServiceSteam::SetLobbyData(uint64_t lobbyId, const char* name, const 
 	SteamMatchmaking()->SetLobbyData((uint64)lobbyId, name, value);
 }
 
+void Unet::ServiceSteam::SendPacket(uint64_t peerId, const void* data, size_t size, PacketType type, uint8_t channel)
+{
+	EP2PSend sendType = k_EP2PSendUnreliable;
+	switch (type) {
+	case PacketType::Unreliable: sendType = k_EP2PSendUnreliable; break;
+	case PacketType::Reliable: sendType = k_EP2PSendReliable; break;
+	}
+	SteamNetworking()->SendP2PPacket((uint64)peerId, data, size, sendType, (int)channel);
+}
+
+size_t Unet::ServiceSteam::ReadPacket(void* data, size_t maxSize, uint64_t* peerId, uint8_t channel)
+{
+	uint32 readSize;
+	CSteamID peer;
+	SteamNetworking()->ReadP2PPacket(data, maxSize, &readSize, &peer, (int)channel);
+
+	if (peerId != nullptr) {
+		*peerId = peer.ConvertToUint64();
+	}
+	return (size_t)readSize;
+}
+
+bool Unet::ServiceSteam::IsPacketAvailable(size_t* outPacketSize, uint8_t channel)
+{
+	uint32 packetSize;
+	bool ret = SteamNetworking()->IsP2PPacketAvailable(&packetSize, (int)channel);
+
+	if (outPacketSize != nullptr) {
+		*outPacketSize = (size_t)packetSize;
+	}
+	return ret;
+}
+
 void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 {
 	if (bIOFailure) {

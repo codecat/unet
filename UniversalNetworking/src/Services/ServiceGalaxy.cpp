@@ -259,3 +259,36 @@ void Unet::ServiceGalaxy::SetLobbyData(uint64_t lobbyId, const char* name, const
 {
 	galaxy::api::Matchmaking()->SetLobbyData(lobbyId, name, value);
 }
+
+void Unet::ServiceGalaxy::SendPacket(uint64_t peerId, const void* data, size_t size, PacketType type, uint8_t channel)
+{
+	galaxy::api::P2PSendType sendType = galaxy::api::P2P_SEND_UNRELIABLE;
+	switch (type) {
+	case PacketType::Unreliable: sendType = galaxy::api::P2P_SEND_UNRELIABLE; break;
+	case PacketType::Reliable: sendType = galaxy::api::P2P_SEND_RELIABLE; break;
+	}
+	galaxy::api::Networking()->SendP2PPacket(peerId, data, size, sendType, channel);
+}
+
+size_t Unet::ServiceGalaxy::ReadPacket(void* data, size_t maxSize, uint64_t* peerId, uint8_t channel)
+{
+	uint32_t readSize;
+	galaxy::api::GalaxyID peer;
+	galaxy::api::Networking()->ReadP2PPacket(data, maxSize, &readSize, peer, channel);
+
+	if (peerId != nullptr) {
+		*peerId = peer.ToUint64();
+	}
+	return (size_t)readSize;
+}
+
+bool Unet::ServiceGalaxy::IsPacketAvailable(size_t* outPacketSize, uint8_t channel)
+{
+	uint32_t packetSize;
+	bool ret = galaxy::api::Networking()->IsP2PPacketAvailable(&packetSize, channel);
+
+	if (outPacketSize != nullptr) {
+		*outPacketSize = (size_t)packetSize;
+	}
+	return ret;
+}

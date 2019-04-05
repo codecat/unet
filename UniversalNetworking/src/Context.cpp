@@ -355,6 +355,8 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 		m_currentLobby = result.JoinedLobby;
 	}
 
+	//TODO: Send all members a "hello" message
+
 	if (m_callbacks != nullptr) {
 		m_callbacks->OnLobbyJoined(result);
 	}

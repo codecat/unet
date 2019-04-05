@@ -44,6 +44,10 @@ namespace Unet
 
 		virtual void SetLobbyData(uint64_t lobbyId, const char* name, const char* value) override;
 
+		virtual void SendPacket(uint64_t peerId, const void* data, size_t size, PacketType type, uint8_t channel) override;
+		virtual size_t ReadPacket(void* data, size_t maxSize, uint64_t* peerId, uint8_t channel) override;
+		virtual bool IsPacketAvailable(size_t* outPacketSize, uint8_t channel) override;
+
 	private:
 		void OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure);
 		void OnLobbyList(LobbyMatchList_t* result, bool bIOFailure);
