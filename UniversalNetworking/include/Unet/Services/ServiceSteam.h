@@ -24,12 +24,18 @@ namespace Unet
 
 		CCallback<ServiceSteam, LobbyDataUpdate_t> m_callLobbyDataUpdate;
 		CCallback<ServiceSteam, LobbyKicked_t> m_callLobbyKicked;
+		CCallback<ServiceSteam, LobbyChatUpdate_t> m_callLobbyChatUpdate;
+
+		CCallback<ServiceSteam, P2PSessionRequest_t> m_callP2PSessionRequest;
 
 	public:
 		ServiceSteam(Context* ctx);
 		virtual ~ServiceSteam();
 
 		virtual ServiceType GetType() override;
+
+		virtual ServiceID GetUserID() override;
+		virtual std::string GetUserName() override;
 
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) override;
 		virtual void GetLobbyList() override;
@@ -56,5 +62,8 @@ namespace Unet
 		void LobbyListDataUpdated();
 		void OnLobbyDataUpdate(LobbyDataUpdate_t* result);
 		void OnLobbyKicked(LobbyKicked_t* result);
+		void OnLobbyChatUpdate(LobbyChatUpdate_t* result);
+
+		void OnP2PSessionRequest(P2PSessionRequest_t* result);
 	};
 }

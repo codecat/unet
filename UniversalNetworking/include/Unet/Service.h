@@ -20,6 +20,9 @@ namespace Unet
 	public:
 		virtual ServiceType GetType() = 0;
 
+		virtual ServiceID GetUserID() = 0;
+		virtual std::string GetUserName() = 0;
+
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) = 0;
 		virtual void GetLobbyList() = 0;
 		virtual void JoinLobby(const ServiceID &id) = 0;

@@ -301,18 +301,30 @@ static void HandleCommand(const s2::string &line)
 		}
 
 		LOG_INFO("Status: %s", statusStr);
+
 		auto currentLobby = g_ctx->CurrentLobby();
 		if (currentLobby == nullptr) {
 			LOG_INFO("  No lobby");
 		} else {
 			auto &lobbyInfo = currentLobby->GetInfo();
+
 			LOG_INFO("  Lobby name: \"%s\"", lobbyInfo.Name.c_str());
 			LOG_INFO("  Lobby host: %s", lobbyInfo.IsHosting ? "true" : "false");
 			auto unetGuid = lobbyInfo.UnetGuid.str();
 			LOG_INFO("  Lobby Guid: %s", unetGuid.c_str());
+
 			LOG_INFO("  Entry points: %d", (int)lobbyInfo.EntryPoints.size());
 			for (auto &entry : lobbyInfo.EntryPoints) {
 				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
+			}
+
+			auto &members = currentLobby->GetMembers();
+			LOG_INFO("  Members: %d", (int)members.size());
+			for (auto &member : members) {
+				LOG_INFO("    %d: \"%s\"", member.UnetPeer, member.Name.c_str());
+				for (auto &id : member.IDs) {
+					LOG_INFO("      %s (0x%08llX)", Unet::GetServiceNameByType(id.Service), id.ID);
+				}
 			}
 		}
 

@@ -13,16 +13,26 @@ namespace Unet
 
 	struct LobbyMember
 	{
+		xg::Guid UnetGuid;
+		int UnetPeer = -1;
 
+		std::string Name;
+		std::vector<ServiceID> IDs;
+		std::vector<LobbyData> Data;
+
+		ServiceID* GetServiceID(ServiceType type);
 	};
 
 	class Lobby
 	{
+		friend class Context;
+
 	private:
 		Context* m_ctx;
 		LobbyInfo m_info;
 
 		std::vector<LobbyData> m_data;
+		std::vector<LobbyMember> m_members;
 
 	public:
 		Lobby(Context* ctx, const LobbyInfo &lobbyInfo);
@@ -30,8 +40,10 @@ namespace Unet
 
 		const LobbyInfo &GetInfo();
 		bool IsConnected();
+		const std::vector<LobbyMember> &GetMembers();
 
 		void AddEntryPoint(ServiceID id);
+		LobbyMember &AddMemberService(const xg::Guid &guid, const ServiceID &id);
 		void ServiceDisconnected(ServiceType service);
 
 		void SetData(const char* name, const std::string &value);

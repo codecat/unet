@@ -225,7 +225,7 @@ int Unet::Context::GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo)
 
 std::string Unet::Context::GetLobbyData(const LobbyInfo &lobbyInfo, const char* name)
 {
-	ServiceType firstService;
+	ServiceType firstService = ServiceType::None;
 	std::string ret;
 
 	for (size_t i = 0; i < lobbyInfo.EntryPoints.size(); i++) {
@@ -300,6 +300,13 @@ Unet::Lobby* Unet::Context::CurrentLobby()
 	return m_currentLobby;
 }
 
+Unet::Service* Unet::Context::PrimaryService()
+{
+	auto ret = GetService(m_primaryService);
+	assert(ret != nullptr);
+	return ret;
+}
+
 Unet::Service* Unet::Context::GetService(ServiceType type)
 {
 	for (auto service : m_services) {
@@ -315,6 +322,7 @@ void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 	if (result.Code != Result::OK) {
 		m_status = ContextStatus::Idle;
 		LeaveLobby();
+
 	} else {
 		m_status = ContextStatus::Connected;
 		m_currentLobby = result.CreatedLobby;
@@ -324,6 +332,15 @@ void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 
 		m_currentLobby->SetData("unet-guid", unetGuid.c_str());
 		m_currentLobby->SetData("unet-name", lobbyInfo.Name.c_str());
+
+		LobbyMember newMember;
+		newMember.UnetGuid = xg::newGuid();
+		newMember.UnetPeer = 0;
+		newMember.Name = PrimaryService()->GetUserName();
+		for (auto service : m_services) {
+			newMember.IDs.emplace_back(service->GetUserID());
+		}
+		m_currentLobby->m_members.emplace_back(newMember);
 	}
 
 	if (m_callbacks != nullptr) {
@@ -355,7 +372,7 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 		m_currentLobby = result.JoinedLobby;
 	}
 
-	//TODO: Send all members a "hello" message
+	//TODO: Send host a "hello" message on all services
 
 	if (m_callbacks != nullptr) {
 		m_callbacks->OnLobbyJoined(result);

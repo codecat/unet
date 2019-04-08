@@ -161,6 +161,16 @@ Unet::ServiceType Unet::ServiceGalaxy::GetType()
 	return ServiceType::Galaxy;
 }
 
+Unet::ServiceID Unet::ServiceGalaxy::GetUserID()
+{
+	return ServiceID(ServiceType::Galaxy, galaxy::api::User()->GetGalaxyID().ToUint64());
+}
+
+std::string Unet::ServiceGalaxy::GetUserName()
+{
+	return galaxy::api::Friends()->GetPersonaName();
+}
+
 void Unet::ServiceGalaxy::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 {
 	galaxy::api::LobbyType type = galaxy::api::LOBBY_TYPE_PUBLIC;

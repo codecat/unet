@@ -49,6 +49,7 @@ namespace Unet
 		Lobby* CurrentLobby();
 
 	private:
+		Service* PrimaryService();
 		Service* GetService(ServiceType type);
 
 	private:

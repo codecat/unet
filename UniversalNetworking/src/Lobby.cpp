@@ -3,6 +3,16 @@
 #include <Unet/Utils.h>
 #include <Unet/Context.h>
 
+Unet::ServiceID* Unet::LobbyMember::GetServiceID(ServiceType type)
+{
+	for (auto &id : IDs) {
+		if (id.Service == type) {
+			return &id;
+		}
+	}
+	return nullptr;
+}
+
 Unet::Lobby::Lobby(Context* ctx, const LobbyInfo &lobbyInfo)
 {
 	m_ctx = ctx;
@@ -26,6 +36,11 @@ bool Unet::Lobby::IsConnected()
 	return m_info.EntryPoints.size() > 0;
 }
 
+const std::vector<Unet::LobbyMember> &Unet::Lobby::GetMembers()
+{
+	return m_members;
+}
+
 void Unet::Lobby::AddEntryPoint(ServiceID entryPoint)
 {
 	auto entry = m_info.GetEntryPoint(entryPoint.Service);
@@ -39,6 +54,32 @@ void Unet::Lobby::AddEntryPoint(ServiceID entryPoint)
 		return;
 	}
 	m_info.EntryPoints.emplace_back(entryPoint);
+}
+
+Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const ServiceID &id)
+{
+	for (auto &member : m_members) {
+		if (member.UnetGuid == guid) {
+			auto existingId = member.GetServiceID(id.Service);
+			if (existingId != nullptr) {
+				auto strGuid = guid.str();
+				m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Tried adding player service %s for guid %s, but it already exists!",
+					GetServiceNameByType(id.Service), strGuid.c_str()
+				));
+			} else {
+				member.IDs.emplace_back(id);
+			}
+			return member;
+		}
+	}
+
+	LobbyMember newMember;
+	newMember.UnetGuid = guid;
+	newMember.UnetPeer = m_members.size();
+	newMember.IDs.emplace_back(id);
+	m_members.emplace_back(newMember);
+
+	return m_members[m_members.size() - 1];
 }
 
 void Unet::Lobby::ServiceDisconnected(ServiceType service)

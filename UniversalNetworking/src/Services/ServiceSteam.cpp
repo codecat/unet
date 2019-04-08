@@ -1,10 +1,13 @@
 #include <Unet_common.h>
 #include <Unet/Services/ServiceSteam.h>
 #include <Unet/Utils.h>
+#include <Unet/LobbyPacket.h>
 
 Unet::ServiceSteam::ServiceSteam(Context* ctx) :
 	m_callLobbyDataUpdate(this, &ServiceSteam::OnLobbyDataUpdate),
-	m_callLobbyKicked(this, &ServiceSteam::OnLobbyKicked)
+	m_callLobbyKicked(this, &ServiceSteam::OnLobbyKicked),
+	m_callLobbyChatUpdate(this, &ServiceSteam::OnLobbyChatUpdate),
+	m_callP2PSessionRequest(this, &ServiceSteam::OnP2PSessionRequest)
 {
 	m_ctx = ctx;
 }
@@ -18,9 +21,19 @@ Unet::ServiceType Unet::ServiceSteam::GetType()
 	return ServiceType::Steam;
 }
 
+Unet::ServiceID Unet::ServiceSteam::GetUserID()
+{
+	return ServiceID(ServiceType::Steam, SteamUser()->GetSteamID().ConvertToUint64());
+}
+
+std::string Unet::ServiceSteam::GetUserName()
+{
+	return SteamFriends()->GetPersonaName();
+}
+
 void Unet::ServiceSteam::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 {
-	ELobbyType type;
+	ELobbyType type = k_ELobbyTypePublic;
 	switch (privacy) {
 	case LobbyPrivacy::Public: type = k_ELobbyTypePublic; break;
 	case LobbyPrivacy::Private: type = k_ELobbyTypePrivate; break;
@@ -277,7 +290,7 @@ void Unet::ServiceSteam::OnLobbyKicked(LobbyKicked_t* result)
 	}
 
 	auto &lobbyInfo = currentLobby->GetInfo();
-	auto entryPoint = lobbyInfo.GetEntryPoint(ServiceType::Galaxy);
+	auto entryPoint = lobbyInfo.GetEntryPoint(ServiceType::Steam);
 	if (entryPoint == nullptr) {
 		return;
 	}
@@ -287,4 +300,61 @@ void Unet::ServiceSteam::OnLobbyKicked(LobbyKicked_t* result)
 	}
 
 	currentLobby->ServiceDisconnected(ServiceType::Steam);
+}
+
+void Unet::ServiceSteam::OnLobbyChatUpdate(LobbyChatUpdate_t* result)
+{
+	auto currentLobby = m_ctx->CurrentLobby();
+	if (currentLobby == nullptr) {
+		return;
+	}
+
+	auto &lobbyInfo = currentLobby->GetInfo();
+	auto entryPoint = lobbyInfo.GetEntryPoint(ServiceType::Steam);
+	if (entryPoint == nullptr) {
+		return;
+	}
+
+	if (entryPoint->ID != result->m_ulSteamIDLobby) {
+		return;
+	}
+
+	if (result->m_rgfChatMemberStateChange & k_EChatMemberStateChangeEntered) {
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player entered: 0x%08llX", result->m_ulSteamIDUserChanged));
+
+		/*
+		uint8_t msg[] = {
+			(uint8_t)LobbyPacketType::Hello
+		};
+		SteamNetworking()->SendP2PPacket(result->m_ulSteamIDUserChanged, msg, );
+		*/
+	} else if (BChatMemberStateChangeRemoved(result->m_rgfChatMemberStateChange)) {
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%08llX (code %X)", result->m_ulSteamIDUserChanged, result->m_rgfChatMemberStateChange));
+	}
+}
+
+void Unet::ServiceSteam::OnP2PSessionRequest(P2PSessionRequest_t* result)
+{
+	auto currentLobby = m_ctx->CurrentLobby();
+	if (currentLobby == nullptr) {
+		return;
+	}
+
+	auto &lobbyInfo = currentLobby->GetInfo();
+	auto entryPoint = lobbyInfo.GetEntryPoint(ServiceType::Steam);
+	if (entryPoint == nullptr) {
+		return;
+	}
+
+	int numMembers = SteamMatchmaking()->GetNumLobbyMembers(entryPoint->ID);
+	for (int i = 0; i < numMembers; i++) {
+		auto memberId = SteamMatchmaking()->GetLobbyMemberByIndex(entryPoint->ID, i);
+		if (memberId == result->m_steamIDRemote) {
+			m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Accepting P2P Session Request from 0x%08llX", result->m_steamIDRemote.ConvertToUint64()));
+			SteamNetworking()->AcceptP2PSessionWithUser(result->m_steamIDRemote);
+			return;
+		}
+	}
+
+	m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Rejecting P2P Session Request from 0x%08llX because they're not in the current Steam lobby!", result->m_steamIDRemote.ConvertToUint64()));
 }
