@@ -343,6 +343,8 @@ void Unet::ServiceSteam::OnLobbyChatUpdate(LobbyChatUpdate_t* result)
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player entered: 0x%08llX", result->m_ulSteamIDUserChanged));
 	} else if (BChatMemberStateChangeRemoved(result->m_rgfChatMemberStateChange)) {
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%08llX (code %X)", result->m_ulSteamIDUserChanged, result->m_rgfChatMemberStateChange));
+
+		//TODO: Handle this in context
 	}
 }
 
