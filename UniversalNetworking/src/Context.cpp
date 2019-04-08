@@ -36,6 +36,16 @@ Unet::ContextStatus Unet::Context::GetStatus()
 	return m_status;
 }
 
+void Unet::Context::SetCallbacks(Callbacks* callbacks)
+{
+	m_callbacks = callbacks;
+}
+
+Unet::Callbacks* Unet::Context::GetCallbacks()
+{
+	return m_callbacks;
+}
+
 template<typename TResult, typename TFunc>
 void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &callback, TFunc func)
 {
@@ -60,16 +70,6 @@ void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &callback, T
 	(ctx->*func)(result);
 
 	callback.Clear();
-}
-
-void Unet::Context::SetCallbacks(Callbacks* callbacks)
-{
-	m_callbacks = callbacks;
-}
-
-Unet::Callbacks* Unet::Context::GetCallbacks()
-{
-	return m_callbacks;
 }
 
 void Unet::Context::RunCallbacks()
@@ -105,22 +105,56 @@ void Unet::Context::RunCallbacks()
 
 				json js = json::from_bson(msg);
 				if (!js.is_object() || !js.contains("t")) {
-					m_callbacks->OnLogError(strPrintF("P2P message is not a valid bson object!"));
+					m_callbacks->OnLogError(strPrintF("[P2P] [%s] Message from 0x%08llX is not a valid bson object!", GetServiceNameByType(peer.Service), peer.ID));
 					continue;
 				}
 
 				auto jsDump = js.dump();
-				m_callbacks->OnLogDebug(strPrintF("[P2P] [%s] %s", GetServiceNameByType(service->GetType()), jsDump.c_str()));
+				m_callbacks->OnLogDebug(strPrintF("[P2P] [%s] Message object: \"%s\"", GetServiceNameByType(peer.Service), jsDump.c_str()));
 
 				auto type = (LobbyPacketType)(uint8_t)js["t"];
-				if (type == LobbyPacketType::Hello) {
+
+				if (type == LobbyPacketType::Handshake) {
 					auto &lobbyInfo = m_currentLobby->GetInfo();
 					if (!lobbyInfo.IsHosting) {
 						continue;
 					}
 
-					xg::Guid guid(js["guid"]);
+					xg::Guid guid(js["guid"].get<std::string>());
 					m_currentLobby->AddMemberService(guid, peer);
+
+				} else if (type == LobbyPacketType::Hello) {
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (!lobbyInfo.IsHosting) {
+						continue;
+					}
+
+					auto member = m_currentLobby->GetMember(peer);
+					member->Name = js["name"].get<std::string>();
+					member->Valid = true;
+
+					js = json::object();
+					js["t"] = (uint8_t)LobbyPacketType::LobbyInfo;
+					//TODO: Add actual lobby info
+					msg = json::to_bson(js);
+
+					service->SendPacket(peer, msg.data(), msg.size(), PacketType::Reliable, 0);
+
+					//TODO: Send member info to all other clients
+
+				} else if (type == LobbyPacketType::LobbyInfo) {
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (lobbyInfo.IsHosting) {
+						continue;
+					}
+
+					//TODO: Set lobby info
+					
+					LobbyJoinResult result;
+					result.Code = Result::OK;
+					//TODO: Set result.JoinGuid? It's not super important..
+					result.JoinedLobby = m_currentLobby;
+					m_callbacks->OnLobbyJoined(result);
 
 				} else {
 					m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
@@ -162,6 +196,11 @@ void Unet::Context::EnableService(ServiceType service)
 	if (m_primaryService == ServiceType::None) {
 		SetPrimaryService(service);
 	}
+}
+
+int Unet::Context::ServiceCount()
+{
+	return (int)m_services.size();
 }
 
 void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name)
@@ -428,16 +467,30 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 	if (result.Code != Result::OK) {
 		m_status = ContextStatus::Idle;
 		LeaveLobby();
+
+		m_callbacks->OnLobbyJoined(result);
+		return;
+
 	} else {
 		m_status = ContextStatus::Connected;
 		m_currentLobby = result.JoinedLobby;
 	}
 
-	//TODO: Send host a "hello" message on all services
+	auto lobbyId = m_currentLobby->GetPrimaryEntryPoint();
+	assert(lobbyId.IsValid());
 
-	if (m_callbacks != nullptr) {
-		m_callbacks->OnLobbyJoined(result);
-	}
+	auto service = GetService(lobbyId.Service);
+	assert(service != nullptr);
+
+	auto lobbyHost = service->GetLobbyHost(lobbyId);
+	assert(lobbyHost.IsValid());
+
+	json js;
+	js["t"] = (uint8_t)LobbyPacketType::Hello;
+	js["name"] = m_personaName;
+	std::vector<uint8_t> msg = json::to_bson(js);
+
+	service->SendPacket(lobbyHost, msg.data(), msg.size(), PacketType::Reliable, 0);
 }
 
 void Unet::Context::OnLobbyLeft(const LobbyLeftResult &result)

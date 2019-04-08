@@ -90,6 +90,13 @@ int Unet::ServiceSteam::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 	return SteamMatchmaking()->GetLobbyMemberLimit((uint64)lobbyId.ID);
 }
 
+Unet::ServiceID Unet::ServiceSteam::GetLobbyHost(const ServiceID &lobbyId)
+{
+	assert(lobbyId.Service == ServiceType::Steam);
+
+	return ServiceID(ServiceType::Steam, SteamMatchmaking()->GetLobbyOwner((uint64)lobbyId.ID).ConvertToUint64());
+}
+
 std::string Unet::ServiceSteam::GetLobbyData(const ServiceID &lobbyId, const char* name)
 {
 	assert(lobbyId.Service == ServiceType::Steam);
@@ -243,9 +250,8 @@ void Unet::ServiceSteam::OnLobbyJoin(LobbyEnter_t* result, bool bIOFailure)
 	m_ctx->GetCallbacks()->OnLogDebug("[Steam] Lobby joined");
 
 	json js;
-	js["t"] = (uint8_t)LobbyPacketType::Hello;
+	js["t"] = (uint8_t)LobbyPacketType::Handshake;
 	js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
-	js["name"] = m_ctx->GetPersonaName();
 	std::vector<uint8_t> msg = json::to_bson(js);
 
 	auto lobbyOwner = SteamMatchmaking()->GetLobbyOwner(result->m_ulSteamIDLobby);
@@ -335,24 +341,6 @@ void Unet::ServiceSteam::OnLobbyChatUpdate(LobbyChatUpdate_t* result)
 
 	if (result->m_rgfChatMemberStateChange & k_EChatMemberStateChangeEntered) {
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player entered: 0x%08llX", result->m_ulSteamIDUserChanged));
-
-		/*
-		if (currentLobby->GetInfo().IsHosting) {
-			auto hostMember = currentLobby->GetMember(GetUserID());
-			if (hostMember == nullptr) {
-				m_ctx->GetCallbacks()->OnLogError("[Steam] Couldn't find host member in lobby!");
-				return;
-			}
-
-			json js;
-			js["t"] = LobbyPacketType::Hello;
-			js["guid"] = hostMember->UnetGuid.str();
-			std::vector<uint8_t> msg = json::to_bson(js);
-
-			SteamNetworking()->SendP2PPacket(result->m_ulSteamIDUserChanged, msg.data(), (uint32)msg.size(), k_EP2PSendReliable);
-		}
-		*/
-
 	} else if (BChatMemberStateChangeRemoved(result->m_rgfChatMemberStateChange)) {
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%08llX (code %X)", result->m_ulSteamIDUserChanged, result->m_rgfChatMemberStateChange));
 	}

@@ -79,6 +79,7 @@ namespace Unet
 		virtual void LeaveLobby() override;
 
 		virtual int GetLobbyMaxPlayers(const ServiceID &lobbyId) override;
+		virtual ServiceID GetLobbyHost(const ServiceID &lobbyId) override;
 
 		virtual std::string GetLobbyData(const ServiceID &lobbyId, const char* name) override;
 		virtual int GetLobbyDataCount(const ServiceID &lobbyId) override;

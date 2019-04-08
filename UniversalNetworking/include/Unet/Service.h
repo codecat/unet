@@ -34,6 +34,8 @@ namespace Unet
 		virtual int GetLobbyDataCount(const ServiceID &lobbyId) = 0;
 		virtual LobbyData GetLobbyData(const ServiceID &lobbyId, int index) = 0;
 
+		virtual ServiceID GetLobbyHost(const ServiceID &lobbyId) = 0;
+
 		virtual void SetLobbyData(const ServiceID &lobbyId, const char* name, const char* value) = 0;
 
 		virtual void SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel) = 0;

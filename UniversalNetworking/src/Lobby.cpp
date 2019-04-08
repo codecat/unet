@@ -36,6 +36,20 @@ bool Unet::Lobby::IsConnected()
 	return m_info.EntryPoints.size() > 0;
 }
 
+Unet::ServiceID Unet::Lobby::GetPrimaryEntryPoint()
+{
+	if (m_info.EntryPoints.size() == 0) {
+		return ServiceID();
+	}
+
+	auto primaryEntryPoint = m_info.GetEntryPoint(m_ctx->m_primaryService);
+	if (primaryEntryPoint != nullptr) {
+		return *primaryEntryPoint;
+	}
+
+	return m_info.EntryPoints[0];
+}
+
 const std::vector<Unet::LobbyMember> &Unet::Lobby::GetMembers()
 {
 	return m_members;
@@ -73,6 +87,11 @@ Unet::LobbyMember* Unet::Lobby::GetMember(const ServiceID &serviceId)
 	return nullptr;
 }
 
+Unet::LobbyMember* Unet::Lobby::GetHostMember()
+{
+	return GetMember(0);
+}
+
 void Unet::Lobby::AddEntryPoint(ServiceID entryPoint)
 {
 	auto entry = m_info.GetEntryPoint(entryPoint.Service);
@@ -106,6 +125,7 @@ Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const Ser
 	}
 
 	LobbyMember newMember;
+	newMember.Valid = false;
 	newMember.UnetGuid = guid;
 	newMember.UnetPeer = m_members.size();
 	newMember.IDs.emplace_back(id);

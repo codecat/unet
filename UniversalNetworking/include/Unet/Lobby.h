@@ -13,6 +13,9 @@ namespace Unet
 
 	struct LobbyMember
 	{
+		/// Only valid if all fundamental user data has been received after joining the lobby (should only be a concern on the host)
+		bool Valid = true;
+
 		xg::Guid UnetGuid;
 		int UnetPeer = -1;
 
@@ -41,10 +44,13 @@ namespace Unet
 		const LobbyInfo &GetInfo();
 		bool IsConnected();
 
+		ServiceID GetPrimaryEntryPoint();
+
 		const std::vector<LobbyMember> &GetMembers();
 		LobbyMember* GetMember(const xg::Guid &guid);
 		LobbyMember* GetMember(int peer);
 		LobbyMember* GetMember(const ServiceID &serviceId);
+		LobbyMember* GetHostMember();
 
 		void AddEntryPoint(ServiceID id);
 		LobbyMember &AddMemberService(const xg::Guid &guid, const ServiceID &id);

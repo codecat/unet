@@ -33,6 +33,7 @@ namespace Unet
 
 		void SetPrimaryService(ServiceType service);
 		void EnableService(ServiceType service);
+		int ServiceCount();
 
 		void CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name = nullptr);
 		void GetLobbyList();
@@ -41,6 +42,7 @@ namespace Unet
 
 		/// Get maximum number of players as reported by services.
 		int GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo);
+
 		/// Get lobby data as reported by services.
 		std::string GetLobbyData(const LobbyInfo &lobbyInfo, const char* name);
 		/// Get all lobby data as reported by services.

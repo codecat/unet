@@ -119,9 +119,8 @@ void Unet::LobbyJoinListener::OnLobbyEntered(const galaxy::api::GalaxyID& lobbyI
 	m_self->m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby joined");
 
 	json js;
-	js["t"] = (uint8_t)LobbyPacketType::Hello;
+	js["t"] = (uint8_t)LobbyPacketType::Handshake;
 	js["guid"] = m_self->m_requestLobbyJoin->Data->JoinGuid.str();
-	js["name"] = m_self->m_ctx->GetPersonaName();
 	std::vector<uint8_t> msg = json::to_bson(js);
 
 	auto lobbyOwner = galaxy::api::Matchmaking()->GetLobbyOwner(lobbyID);
@@ -258,6 +257,13 @@ int Unet::ServiceGalaxy::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 	assert(lobbyId.Service == ServiceType::Galaxy);
 
 	return (int)galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(lobbyId.ID);
+}
+
+Unet::ServiceID Unet::ServiceGalaxy::GetLobbyHost(const ServiceID &lobbyId)
+{
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
+	return ServiceID(ServiceType::Galaxy, galaxy::api::Matchmaking()->GetLobbyOwner(lobbyId.ID).ToUint64());
 }
 
 std::string Unet::ServiceGalaxy::GetLobbyData(const ServiceID &lobbyId, const char* name)
