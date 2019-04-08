@@ -40,7 +40,11 @@ namespace Unet
 
 		const LobbyInfo &GetInfo();
 		bool IsConnected();
+
 		const std::vector<LobbyMember> &GetMembers();
+		LobbyMember* GetMember(const xg::Guid &guid);
+		LobbyMember* GetMember(int peer);
+		LobbyMember* GetMember(const ServiceID &serviceId);
 
 		void AddEntryPoint(ServiceID id);
 		LobbyMember &AddMemberService(const xg::Guid &guid, const ServiceID &id);

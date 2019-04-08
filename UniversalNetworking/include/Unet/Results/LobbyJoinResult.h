@@ -8,6 +8,7 @@ namespace Unet
 {
 	struct LobbyJoinResult : public ResultObject
 	{
+		xg::Guid JoinGuid;
 		Lobby* JoinedLobby;
 	};
 }

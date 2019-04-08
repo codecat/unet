@@ -4,6 +4,10 @@
 #include <Unet/Services/ServiceSteam.h>
 #include <Unet/Services/ServiceGalaxy.h>
 #include <Unet/Utils.h>
+#include <Unet/LobbyPacket.h>
+
+#include <Unet/json.hpp>
+using json = nlohmann::json;
 
 Unet::Context::Context()
 {
@@ -86,11 +90,57 @@ void Unet::Context::RunCallbacks()
 			OnLobbyLeft(result);
 		}
 	}
+
+	if (m_currentLobby != nullptr) {
+		for (auto service : m_services) {
+			size_t packetSize;
+			while (service->IsPacketAvailable(&packetSize, 0)) {
+				m_callbacks->OnLogDebug(strPrintF("[P2P] [%s] %d bytes", GetServiceNameByType(service->GetType()), (int)packetSize));
+
+				std::vector<uint8_t> msg;
+				msg.assign(packetSize, 0);
+
+				ServiceID peer;
+				service->ReadPacket(msg.data(), packetSize, &peer, 0);
+
+				json js = json::from_bson(msg);
+				if (!js.is_object() || !js.contains("t")) {
+					m_callbacks->OnLogError(strPrintF("P2P message is not a valid bson object!"));
+					continue;
+				}
+
+				auto jsDump = js.dump();
+				m_callbacks->OnLogDebug(strPrintF("[P2P] [%s] %s", GetServiceNameByType(service->GetType()), jsDump.c_str()));
+
+				auto type = (LobbyPacketType)(uint8_t)js["t"];
+				if (type == LobbyPacketType::Hello) {
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (!lobbyInfo.IsHosting) {
+						continue;
+					}
+
+					xg::Guid guid(js["guid"]);
+					m_currentLobby->AddMemberService(guid, peer);
+
+				} else {
+					m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
+				}
+			}
+		}
+	}
 }
 
 void Unet::Context::SetPrimaryService(ServiceType service)
 {
+	auto s = GetService(service);
+	if (s == nullptr) {
+		m_callbacks->OnLogError(strPrintF("Service %s is not enabled, so it can't be set as the primary service!", GetServiceNameByType(service)));
+		return;
+	}
+
 	m_primaryService = service;
+
+	m_personaName = s->GetUserName();
 }
 
 void Unet::Context::EnableService(ServiceType service)
@@ -107,11 +157,11 @@ void Unet::Context::EnableService(ServiceType service)
 		return;
 	}
 
-	if (m_primaryService == ServiceType::None) {
-		m_primaryService = service;
-	}
-
 	m_services.emplace_back(newService);
+
+	if (m_primaryService == ServiceType::None) {
+		SetPrimaryService(service);
+	}
 }
 
 void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name)
@@ -157,6 +207,7 @@ void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 	m_callbackLobbyJoin.Begin();
 
 	auto &result = m_callbackLobbyJoin.GetResult();
+	result.JoinGuid = xg::newGuid();
 	result.JoinedLobby = new Lobby(this, lobbyInfo);
 
 	for (auto service : m_services) {
@@ -298,6 +349,16 @@ std::vector<Unet::LobbyData> Unet::Context::GetLobbyData(const LobbyInfo &lobbyI
 Unet::Lobby* Unet::Context::CurrentLobby()
 {
 	return m_currentLobby;
+}
+
+void Unet::Context::SetPersonaName(const std::string &str)
+{
+	m_personaName = str;
+}
+
+const std::string &Unet::Context::GetPersonaName()
+{
+	return m_personaName;
 }
 
 Unet::Service* Unet::Context::PrimaryService()

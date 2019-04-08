@@ -1,6 +1,10 @@
 #include <Unet_common.h>
 #include <Unet/Services/ServiceGalaxy.h>
 #include <Unet/Utils.h>
+#include <Unet/LobbyPacket.h>
+
+#include <Unet/json.hpp>
+using json = nlohmann::json;
 
 void Unet::LobbyCreatedListener::OnLobbyCreated(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyCreateResult result)
 {
@@ -113,6 +117,17 @@ void Unet::LobbyJoinListener::OnLobbyEntered(const galaxy::api::GalaxyID& lobbyI
 	m_self->m_requestLobbyJoin->Code = Result::OK;
 
 	m_self->m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby joined");
+
+	json js;
+	js["t"] = (uint8_t)LobbyPacketType::Hello;
+	js["guid"] = m_self->m_requestLobbyJoin->Data->JoinGuid.str();
+	js["name"] = m_self->m_ctx->GetPersonaName();
+	std::vector<uint8_t> msg = json::to_bson(js);
+
+	auto lobbyOwner = galaxy::api::Matchmaking()->GetLobbyOwner(lobbyID);
+	galaxy::api::Networking()->SendP2PPacket(lobbyOwner, msg.data(), (uint32_t)msg.size(), galaxy::api::P2P_SEND_RELIABLE);
+
+	m_self->m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Handshake sent");
 }
 
 void Unet::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& lobbyID, LobbyLeaveReason leaveReason)

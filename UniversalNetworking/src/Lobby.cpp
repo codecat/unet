@@ -41,6 +41,38 @@ const std::vector<Unet::LobbyMember> &Unet::Lobby::GetMembers()
 	return m_members;
 }
 
+Unet::LobbyMember* Unet::Lobby::GetMember(const xg::Guid &guid)
+{
+	for (auto &member : m_members) {
+		if (member.UnetGuid == guid) {
+			return &member;
+		}
+	}
+	return nullptr;
+}
+
+Unet::LobbyMember* Unet::Lobby::GetMember(int peer)
+{
+	for (auto &member : m_members) {
+		if (member.UnetPeer == peer) {
+			return &member;
+		}
+	}
+	return nullptr;
+}
+
+Unet::LobbyMember* Unet::Lobby::GetMember(const ServiceID &serviceId)
+{
+	for (auto &member : m_members) {
+		for (auto &id : member.IDs) {
+			if (id == serviceId) {
+				return &member;
+			}
+		}
+	}
+	return nullptr;
+}
+
 void Unet::Lobby::AddEntryPoint(ServiceID entryPoint)
 {
 	auto entry = m_info.GetEntryPoint(entryPoint.Service);

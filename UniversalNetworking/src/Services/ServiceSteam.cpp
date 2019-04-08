@@ -3,6 +3,9 @@
 #include <Unet/Utils.h>
 #include <Unet/LobbyPacket.h>
 
+#include <Unet/json.hpp>
+using json = nlohmann::json;
+
 Unet::ServiceSteam::ServiceSteam(Context* ctx) :
 	m_callLobbyDataUpdate(this, &ServiceSteam::OnLobbyDataUpdate),
 	m_callLobbyKicked(this, &ServiceSteam::OnLobbyKicked),
@@ -238,6 +241,17 @@ void Unet::ServiceSteam::OnLobbyJoin(LobbyEnter_t* result, bool bIOFailure)
 	m_requestLobbyJoin->Code = Result::OK;
 
 	m_ctx->GetCallbacks()->OnLogDebug("[Steam] Lobby joined");
+
+	json js;
+	js["t"] = (uint8_t)LobbyPacketType::Hello;
+	js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
+	js["name"] = m_ctx->GetPersonaName();
+	std::vector<uint8_t> msg = json::to_bson(js);
+
+	auto lobbyOwner = SteamMatchmaking()->GetLobbyOwner(result->m_ulSteamIDLobby);
+	SteamNetworking()->SendP2PPacket(lobbyOwner, msg.data(), (uint32)msg.size(), k_EP2PSendReliable);
+
+	m_ctx->GetCallbacks()->OnLogDebug("[Steam] Handshake sent");
 }
 
 void Unet::ServiceSteam::LobbyListDataUpdated()
@@ -323,11 +337,22 @@ void Unet::ServiceSteam::OnLobbyChatUpdate(LobbyChatUpdate_t* result)
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player entered: 0x%08llX", result->m_ulSteamIDUserChanged));
 
 		/*
-		uint8_t msg[] = {
-			(uint8_t)LobbyPacketType::Hello
-		};
-		SteamNetworking()->SendP2PPacket(result->m_ulSteamIDUserChanged, msg, );
+		if (currentLobby->GetInfo().IsHosting) {
+			auto hostMember = currentLobby->GetMember(GetUserID());
+			if (hostMember == nullptr) {
+				m_ctx->GetCallbacks()->OnLogError("[Steam] Couldn't find host member in lobby!");
+				return;
+			}
+
+			json js;
+			js["t"] = LobbyPacketType::Hello;
+			js["guid"] = hostMember->UnetGuid.str();
+			std::vector<uint8_t> msg = json::to_bson(js);
+
+			SteamNetworking()->SendP2PPacket(result->m_ulSteamIDUserChanged, msg.data(), (uint32)msg.size(), k_EP2PSendReliable);
+		}
 		*/
+
 	} else if (BChatMemberStateChangeRemoved(result->m_rgfChatMemberStateChange)) {
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%08llX (code %X)", result->m_ulSteamIDUserChanged, result->m_rgfChatMemberStateChange));
 	}

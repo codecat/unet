@@ -48,6 +48,9 @@ namespace Unet
 
 		Lobby* CurrentLobby();
 
+		void SetPersonaName(const std::string &str);
+		const std::string &GetPersonaName();
+
 	private:
 		Service* PrimaryService();
 		Service* GetService(ServiceType type);
@@ -59,6 +62,8 @@ namespace Unet
 		void OnLobbyLeft(const LobbyLeftResult &result);
 
 	private:
+		std::string m_personaName;
+
 		ContextStatus m_status;
 		ServiceType m_primaryService;
 
