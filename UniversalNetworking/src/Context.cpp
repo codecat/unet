@@ -17,6 +17,7 @@ Unet::Context::Context()
 	m_callbacks = nullptr;
 
 	m_currentLobby = nullptr;
+	m_localPeer = -1;
 }
 
 Unet::Context::~Context()
@@ -228,6 +229,12 @@ void Unet::Context::RunCallbacks()
 						}
 					}
 
+					for (auto &member : m_currentLobby->m_members) {
+						if (member.UnetGuid == m_localGuid) {
+							m_localPeer = member.UnetPeer;
+						}
+					}
+
 					m_status = ContextStatus::Connected;
 
 					LobbyJoinResult result;
@@ -303,12 +310,15 @@ void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char
 
 	m_callbackCreateLobby.Begin();
 
+	m_localGuid = xg::newGuid();
+	m_localPeer = 0;
+
 	auto &result = m_callbackCreateLobby.GetResult();
 	LobbyInfo newLobbyInfo;
 	newLobbyInfo.IsHosting = true;
 	newLobbyInfo.Privacy = privacy;
 	newLobbyInfo.MaxPlayers = maxPlayers;
-	newLobbyInfo.UnetGuid = xg::newGuid();
+	newLobbyInfo.UnetGuid = m_localGuid;
 	if (name != nullptr) {
 		newLobbyInfo.Name = name;
 	}
@@ -339,8 +349,11 @@ void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 
 	m_callbackLobbyJoin.Begin();
 
+	m_localGuid = xg::newGuid();
+	m_localPeer = -1;
+
 	auto &result = m_callbackLobbyJoin.GetResult();
-	result.JoinGuid = xg::newGuid();
+	result.JoinGuid = m_localGuid;
 	result.JoinedLobby = new Lobby(this, lobbyInfo);
 
 	for (auto service : m_services) {
@@ -523,6 +536,9 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size)
 		return;
 	}
 
+	// Sending a message to yourself isn't very useful.
+	assert(member.UnetPeer != m_localPeer);
+
 	service->SendPacket(id, data, size, PacketType::Reliable, 0);
 }
 
@@ -534,7 +550,9 @@ void Unet::Context::SendToAll(uint8_t* data, size_t size)
 	}
 
 	for (auto &member : m_currentLobby->m_members) {
-		SendTo(member, data, size);
+		if (member.UnetPeer != m_localPeer) {
+			SendTo(member, data, size);
+		}
 	}
 }
 
@@ -546,7 +564,7 @@ void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, si
 	}
 
 	for (auto &member : m_currentLobby->m_members) {
-		if (member.UnetPeer != exceptMember.UnetPeer) {
+		if (member.UnetPeer != m_localPeer && member.UnetPeer != exceptMember.UnetPeer) {
 			SendTo(member, data, size);
 		}
 	}

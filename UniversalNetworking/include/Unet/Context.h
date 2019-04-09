@@ -77,6 +77,8 @@ namespace Unet
 		Callbacks* m_callbacks;
 
 		Lobby* m_currentLobby;
+		xg::Guid m_localGuid;
+		int m_localPeer;
 
 		std::vector<Service*> m_services;
 
