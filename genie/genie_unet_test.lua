@@ -43,6 +43,8 @@ project 'unet_test'
 	end
 
 	-- MacOS rpath
-	if os.get() == 'macosx' then
+	if os.get() == 'linux' then
+		linkoptions { '-Wl,-rpath,.' }
+	elseif os.get() == 'macosx' then
 		linkoptions { '-Wl,-rpath,"@loader_path",-rpath,.' }
 	end
