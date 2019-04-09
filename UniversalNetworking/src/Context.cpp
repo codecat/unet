@@ -103,6 +103,8 @@ void Unet::Context::RunCallbacks()
 				ServiceID peer;
 				service->ReadPacket(msg.data(), packetSize, &peer, 0);
 
+				auto peerMember = m_currentLobby->GetMember(peer);
+
 				json js = json::from_bson(msg);
 				if (!js.is_object() || !js.contains("t")) {
 					m_callbacks->OnLogError(strPrintF("[P2P] [%s] Message from 0x%08llX is not a valid bson object!", GetServiceNameByType(peer.Service), peer.ID));
@@ -121,7 +123,18 @@ void Unet::Context::RunCallbacks()
 					}
 
 					xg::Guid guid(js["guid"].get<std::string>());
-					m_currentLobby->AddMemberService(guid, peer);
+					auto &member = m_currentLobby->AddMemberService(guid, peer);
+
+					if (member.Valid) {
+						js = json::object();
+						js["t"] = (uint8_t)LobbyPacketType::MemberNewService;
+						js["guid"] = guid.str();
+						js["service"] = (int)peer.Service;
+						js["id"] = peer.ID;
+						msg = json::to_bson(js);
+
+						SendToAll(msg.data(), msg.size());
+					}
 
 				} else if (type == LobbyPacketType::Hello) {
 					auto &lobbyInfo = m_currentLobby->GetInfo();
@@ -130,7 +143,15 @@ void Unet::Context::RunCallbacks()
 					}
 
 					auto member = m_currentLobby->GetMember(peer);
+					if (member == nullptr) {
+						m_callbacks->OnLogWarn(strPrintF("Received Hello packet from %s ID 0x%08llX before receiving any handshakes!",
+							GetServiceNameByType(peer.Service), peer.ID
+						));
+						continue;
+					}
+
 					member->Name = js["name"].get<std::string>();
+					member->UnetPrimaryService = peer.Service;
 					member->Valid = true;
 
 					js = json::object();
@@ -161,7 +182,7 @@ void Unet::Context::RunCallbacks()
 					}
 					msg = json::to_bson(js);
 
-					service->SendPacket(peer, msg.data(), msg.size(), PacketType::Reliable, 0);
+					SendTo(*member, msg.data(), msg.size());
 
 					//TODO: Send member info to all other clients
 					//TODO: Call OnLobbyMemberJoined callback
@@ -214,6 +235,20 @@ void Unet::Context::RunCallbacks()
 					//TODO: Set result.JoinGuid? It's not super important..
 					result.JoinedLobby = m_currentLobby;
 					m_callbacks->OnLobbyJoined(result);
+
+				} else if (type == LobbyPacketType::MemberNewService) {
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (lobbyInfo.IsHosting) {
+						continue;
+					}
+
+					xg::Guid guid(js["guid"].get<std::string>());
+
+					ServiceID id;
+					id.Service = (ServiceType)js["service"].get<int>();
+					id.ID = js["id"].get<uint64_t>();
+
+					m_currentLobby->AddMemberService(guid, peer);
 
 				} else {
 					m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
@@ -476,6 +511,47 @@ Unet::Service* Unet::Context::GetService(ServiceType type)
 	return nullptr;
 }
 
+void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size)
+{
+	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
+
+	auto id = member.GetPrimaryServiceID();
+	auto service = GetService(id.Service);
+
+	assert(service != nullptr);
+	if (service == nullptr) {
+		return;
+	}
+
+	service->SendPacket(id, data, size, PacketType::Reliable, 0);
+}
+
+void Unet::Context::SendToAll(uint8_t* data, size_t size)
+{
+	assert(m_currentLobby != nullptr);
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	for (auto &member : m_currentLobby->m_members) {
+		SendTo(member, data, size);
+	}
+}
+
+void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size)
+{
+	assert(m_currentLobby != nullptr);
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	for (auto &member : m_currentLobby->m_members) {
+		if (member.UnetPeer != exceptMember.UnetPeer) {
+			SendTo(member, data, size);
+		}
+	}
+}
+
 void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 {
 	if (result.Code != Result::OK) {
@@ -492,7 +568,7 @@ void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 		m_currentLobby->SetData("unet-guid", unetGuid.c_str());
 		m_currentLobby->SetData("unet-name", lobbyInfo.Name.c_str());
 
-		LobbyMember newMember;
+		LobbyMember newMember(this);
 		newMember.UnetGuid = xg::newGuid();
 		newMember.UnetPeer = 0;
 		newMember.Name = PrimaryService()->GetUserName();
@@ -549,6 +625,8 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 	std::vector<uint8_t> msg = json::to_bson(js);
 
 	service->SendPacket(lobbyHost, msg.data(), msg.size(), PacketType::Reliable, 0);
+
+	m_callbacks->OnLogDebug("Hello sent");
 }
 
 void Unet::Context::OnLobbyLeft(const LobbyLeftResult &result)

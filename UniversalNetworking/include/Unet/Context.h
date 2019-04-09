@@ -19,6 +19,7 @@ namespace Unet
 	class Context
 	{
 		friend class Lobby;
+		friend class LobbyMember;
 
 	public:
 		Context();
@@ -56,6 +57,10 @@ namespace Unet
 	private:
 		Service* PrimaryService();
 		Service* GetService(ServiceType type);
+
+		void SendTo(LobbyMember &member, uint8_t* data, size_t size);
+		void SendToAll(uint8_t* data, size_t size);
+		void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size);
 
 	private:
 		void OnLobbyCreated(const CreateLobbyResult &result);

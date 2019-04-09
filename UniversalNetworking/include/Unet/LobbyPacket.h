@@ -14,6 +14,9 @@ namespace Unet
 
 		/// Sent by the server to give basic lobby information, which readies the client
 		LobbyInfo,
+
+		/// Sent by the server the indicate that a member has connected with a new service ID
+		MemberNewService,
 	};
 
 	/*

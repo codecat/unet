@@ -38,5 +38,15 @@ namespace Unet
 		{
 			return ID == id;
 		}
+
+		bool operator!=(const ServiceID &other) const
+		{
+			return !operator==(other);
+		}
+
+		bool operator!=(uint64_t id) const
+		{
+			return !operator==(id);
+		}
 	};
 }

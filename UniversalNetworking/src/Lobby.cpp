@@ -3,14 +3,40 @@
 #include <Unet/Utils.h>
 #include <Unet/Context.h>
 
-Unet::ServiceID* Unet::LobbyMember::GetServiceID(ServiceType type)
+Unet::LobbyMember::LobbyMember(Context* ctx)
+{
+	m_ctx = ctx;
+}
+
+Unet::ServiceID Unet::LobbyMember::GetServiceID(ServiceType type)
 {
 	for (auto &id : IDs) {
 		if (id.Service == type) {
-			return &id;
+			return id;
 		}
 	}
-	return nullptr;
+	return ServiceID();
+}
+
+Unet::ServiceID Unet::LobbyMember::GetPrimaryServiceID()
+{
+	assert(IDs.size() > 0);
+
+	for (auto &id : IDs) {
+		if (id.Service == UnetPrimaryService) {
+			return id;
+		}
+
+		if (id.Service == m_ctx->m_primaryService) {
+			return id;
+		}
+
+		if (m_ctx->GetService(id.Service) != nullptr) {
+			return id;
+		}
+	}
+
+	return ServiceID();
 }
 
 Unet::Lobby::Lobby(Context* ctx, const LobbyInfo &lobbyInfo)
@@ -109,10 +135,41 @@ void Unet::Lobby::AddEntryPoint(ServiceID entryPoint)
 
 Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const ServiceID &id)
 {
+	for (size_t i = 0; i < m_members.size(); i++) {
+		bool foundMember = false;
+		auto &member = m_members[i];
+
+		if (member.UnetGuid == guid) {
+			continue;
+		}
+
+		for (auto &memberId : member.IDs) {
+			if (memberId != id) {
+				continue;
+			}
+
+			auto strGuid = guid.str();
+			auto strExistingGuid = member.UnetGuid.str();
+
+			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Tried adding %s ID 0x%08llX to member with guid %s, but another member with guid %s already has this ID! Assuming existing member is no longer connected, removing from member list.",
+				GetServiceNameByType(id.Service), id.ID,
+				strGuid.c_str(), strExistingGuid.c_str()
+			));
+
+			m_members.erase(m_members.begin() + i);
+			foundMember = true;
+			break;
+		}
+
+		if (foundMember) {
+			break;
+		}
+	}
+
 	for (auto &member : m_members) {
 		if (member.UnetGuid == guid) {
 			auto existingId = member.GetServiceID(id.Service);
-			if (existingId != nullptr) {
+			if (existingId.IsValid()) {
 				auto strGuid = guid.str();
 				m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Tried adding player service %s for guid %s, but it already exists!",
 					GetServiceNameByType(id.Service), strGuid.c_str()
@@ -124,7 +181,7 @@ Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const Ser
 		}
 	}
 
-	LobbyMember newMember;
+	LobbyMember newMember(m_ctx);
 	newMember.Valid = false;
 	newMember.UnetGuid = guid;
 	newMember.UnetPeer = m_members.size();
