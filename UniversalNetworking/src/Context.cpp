@@ -248,7 +248,7 @@ void Unet::Context::RunCallbacks()
 					id.Service = (ServiceType)js["service"].get<int>();
 					id.ID = js["id"].get<uint64_t>();
 
-					m_currentLobby->AddMemberService(guid, peer);
+					m_currentLobby->AddMemberService(guid, id);
 
 				} else {
 					m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
