@@ -6,24 +6,6 @@
 #include <Unet/json.hpp>
 using json = nlohmann::json;
 
-void Unet::LobbyCreatedListener::OnLobbyCreated(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyCreateResult result)
-{
-	if (result != galaxy::api::LOBBY_CREATE_RESULT_SUCCESS) {
-		m_self->m_requestLobbyCreated->Code = Result::Error;
-		m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Error %d while creating lobby", (int)result));
-		return;
-	}
-
-	ServiceID newEntryPoint;
-	newEntryPoint.Service = m_self->GetType();
-	newEntryPoint.ID = lobbyID.ToUint64();
-	m_self->m_requestLobbyCreated->Data->CreatedLobby->AddEntryPoint(newEntryPoint);
-
-	m_self->m_requestLobbyCreated->Code = Result::OK;
-
-	m_self->m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby created");
-}
-
 void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::LobbyListResult result)
 {
 	m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Lobby list received (%d)", (int)lobbyCount));
@@ -101,73 +83,17 @@ void Unet::LobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Gala
 	LobbyDataUpdated();
 }
 
-void Unet::LobbyJoinListener::OnLobbyEntered(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyEnterResult result)
-{
-	if (result != galaxy::api::LOBBY_ENTER_RESULT_SUCCESS) {
-		m_self->m_requestLobbyJoin->Code = Result::Error;
-		m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Couldn't join lobby due to error %d", (int)result));
-		return;
-	}
-
-	ServiceID newEntryPoint;
-	newEntryPoint.Service = ServiceType::Galaxy;
-	newEntryPoint.ID = lobbyID.ToUint64();
-	m_self->m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(newEntryPoint);
-
-	m_self->m_requestLobbyJoin->Code = Result::OK;
-
-	m_self->m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby joined");
-
-	json js;
-	js["t"] = (uint8_t)LobbyPacketType::Handshake;
-	js["guid"] = m_self->m_requestLobbyJoin->Data->JoinGuid.str();
-	std::vector<uint8_t> msg = json::to_bson(js);
-
-	auto lobbyOwner = galaxy::api::Matchmaking()->GetLobbyOwner(lobbyID);
-	galaxy::api::Networking()->SendP2PPacket(lobbyOwner, msg.data(), (uint32_t)msg.size(), galaxy::api::P2P_SEND_RELIABLE);
-
-	m_self->m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Handshake sent");
-}
-
-void Unet::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& lobbyID, LobbyLeaveReason leaveReason)
-{
-	auto currentLobby = m_self->m_ctx->CurrentLobby();
-	if (currentLobby == nullptr) {
-		return;
-	}
-
-	auto &lobbyInfo = currentLobby->GetInfo();
-	auto entryPoint = lobbyInfo.GetEntryPoint(ServiceType::Galaxy);
-	if (entryPoint == nullptr) {
-		return;
-	}
-
-	if (entryPoint->ID != lobbyID.ToUint64()) {
-		return;
-	}
-
-	if (leaveReason == LOBBY_LEAVE_REASON_USER_LEFT) {
-		m_self->m_requestLobbyLeft->Code = Result::OK;
-		m_self->m_requestLobbyLeft->Data->Reason = LeaveReason::UserLeave;
-	} else {
-		currentLobby->ServiceDisconnected(ServiceType::Galaxy);
-	}
-}
-
 Unet::ServiceGalaxy::ServiceGalaxy(Context* ctx) :
-	m_lobbyCreatedListener(this),
-	m_lobbyListListener(this),
-	m_lobbyJoinListener(this),
-	m_lobbyLeftListener(this)
+	m_lobbyListListener(this)
 {
 	m_ctx = ctx;
 
-	galaxy::api::ListenerRegistrar()->Register(LobbyLeftListener::GetListenerType(), &m_lobbyLeftListener);
+	galaxy::api::ListenerRegistrar()->Register(galaxy::api::LOBBY_LEFT, (galaxy::api::ILobbyLeftListener*)this);
 }
 
 Unet::ServiceGalaxy::~ServiceGalaxy()
 {
-	galaxy::api::ListenerRegistrar()->Unregister(LobbyLeftListener::GetListenerType(), &m_lobbyLeftListener);
+	galaxy::api::ListenerRegistrar()->Unregister(galaxy::api::LOBBY_LEFT, (galaxy::api::ILobbyLeftListener*)this);
 }
 
 Unet::ServiceType Unet::ServiceGalaxy::GetType()
@@ -196,7 +122,7 @@ void Unet::ServiceGalaxy::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	m_requestLobbyCreated = m_ctx->m_callbackCreateLobby.AddServiceRequest(this);
 
 	try {
-		galaxy::api::Matchmaking()->CreateLobby(type, maxPlayers, true, galaxy::api::LOBBY_TOPOLOGY_TYPE_FCM, &m_lobbyCreatedListener);
+		galaxy::api::Matchmaking()->CreateLobby(type, maxPlayers, true, galaxy::api::LOBBY_TOPOLOGY_TYPE_FCM, this);
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyCreated->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to create lobby: %s", error.GetMsg()));
@@ -222,7 +148,7 @@ void Unet::ServiceGalaxy::JoinLobby(const ServiceID &id)
 	m_requestLobbyJoin = m_ctx->m_callbackLobbyJoin.AddServiceRequest(this);
 
 	try {
-		galaxy::api::Matchmaking()->JoinLobby(id.ID, &m_lobbyJoinListener);
+		galaxy::api::Matchmaking()->JoinLobby(id.ID, this);
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyJoin->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to join lobby: %s", error.GetMsg()));
@@ -245,7 +171,7 @@ void Unet::ServiceGalaxy::LeaveLobby()
 	m_requestLobbyLeft = m_ctx->m_callbackLobbyLeft.AddServiceRequest(this);
 
 	try {
-		galaxy::api::Matchmaking()->LeaveLobby(entryPoint->ID, &m_lobbyLeftListener);
+		galaxy::api::Matchmaking()->LeaveLobby(entryPoint->ID, this);
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyLeft->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to leave lobby: %s", error.GetMsg()));
@@ -336,4 +262,75 @@ bool Unet::ServiceGalaxy::IsPacketAvailable(size_t* outPacketSize, uint8_t chann
 		*outPacketSize = (size_t)packetSize;
 	}
 	return ret;
+}
+
+void Unet::ServiceGalaxy::OnLobbyCreated(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyCreateResult result)
+{
+	if (result != galaxy::api::LOBBY_CREATE_RESULT_SUCCESS) {
+		m_requestLobbyCreated->Code = Result::Error;
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Error %d while creating lobby", (int)result));
+		return;
+	}
+
+	ServiceID newEntryPoint;
+	newEntryPoint.Service = ServiceType::Galaxy;
+	newEntryPoint.ID = lobbyID.ToUint64();
+	m_requestLobbyCreated->Data->CreatedLobby->AddEntryPoint(newEntryPoint);
+
+	m_requestLobbyCreated->Code = Result::OK;
+
+	m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby created");
+}
+
+void Unet::ServiceGalaxy::OnLobbyEntered(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyEnterResult result)
+{
+	if (result != galaxy::api::LOBBY_ENTER_RESULT_SUCCESS) {
+		m_requestLobbyJoin->Code = Result::Error;
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Couldn't join lobby due to error %d", (int)result));
+		return;
+	}
+
+	ServiceID newEntryPoint;
+	newEntryPoint.Service = ServiceType::Galaxy;
+	newEntryPoint.ID = lobbyID.ToUint64();
+	m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(newEntryPoint);
+
+	m_requestLobbyJoin->Code = Result::OK;
+
+	m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby joined");
+
+	json js;
+	js["t"] = (uint8_t)LobbyPacketType::Handshake;
+	js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
+	std::vector<uint8_t> msg = json::to_bson(js);
+
+	auto lobbyOwner = galaxy::api::Matchmaking()->GetLobbyOwner(lobbyID);
+	galaxy::api::Networking()->SendP2PPacket(lobbyOwner, msg.data(), (uint32_t)msg.size(), galaxy::api::P2P_SEND_RELIABLE);
+
+	m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Handshake sent");
+}
+
+void Unet::ServiceGalaxy::OnLobbyLeft(const galaxy::api::GalaxyID& lobbyID, LobbyLeaveReason leaveReason)
+{
+	auto currentLobby = m_ctx->CurrentLobby();
+	if (currentLobby == nullptr) {
+		return;
+	}
+
+	auto &lobbyInfo = currentLobby->GetInfo();
+	auto entryPoint = lobbyInfo.GetEntryPoint(ServiceType::Galaxy);
+	if (entryPoint == nullptr) {
+		return;
+	}
+
+	if (entryPoint->ID != lobbyID.ToUint64()) {
+		return;
+	}
+
+	if (leaveReason == LOBBY_LEAVE_REASON_USER_LEFT) {
+		m_requestLobbyLeft->Code = Result::OK;
+		m_requestLobbyLeft->Data->Reason = LeaveReason::UserLeave;
+	} else {
+		currentLobby->ServiceDisconnected(ServiceType::Galaxy);
+	}
 }
