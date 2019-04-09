@@ -207,6 +207,8 @@ void Unet::Context::RunCallbacks()
 						}
 					}
 
+					m_status = ContextStatus::Connected;
+
 					LobbyJoinResult result;
 					result.Code = Result::OK;
 					//TODO: Set result.JoinGuid? It's not super important..
@@ -529,7 +531,6 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 		return;
 
 	} else {
-		m_status = ContextStatus::Connected;
 		m_currentLobby = result.JoinedLobby;
 	}
 

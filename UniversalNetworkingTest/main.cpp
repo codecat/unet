@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 
 #include <iostream>
 
@@ -399,10 +400,45 @@ static void HandleCommand(const s2::string &line)
 
 static s2::string ReadLine()
 {
-	auto currentLobby = g_ctx->CurrentLobby();
-	if (currentLobby != nullptr) {
-		auto &lobbyInfo = currentLobby->GetInfo();
-		std::cout << "[" << lobbyInfo.Name << "] ";
+	tm date;
+	time_t itime = time(nullptr);
+#if defined(PLATFORM_WINDOWS)
+	_localtime64_s(&date, &itime);
+#else
+	localtime_r(&itime, &date);
+#endif
+	printf("[%02d:%02d:%02d] ", date.tm_hour, date.tm_min, date.tm_sec);
+
+	auto status = g_ctx->GetStatus();
+
+	std::cout << "[";
+	termcolor::cyan();
+
+	switch (status) {
+	case Unet::ContextStatus::Idle: std::cout << "Idle"; break;
+	case Unet::ContextStatus::Connecting: std::cout << "Connecting"; break;
+	case Unet::ContextStatus::Connected: std::cout << "Connected"; break;
+	}
+
+	termcolor::reset();
+	std::cout << "] ";
+
+	if (status == Unet::ContextStatus::Connected) {
+		std::cout << "[";
+
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby != nullptr) {
+			auto &lobbyInfo = currentLobby->GetInfo();
+			termcolor::green();
+			std::cout << lobbyInfo.Name;
+
+		} else {
+			termcolor::red();
+			std::cout << "No lobby!";
+		}
+
+		termcolor::reset();
+		std::cout << "] ";
 	}
 
 	std::cout << "> ";
