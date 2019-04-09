@@ -30,7 +30,8 @@ namespace Unet
 	class ServiceGalaxy : public Service,
 		galaxy::api::ILobbyCreatedListener,
 		galaxy::api::ILobbyEnteredListener,
-		galaxy::api::ILobbyLeftListener
+		galaxy::api::ILobbyLeftListener,
+		galaxy::api::ILobbyMemberStateListener
 	{
 	private:
 		LobbyListListener m_lobbyListListener;
@@ -72,5 +73,6 @@ namespace Unet
 		virtual void OnLobbyCreated(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyCreateResult result) override;
 		virtual void OnLobbyEntered(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyEnterResult result) override;
 		virtual void OnLobbyLeft(const galaxy::api::GalaxyID& lobbyID, LobbyLeaveReason leaveReason) override;
+		virtual void OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& lobbyID, const galaxy::api::GalaxyID& memberID, galaxy::api::LobbyMemberStateChange memberStateChange) override;
 	};
 }

@@ -89,11 +89,13 @@ Unet::ServiceGalaxy::ServiceGalaxy(Context* ctx) :
 	m_ctx = ctx;
 
 	galaxy::api::ListenerRegistrar()->Register(galaxy::api::LOBBY_LEFT, (galaxy::api::ILobbyLeftListener*)this);
+	galaxy::api::ListenerRegistrar()->Register(galaxy::api::LOBBY_MEMBER_STATE, (galaxy::api::ILobbyMemberStateListener*)this);
 }
 
 Unet::ServiceGalaxy::~ServiceGalaxy()
 {
 	galaxy::api::ListenerRegistrar()->Unregister(galaxy::api::LOBBY_LEFT, (galaxy::api::ILobbyLeftListener*)this);
+	galaxy::api::ListenerRegistrar()->Unregister(galaxy::api::LOBBY_MEMBER_STATE, (galaxy::api::ILobbyMemberStateListener*)this);
 }
 
 Unet::ServiceType Unet::ServiceGalaxy::GetType()
@@ -332,5 +334,31 @@ void Unet::ServiceGalaxy::OnLobbyLeft(const galaxy::api::GalaxyID& lobbyID, Lobb
 		m_requestLobbyLeft->Data->Reason = LeaveReason::UserLeave;
 	} else {
 		currentLobby->ServiceDisconnected(ServiceType::Galaxy);
+	}
+}
+
+void Unet::ServiceGalaxy::OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& lobbyID, const galaxy::api::GalaxyID& memberID, galaxy::api::LobbyMemberStateChange memberStateChange)
+{
+	auto currentLobby = m_ctx->CurrentLobby();
+	if (currentLobby == nullptr) {
+		return;
+	}
+
+	auto &lobbyInfo = currentLobby->GetInfo();
+	auto entryPoint = lobbyInfo.GetEntryPoint(ServiceType::Galaxy);
+	if (entryPoint == nullptr) {
+		return;
+	}
+
+	if (entryPoint->ID != lobbyID.ToUint64()) {
+		return;
+	}
+
+	if (memberStateChange == galaxy::api::LOBBY_MEMBER_STATE_CHANGED_ENTERED) {
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Player entered: 0x%08llX", memberID.ToUint64()));
+	} else {
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%08llX (code %X)", memberID.ToUint64(), memberStateChange));
+
+		//TODO: Handle this in context
 	}
 }
