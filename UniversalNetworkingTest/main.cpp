@@ -23,8 +23,11 @@
 #include <steam/steam_api.h>
 #include <galaxy/GalaxyApi.h>
 
-#if defined(_MSC_VER)
+#if defined(PLATFORM_WINDOWS)
 #include <Windows.h>
+#else
+#include <unistd.h>
+#include <poll.h>
 #endif
 
 static Unet::Context* g_ctx = nullptr;
@@ -225,6 +228,20 @@ static void InitializeGalaxy(const char* clientId, const char* clientSecret)
 	}
 }
 
+static bool IsKeyPressed()
+{
+#if defined(PLATFORM_WINDOWS)
+	Sleep(1);
+	return WaitForSingleObject(GetStdHandle(STD_INPUT_HANDLE), 0) == WAIT_OBJECT_0;
+#else
+	usleep(1000);
+	struct pollfd pls[1];
+	pls[0].fd = STDIN_FILENO;
+	pls[0].events = POLLIN | POLLPRI;
+	return poll(pls, 1, 0) > 0;
+#endif
+}
+
 static void HandleCommand(const s2::string &line)
 {
 	auto parse = line.commandlinesplit();
@@ -242,6 +259,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  run <filename>      - Runs commands from a file");
 		LOG_INFO("  enable <name> [...] - Enables a service by the given name, including optional parameters");
 		LOG_INFO("  status              - Prints current network status");
+		LOG_INFO("  wait                - Keeps running callbacks until a key is pressed");
 		LOG_INFO("  create [name]       - Creates a public lobby");
 		LOG_INFO("  list                - Requests all available lobbies");
 		LOG_INFO("  data [num]          - Show all lobby data by the number in the list, or the current lobby");
@@ -328,6 +346,13 @@ static void HandleCommand(const s2::string &line)
 					LOG_INFO("      %s (0x%08llX)", Unet::GetServiceNameByType(id.Service), id.ID);
 				}
 			}
+		}
+
+	} else if (parse[0] == "wait") {
+		LOG_INFO("Entering wait mode. Press any key to stop.");
+
+		while (!IsKeyPressed()) {
+			RunCallbacks();
 		}
 
 	} else if (parse[0] == "create") {
