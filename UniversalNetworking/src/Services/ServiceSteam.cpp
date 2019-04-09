@@ -361,9 +361,9 @@ void Unet::ServiceSteam::OnP2PSessionRequest(P2PSessionRequest_t* result)
 		return;
 	}
 
-	int numMembers = SteamMatchmaking()->GetNumLobbyMembers(entryPoint->ID);
+	int numMembers = SteamMatchmaking()->GetNumLobbyMembers((uint64)entryPoint->ID);
 	for (int i = 0; i < numMembers; i++) {
-		auto memberId = SteamMatchmaking()->GetLobbyMemberByIndex(entryPoint->ID, i);
+		auto memberId = SteamMatchmaking()->GetLobbyMemberByIndex((uint64)entryPoint->ID, i);
 		if (memberId == result->m_steamIDRemote) {
 			m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Accepting P2P Session Request from 0x%08llX", result->m_steamIDRemote.ConvertToUint64()));
 			SteamNetworking()->AcceptP2PSessionWithUser(result->m_steamIDRemote);
