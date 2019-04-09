@@ -81,9 +81,8 @@ void Unet::Context::RunCallbacks()
 	CheckCallback(this, m_callbackLobbyLeft, &Context::OnLobbyLeft);
 
 	if (m_status == ContextStatus::Connected && m_currentLobby != nullptr) {
-		auto &lobbyInfo = m_currentLobby->GetInfo();
-		if (lobbyInfo.EntryPoints.size() == 0) {
-			m_callbacks->OnLogError("Connection to lobby was lost (no more remaining entry points)");
+		if (!m_currentLobby->IsConnected()) {
+			m_callbacks->OnLogError("Connection to lobby was lost");
 
 			LobbyLeftResult result;
 			result.Code = Result::OK;
@@ -650,6 +649,7 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 void Unet::Context::OnLobbyLeft(const LobbyLeftResult &result)
 {
 	m_status = ContextStatus::Idle;
+	m_localPeer = -1;
 
 	if (m_currentLobby != nullptr) {
 		delete m_currentLobby;

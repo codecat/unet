@@ -359,6 +359,6 @@ void Unet::ServiceGalaxy::OnLobbyMemberStateChanged(const galaxy::api::GalaxyID&
 	} else {
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%08llX (code %X)", memberID.ToUint64(), memberStateChange));
 
-		//TODO: Handle this in context
+		currentLobby->RemoveMemberService(ServiceID(ServiceType::Galaxy, memberID.ToUint64()));
 	}
 }

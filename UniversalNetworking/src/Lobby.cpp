@@ -133,6 +133,27 @@ void Unet::Lobby::AddEntryPoint(ServiceID entryPoint)
 	m_info.EntryPoints.emplace_back(entryPoint);
 }
 
+void Unet::Lobby::ServiceDisconnected(ServiceType service)
+{
+	auto it = std::find_if(m_info.EntryPoints.begin(), m_info.EntryPoints.end(), [service](const ServiceID & entryPoint) {
+		return entryPoint.Service == service;
+		});
+
+	if (it == m_info.EntryPoints.end()) {
+		return;
+	}
+
+	m_info.EntryPoints.erase(it);
+
+	if (IsConnected()) {
+		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Lost connection to entry point %s (%d points still open)", GetServiceNameByType(service), (int)m_info.EntryPoints.size()));
+	} else {
+		m_ctx->GetCallbacks()->OnLogError("Lost connection to all entry points!");
+
+		//TODO: Run some callback and close the lobby?
+	}
+}
+
 Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const ServiceID &id)
 {
 	for (size_t i = 0; i < m_members.size(); i++) {
@@ -191,22 +212,36 @@ Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const Ser
 	return m_members[m_members.size() - 1];
 }
 
-void Unet::Lobby::ServiceDisconnected(ServiceType service)
+void Unet::Lobby::RemoveMemberService(const ServiceID &id)
 {
-	auto it = std::find_if(m_info.EntryPoints.begin(), m_info.EntryPoints.end(), [service](const ServiceID &entryPoint) {
-		return entryPoint.Service == service;
-	});
-
-	if (it == m_info.EntryPoints.end()) {
+	auto member = GetMember(id);
+	if (member == nullptr) {
 		return;
 	}
 
-	m_info.EntryPoints.erase(it);
+	auto it = std::find(member->IDs.begin(), member->IDs.end(), id);
+	assert(it != member->IDs.end());
+	if (it == member->IDs.end()) {
+		return;
+	}
 
-	if (IsConnected()) {
-		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Lost connection to entry point %s (%d points still open)", GetServiceNameByType(service), (int)m_info.EntryPoints.size()));
+	member->IDs.erase(it);
+	if (member->IDs.size() > 0) {
+		//TODO: Remove this warning
+		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Lost member connection on %s with ID 0x%08llX (%d points still open)",
+			GetServiceNameByType(id.Service), id.ID, (int)member->IDs.size()
+		));
 	} else {
-		m_ctx->GetCallbacks()->OnLogError("Lost connection to all entry points!");
+		//TODO: Remove this warning
+		auto strGuid = member->UnetGuid.str();
+		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Fully lost member connection for guid %s",
+			strGuid.c_str()
+		));
+
+		size_t i = member - m_members.data();
+		m_members.erase(m_members.begin() + i);
+
+		//TODO: Run callback
 	}
 }
 

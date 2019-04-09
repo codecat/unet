@@ -20,6 +20,8 @@ namespace Unet
 		virtual void OnLobbyList(const LobbyListResult &result) {}
 		virtual void OnLobbyJoined(const LobbyJoinResult &result) {}
 		virtual void OnLobbyLeft(const LobbyLeftResult &result) {}
-		//TODO: OnLobbyConnectionFallback, specifying which p2p we've fallen back to
+
+		//TODO: OnLobbyPlayerJoined
+		//TODO: OnLobbyPlayerLeft
 	};
 }

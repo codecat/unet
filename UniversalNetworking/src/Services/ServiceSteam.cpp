@@ -344,7 +344,7 @@ void Unet::ServiceSteam::OnLobbyChatUpdate(LobbyChatUpdate_t* result)
 	} else if (BChatMemberStateChangeRemoved(result->m_rgfChatMemberStateChange)) {
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%08llX (code %X)", result->m_ulSteamIDUserChanged, result->m_rgfChatMemberStateChange));
 
-		//TODO: Handle this in context
+		currentLobby->RemoveMemberService(ServiceID(ServiceType::Steam, result->m_ulSteamIDUserChanged));
 	}
 }
 
