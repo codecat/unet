@@ -8,7 +8,7 @@ Unet::LobbyMember::LobbyMember(Context* ctx)
 	m_ctx = ctx;
 }
 
-Unet::ServiceID Unet::LobbyMember::GetServiceID(ServiceType type)
+Unet::ServiceID Unet::LobbyMember::GetServiceID(ServiceType type) const
 {
 	for (auto &id : IDs) {
 		if (id.Service == type) {
@@ -18,7 +18,7 @@ Unet::ServiceID Unet::LobbyMember::GetServiceID(ServiceType type)
 	return ServiceID();
 }
 
-Unet::ServiceID Unet::LobbyMember::GetPrimaryServiceID()
+Unet::ServiceID Unet::LobbyMember::GetPrimaryServiceID() const
 {
 	assert(IDs.size() > 0);
 
@@ -226,22 +226,13 @@ void Unet::Lobby::RemoveMemberService(const ServiceID &id)
 	}
 
 	member->IDs.erase(it);
-	if (member->IDs.size() > 0) {
-		//TODO: Remove this warning
-		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Lost member connection on %s with ID 0x%08llX (%d points still open)",
-			GetServiceNameByType(id.Service), id.ID, (int)member->IDs.size()
-		));
-	} else {
-		//TODO: Remove this warning
-		auto strGuid = member->UnetGuid.str();
-		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Fully lost member connection for guid %s",
-			strGuid.c_str()
-		));
+	if (member->IDs.size() == 0) {
+		LobbyMember callbackCopy = *member;
 
 		size_t i = member - m_members.data();
 		m_members.erase(m_members.begin() + i);
 
-		//TODO: Run callback
+		m_ctx->m_callbacks->OnLobbyPlayerLeft(callbackCopy);
 	}
 }
 

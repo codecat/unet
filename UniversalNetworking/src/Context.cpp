@@ -184,6 +184,8 @@ void Unet::Context::RunCallbacks()
 
 					SendTo(*member, msg.data(), msg.size());
 
+					m_callbacks->OnLobbyPlayerJoined(*member);
+
 					//TODO: Send member info to all other clients
 					//TODO: Call OnLobbyMemberJoined callback
 

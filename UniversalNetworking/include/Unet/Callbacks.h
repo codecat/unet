@@ -21,7 +21,7 @@ namespace Unet
 		virtual void OnLobbyJoined(const LobbyJoinResult &result) {}
 		virtual void OnLobbyLeft(const LobbyLeftResult &result) {}
 
-		//TODO: OnLobbyPlayerJoined
-		//TODO: OnLobbyPlayerLeft
+		virtual void OnLobbyPlayerJoined(const LobbyMember &member) {}
+		virtual void OnLobbyPlayerLeft(const LobbyMember &member) {}
 	};
 }

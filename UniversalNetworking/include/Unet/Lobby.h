@@ -33,8 +33,8 @@ namespace Unet
 	public:
 		LobbyMember(Context* ctx);
 
-		ServiceID GetServiceID(ServiceType type);
-		ServiceID GetPrimaryServiceID();
+		ServiceID GetServiceID(ServiceType type) const;
+		ServiceID GetPrimaryServiceID() const;
 	};
 
 	class Lobby

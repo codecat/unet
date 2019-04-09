@@ -57,7 +57,9 @@ public:
 
 	virtual void OnLogDebug(const std::string &str) override
 	{
+#if defined(DEBUG)
 		LOG_DEBUG("%s", str.c_str());
+#endif
 	}
 
 	virtual void OnLobbyCreated(const Unet::CreateLobbyResult &result) override
@@ -109,6 +111,16 @@ public:
 		case Unet::LeaveReason::Disconnected: reasonStr = "Lost connection"; break;
 		}
 		LOG_INFO("Left lobby: %s", reasonStr);
+	}
+
+	virtual void OnLobbyPlayerJoined(const Unet::LobbyMember &member) override
+	{
+		LOG_INFO("Player joined: %s", member.Name.c_str());
+	}
+
+	virtual void OnLobbyPlayerLeft(const Unet::LobbyMember &member) override
+	{
+		LOG_INFO("Player left: %s", member.Name.c_str());
 	}
 };
 
