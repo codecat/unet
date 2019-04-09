@@ -48,7 +48,7 @@ Unet::Callbacks* Unet::Context::GetCallbacks()
 }
 
 template<typename TResult, typename TFunc>
-void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &callback, TFunc func)
+static void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &callback, TFunc func)
 {
 	if (!callback.Ready()) {
 		return;
@@ -71,6 +71,55 @@ void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &callback, T
 	(ctx->*func)(result);
 
 	callback.Clear();
+}
+
+static json SerializeMember(const Unet::LobbyMember &member)
+{
+	json js;
+	js["guid"] = member.UnetGuid.str();
+	js["peer"] = member.UnetPeer;
+	js["name"] = member.Name;
+	js["ids"] = json::array();
+	for (auto &id : member.IDs) {
+		js["ids"].emplace_back(json::array({ (int)id.Service, id.ID }));
+	}
+	js["data"] = json::object();
+	for (auto &memberData : member.Data) {
+		js["data"][memberData.Name] = memberData.Value;
+	}
+	return js;
+}
+
+static Unet::LobbyMember &DeserializeMember(Unet::Context* ctx, const json &member)
+{
+	auto currentLobby = ctx->CurrentLobby();
+
+	xg::Guid guid(member["guid"].get<std::string>());
+
+	for (auto &memberId : member["ids"]) {
+		auto service = (Unet::ServiceType)memberId[0].get<int>();
+		auto id = memberId[1].get<uint64_t>();
+
+		currentLobby->AddMemberService(guid, Unet::ServiceID(service, id));
+	}
+
+	auto lobbyMember = currentLobby->GetMember(guid);
+	assert(lobbyMember != nullptr); // If this fails, there's no service IDs available for this member
+
+	lobbyMember->UnetPeer = member["peer"].get<int>();
+	lobbyMember->Name = member["name"].get<std::string>();
+	lobbyMember->Valid = true;
+
+	for (auto &pair : member["data"].items()) {
+		for (auto &data : lobbyMember->Data) {
+			if (data.Name == pair.key()) {
+				data.Value = pair.value().get<std::string>();
+				break;
+			}
+		}
+	}
+
+	return *lobbyMember;
 }
 
 void Unet::Context::RunCallbacks()
@@ -150,10 +199,12 @@ void Unet::Context::RunCallbacks()
 						continue;
 					}
 
+					// Update member
 					member->Name = js["name"].get<std::string>();
 					member->UnetPrimaryService = peer.Service;
 					member->Valid = true;
 
+					// Send LobbyInfo to new member
 					js = json::object();
 					js["t"] = (uint8_t)LobbyPacketType::LobbyInfo;
 					js["data"] = json::object();
@@ -162,32 +213,21 @@ void Unet::Context::RunCallbacks()
 					}
 					js["members"] = json::array();
 					for (auto &member : m_currentLobby->m_members) {
-						if (!member.Valid) {
-							continue;
+						if (member.Valid) {
+							js["members"].emplace_back(SerializeMember(member));
 						}
-
-						json jsMember;
-						jsMember["guid"] = member.UnetGuid.str();
-						jsMember["peer"] = member.UnetPeer;
-						jsMember["name"] = member.Name;
-						jsMember["ids"] = json::array();
-						for (auto &id : member.IDs) {
-							jsMember["ids"].emplace_back(json::array({ (int)id.Service, id.ID }));
-						}
-						jsMember["data"] = json::object();
-						for (auto &memberData : member.Data) {
-							jsMember["data"][memberData.Name] = memberData.Value;
-						}
-						js["members"].emplace_back(jsMember);
 					}
 					msg = json::to_bson(js);
-
 					SendTo(*member, msg.data(), msg.size());
 
-					m_callbacks->OnLobbyPlayerJoined(*member);
+					// Send MemberInfo to existing members
+					js = SerializeMember(*member);
+					js["t"] = (uint8_t)LobbyPacketType::MemberInfo;
+					msg = json::to_bson(js);
+					SendToAllExcept(*member, msg.data(), msg.size());
 
-					//TODO: Send member info to all other clients
-					//TODO: Call OnLobbyMemberJoined callback
+					// Run callback
+					m_callbacks->OnLobbyPlayerJoined(*member);
 
 				} else if (type == LobbyPacketType::LobbyInfo) {
 					auto &lobbyInfo = m_currentLobby->GetInfo();
@@ -205,29 +245,7 @@ void Unet::Context::RunCallbacks()
 					}
 
 					for (auto &member : js["members"]) {
-						xg::Guid guid(member["guid"].get<std::string>());
-
-						for (auto &memberId : member["ids"]) {
-							auto service = (ServiceType)memberId[0].get<int>();
-							auto id = memberId[1].get<uint64_t>();
-
-							m_currentLobby->AddMemberService(guid, ServiceID(service, id));
-						}
-
-						auto lobbyMember = m_currentLobby->GetMember(guid);
-						assert(lobbyMember != nullptr); // If this fails, there's no service IDs available for this member
-
-						lobbyMember->UnetPeer = member["peer"].get<int>();
-						lobbyMember->Name = member["name"].get<std::string>();
-
-						for (auto &pair : member["data"].items()) {
-							for (auto &data : lobbyMember->Data) {
-								if (data.Name == pair.key()) {
-									data.Value = pair.value().get<std::string>();
-									break;
-								}
-							}
-						}
+						DeserializeMember(this, member);
 					}
 
 					for (auto &member : m_currentLobby->m_members) {
@@ -243,6 +261,15 @@ void Unet::Context::RunCallbacks()
 					//TODO: Set result.JoinGuid? It's not super important..
 					result.JoinedLobby = m_currentLobby;
 					m_callbacks->OnLobbyJoined(result);
+
+				} else if (type == LobbyPacketType::MemberInfo) {
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (lobbyInfo.IsHosting) {
+						continue;
+					}
+
+					auto &member = DeserializeMember(this, js);
+					m_callbacks->OnLobbyPlayerJoined(member);
 
 				} else if (type == LobbyPacketType::MemberNewService) {
 					auto &lobbyInfo = m_currentLobby->GetInfo();

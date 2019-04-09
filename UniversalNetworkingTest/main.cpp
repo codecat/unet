@@ -353,7 +353,7 @@ static void HandleCommand(const s2::string &line)
 			LOG_INFO("  Members: %d", (int)members.size());
 			for (auto &member : members) {
 				auto memberGuid = member.UnetGuid.str();
-				LOG_INFO("    %d: \"%s\" (%s)", member.UnetPeer, member.Name.c_str(), memberGuid.c_str());
+				LOG_INFO("    %d: \"%s\" (%s) (%s)", member.UnetPeer, member.Name.c_str(), member.Valid ? "Valid" : "Invalid", memberGuid.c_str());
 				for (auto &id : member.IDs) {
 					LOG_INFO("      %s (0x%08llX)", Unet::GetServiceNameByType(id.Service), id.ID);
 				}
