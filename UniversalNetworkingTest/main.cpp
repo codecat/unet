@@ -280,12 +280,16 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  exit");
 		LOG_INFO("  help");
 		LOG_INFO("  run <filename>      - Runs commands from a file");
+		LOG_INFO("");
 		LOG_INFO("  enable <name> [...] - Enables a service by the given name, including optional parameters");
+		LOG_INFO("  primary <name>      - Changes the primary service");
+		LOG_INFO("");
 		LOG_INFO("  status              - Prints current network status");
 		LOG_INFO("  wait                - Keeps running callbacks until a key is pressed");
+		LOG_INFO("");
 		LOG_INFO("  create [name]       - Creates a public lobby");
 		LOG_INFO("  list                - Requests all available lobbies");
-		LOG_INFO("  data [num]          - Show all lobby data by the number in the list, or the current lobby");
+		LOG_INFO("  data [num]          - Shows all lobby data by the number in the list, or the current lobby");
 		LOG_INFO("  join <num>          - Joins a lobby by the number in the list");
 		LOG_INFO("  leave               - Leaves the current lobby or cancels the join request");
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a number of random bytes on channel 0");
@@ -332,6 +336,15 @@ static void HandleCommand(const s2::string &line)
 
 		} else {
 			LOG_ERROR("Unable to find service by the name of '%s' that takes %d parameters", serviceName.c_str(), (int)parse.len() - 2);
+		}
+
+	} else if (parse[0] == "primary" && parse.len() == 2) {
+		auto serviceName = parse[1];
+		auto serviceType = Unet::GetServiceTypeByName(serviceName);
+		if (serviceType == Unet::ServiceType::None) {
+			LOG_ERROR("Unable to find service by the name of '%s'", serviceName.c_str());
+		} else {
+			g_ctx->SetPrimaryService(serviceType);
 		}
 
 	} else if (parse[0] == "status") {
