@@ -129,7 +129,7 @@ Unet::LobbyMember* Unet::Lobby::GetHostMember()
 	return GetMember(0);
 }
 
-void Unet::Lobby::AddEntryPoint(ServiceID entryPoint)
+void Unet::Lobby::AddEntryPoint(const ServiceID &entryPoint)
 {
 	auto entry = m_info.GetEntryPoint(entryPoint.Service);
 	if (entry != nullptr) {

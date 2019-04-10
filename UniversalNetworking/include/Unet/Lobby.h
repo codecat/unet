@@ -63,7 +63,7 @@ namespace Unet
 		LobbyMember* GetMember(const ServiceID &serviceId);
 		LobbyMember* GetHostMember();
 
-		void AddEntryPoint(ServiceID id);
+		void AddEntryPoint(const ServiceID &id);
 		void ServiceDisconnected(ServiceType service);
 
 		LobbyMember &AddMemberService(const xg::Guid &guid, const ServiceID &id);

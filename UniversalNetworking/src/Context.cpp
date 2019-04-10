@@ -3,6 +3,7 @@
 #include <Unet/Service.h>
 #include <Unet/Services/ServiceSteam.h>
 #include <Unet/Services/ServiceGalaxy.h>
+#include <Unet/Services/ServiceEnet.h>
 #include <Unet/Utils.h>
 #include <Unet/LobbyPacket.h>
 
@@ -128,6 +129,10 @@ static Unet::LobbyMember &DeserializeMemberIntoLobby(Unet::Lobby* lobby, const j
 
 void Unet::Context::RunCallbacks()
 {
+	for (auto service : m_services) {
+		service->RunCallbacks();
+	}
+
 	CheckCallback(this, m_callbackCreateLobby, &Context::OnLobbyCreated);
 	CheckCallback(this, m_callbackLobbyList, &Context::OnLobbyList);
 	CheckCallback(this, m_callbackLobbyJoin, &Context::OnLobbyJoined);
@@ -320,6 +325,7 @@ void Unet::Context::EnableService(ServiceType service)
 	switch (service) {
 	case ServiceType::Steam: newService = new ServiceSteam(this); break;
 	case ServiceType::Galaxy: newService = new ServiceGalaxy(this); break;
+	case ServiceType::Enet: newService = new ServiceEnet(this); break;
 	default: assert(false);
 	}
 
@@ -751,7 +757,7 @@ void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 		newMember.UnetGuid = xg::newGuid();
 		newMember.UnetPeer = 0;
 		newMember.UnetPrimaryService = m_primaryService;
-		newMember.Name = PrimaryService()->GetUserName();
+		newMember.Name = m_personaName;
 		for (auto service : m_services) {
 			newMember.IDs.emplace_back(service->GetUserID());
 		}

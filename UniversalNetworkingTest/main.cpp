@@ -6,6 +6,20 @@
 
 #include <Unet.h>
 
+#define S2_IMPL
+#include "s2string.h"
+
+#include <steam/steam_api.h>
+#include <galaxy/GalaxyApi.h>
+#include <enet/enet.h>
+
+#if defined(PLATFORM_WINDOWS)
+#include <Windows.h>
+#else
+#include <unistd.h>
+#include <poll.h>
+#endif
+
 #include "termcolor.hpp"
 #define LOG_TYPE(prefix, func) func(); printf("[" prefix "] "); termcolor::reset()
 #define LOG_ERROR(fmt, ...) LOG_TYPE("ERROR", termcolor::red); printf(fmt "\n", ##__VA_ARGS__)
@@ -17,25 +31,13 @@
 # define LOG_DEBUG(fmt, ...)
 #endif
 
-#define S2_IMPL
-#include "s2string.h"
-
-#include <steam/steam_api.h>
-#include <galaxy/GalaxyApi.h>
-
-#if defined(PLATFORM_WINDOWS)
-#include <Windows.h>
-#else
-#include <unistd.h>
-#include <poll.h>
-#endif
-
 static Unet::Context* g_ctx = nullptr;
 static bool g_keepRunning = true;
 static Unet::LobbyListResult g_lastLobbyList;
 
 static bool g_steamEnabled = false;
 static bool g_galaxyEnabled = false;
+static bool g_enetEnabled = false;
 
 class TestCallbacks : public Unet::Callbacks
 {
@@ -251,6 +253,14 @@ static void InitializeGalaxy(const char* clientId, const char* clientSecret)
 	}
 }
 
+static void InitializeEnet()
+{
+	LOG_INFO("Initializing Enet");
+
+	g_enetEnabled = true;
+	enet_initialize();
+}
+
 static bool IsKeyPressed()
 {
 #if defined(PLATFORM_WINDOWS)
@@ -283,6 +293,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("");
 		LOG_INFO("  enable <name> [...] - Enables a service by the given name, including optional parameters");
 		LOG_INFO("  primary <name>      - Changes the primary service");
+		LOG_INFO("  persona <name>      - Sets your persona name");
 		LOG_INFO("");
 		LOG_INFO("  status              - Prints current network status");
 		LOG_INFO("  wait                - Keeps running callbacks until a key is pressed");
@@ -334,6 +345,13 @@ static void HandleCommand(const s2::string &line)
 				g_ctx->EnableService(Unet::ServiceType::Galaxy);
 			}
 
+		} else if (!g_enetEnabled) {
+			InitializeEnet();
+
+			if (g_enetEnabled) {
+				g_ctx->EnableService(Unet::ServiceType::Enet);
+			}
+
 		} else {
 			LOG_ERROR("Unable to find service by the name of '%s' that takes %d parameters", serviceName.c_str(), (int)parse.len() - 2);
 		}
@@ -346,6 +364,10 @@ static void HandleCommand(const s2::string &line)
 		} else {
 			g_ctx->SetPrimaryService(serviceType);
 		}
+
+	} else if (parse[0] == "persona" && parse.len() == 2) {
+		auto nameString = parse[1];
+		g_ctx->SetPersonaName(nameString.c_str());
 
 	} else if (parse[0] == "status") {
 		auto status = g_ctx->GetStatus();
@@ -514,11 +536,12 @@ static s2::string ReadLine()
 #endif
 	printf("[%02d:%02d:%02d] ", date.tm_hour, date.tm_min, date.tm_sec);
 
-	auto status = g_ctx->GetStatus();
+	std::cout << "[" << g_ctx->GetPersonaName() << "] ";
 
 	std::cout << "[";
 	termcolor::cyan();
 
+	auto status = g_ctx->GetStatus();
 	switch (status) {
 	case Unet::ContextStatus::Idle: std::cout << "Idle"; break;
 	case Unet::ContextStatus::Connecting: std::cout << "Connecting"; break;
@@ -534,6 +557,14 @@ static s2::string ReadLine()
 		auto currentLobby = g_ctx->CurrentLobby();
 		if (currentLobby != nullptr) {
 			auto &lobbyInfo = currentLobby->GetInfo();
+
+			if (lobbyInfo.IsHosting) {
+				termcolor::red();
+				termcolor::bold();
+				std::cout << "HOST ";
+				termcolor::reset();
+			}
+
 			termcolor::green();
 			std::cout << lobbyInfo.Name;
 
@@ -584,6 +615,15 @@ int main(int argc, const char* argv[])
 			continue;
 		}
 
+		if (arg == "--enet") {
+			InitializeEnet();
+
+			if (g_enetEnabled) {
+				g_ctx->EnableService(Unet::ServiceType::Enet);
+			}
+			continue;
+		}
+
 		if (arg == "--primary" && i + 1 < argc) {
 			g_ctx->SetPrimaryService(Unet::GetServiceTypeByName(argv[++i]));
 			continue;
@@ -614,6 +654,8 @@ int main(int argc, const char* argv[])
 		delete g_authListener;
 	}
 	galaxy::api::Shutdown();
+
+	enet_deinitialize();
 
 	return 0;
 }

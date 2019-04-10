@@ -8,11 +8,13 @@ includedirs {
 	DIR_UNET .. 'include/',
 	DIR_LIB .. 'steamworks/public/',
 	DIR_LIB .. 'galaxy/Include/',
+	DIR_LIB .. 'enet/include/',
 }
 
--- Galaxy dir
+-- Library dirs
 libdirs {
 	DIR_LIB .. 'galaxy/Libraries/',
+	DIR_LIB .. 'enet/lib/',
 }
 
 -- Steam dir
@@ -21,7 +23,6 @@ if os.get() == 'windows' then
 		libdirs {
 			DIR_LIB .. 'steamworks/redistributable_bin/win64/',
 		}
-
 	configuration 'x32'
 		libdirs {
 			DIR_LIB .. 'steamworks/redistributable_bin/',
@@ -31,7 +32,6 @@ elseif os.get() == 'linux' then
 		libdirs {
 			DIR_LIB .. 'steamworks/redistributable_bin/linux64/',
 		}
-
 	configuration 'x32'
 		libdirs {
 			DIR_LIB .. 'steamworks/redistributable_bin/linux32/',
@@ -46,7 +46,6 @@ end
 if os.get() == 'windows' then
 	configuration 'x64'
 		links { 'steam_api64' }
-
 	configuration 'x32'
 		links { 'steam_api' }
 else
@@ -58,12 +57,25 @@ end
 if os.get() == 'linux' then
 	configuration 'x64'
 		links { 'Galaxy64' }
-
 	configuration 'x32'
 		links { 'Galaxy' }
 else
 	configuration {}
 		links { 'Galaxy' }
+end
+
+-- Link to enet
+configuration 'x64'
+	links { 'enet64' }
+configuration 'x32'
+	links { 'enet' }
+
+if os.get() == 'windows' then
+	configuration {}
+		links {
+			'Ws2_32',
+			'Winmm',
+		}
 end
 
 configuration {}
