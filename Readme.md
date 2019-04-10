@@ -14,3 +14,4 @@ These channels are entirely separate from the public Context `SendTo` API. There
 Below I'm listing some fun quirks I found out.
 
 * When hosting a lobby yourself, searching for lobbies will not result in your own lobby showing up in the lobby list on Galaxy, but it does on Steam.
+* While Steam's reliable packets have a send limit of 1 MB (actually 1024 * 1024), Galaxy's reliable packets don't seem to have a limit at all. It does get slower the more MB you send though, even on a gigabit network. (In my tests, transfer rate is roughly around 2 MB/s)
