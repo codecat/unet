@@ -558,7 +558,7 @@ std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
 	for (auto service : m_services) {
 		size_t packetSize;
 		if (service->IsPacketAvailable(&packetSize, 2 + channel)) {
-			auto newMessage = std::make_unique<NetworkMessage>(packetSize);
+			std::unique_ptr<NetworkMessage> newMessage(new NetworkMessage(packetSize));
 			newMessage->m_channel = channel;
 			newMessage->m_size = service->ReadPacket(newMessage->m_data, packetSize, &newMessage->m_peer, 2 + channel);
 			return newMessage;
