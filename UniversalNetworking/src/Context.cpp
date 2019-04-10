@@ -82,6 +82,7 @@ static json SerializeMember(const Unet::LobbyMember &member)
 	json js;
 	js["guid"] = member.UnetGuid.str();
 	js["peer"] = member.UnetPeer;
+	js["primary"] = (int)member.UnetPrimaryService;
 	js["name"] = member.Name;
 	js["ids"] = json::array();
 	for (auto &id : member.IDs) {
@@ -94,23 +95,22 @@ static json SerializeMember(const Unet::LobbyMember &member)
 	return js;
 }
 
-static Unet::LobbyMember &DeserializeMember(Unet::Context* ctx, const json &member)
+static Unet::LobbyMember &DeserializeMemberIntoLobby(Unet::Lobby* lobby, const json &member)
 {
-	auto currentLobby = ctx->CurrentLobby();
-
 	xg::Guid guid(member["guid"].get<std::string>());
 
 	for (auto &memberId : member["ids"]) {
 		auto service = (Unet::ServiceType)memberId[0].get<int>();
 		auto id = memberId[1].get<uint64_t>();
 
-		currentLobby->AddMemberService(guid, Unet::ServiceID(service, id));
+		lobby->AddMemberService(guid, Unet::ServiceID(service, id));
 	}
 
-	auto lobbyMember = currentLobby->GetMember(guid);
+	auto lobbyMember = lobby->GetMember(guid);
 	assert(lobbyMember != nullptr); // If this fails, there's no service IDs available for this member
 
 	lobbyMember->UnetPeer = member["peer"].get<int>();
+	lobbyMember->UnetPrimaryService = (Unet::ServiceType)member["primary"].get<int>();
 	lobbyMember->Name = member["name"].get<std::string>();
 	lobbyMember->Valid = true;
 
@@ -253,7 +253,7 @@ void Unet::Context::RunCallbacks()
 					}
 
 					for (auto &member : js["members"]) {
-						DeserializeMember(this, member);
+						DeserializeMemberIntoLobby(CurrentLobby(), member);
 					}
 
 					for (auto &member : m_currentLobby->m_members) {
@@ -276,7 +276,7 @@ void Unet::Context::RunCallbacks()
 						continue;
 					}
 
-					auto &member = DeserializeMember(this, js);
+					auto &member = DeserializeMemberIntoLobby(CurrentLobby(), js);
 					m_callbacks->OnLobbyPlayerJoined(member);
 
 				} else if (type == LobbyPacketType::MemberNewService) {
@@ -748,6 +748,7 @@ void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 		LobbyMember newMember(this);
 		newMember.UnetGuid = xg::newGuid();
 		newMember.UnetPeer = 0;
+		newMember.UnetPrimaryService = m_primaryService;
 		newMember.Name = PrimaryService()->GetUserName();
 		for (auto service : m_services) {
 			newMember.IDs.emplace_back(service->GetUserID());
