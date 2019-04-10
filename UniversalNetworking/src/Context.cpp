@@ -572,9 +572,7 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 	// Sending a message to yourself isn't very useful.
 	assert(member.UnetPeer != m_localPeer);
 
-	//TODO: Make something smarter for which service to pick
-
-	auto id = member.GetPrimaryServiceID();
+	auto id = member.GetDataServiceID();
 	assert(id.IsValid());
 	if (!id.IsValid()) {
 		return;
@@ -674,9 +672,13 @@ void Unet::Context::InternalSendTo(LobbyMember &member, uint8_t* data, size_t si
 	// Sending a message to yourself isn't very useful.
 	assert(member.UnetPeer != m_localPeer);
 
-	auto id = member.GetPrimaryServiceID();
-	auto service = GetService(id.Service);
+	auto id = member.GetDataServiceID();
+	assert(id.IsValid());
+	if (!id.IsValid()) {
+		return;
+	}
 
+	auto service = GetService(id.Service);
 	assert(service != nullptr);
 	if (service == nullptr) {
 		return;

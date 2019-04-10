@@ -34,7 +34,7 @@ namespace Unet
 		LobbyMember(Context* ctx);
 
 		ServiceID GetServiceID(ServiceType type) const;
-		ServiceID GetPrimaryServiceID() const;
+		ServiceID GetDataServiceID() const;
 	};
 
 	class Lobby

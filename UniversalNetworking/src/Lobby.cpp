@@ -18,24 +18,35 @@ Unet::ServiceID Unet::LobbyMember::GetServiceID(ServiceType type) const
 	return ServiceID();
 }
 
-Unet::ServiceID Unet::LobbyMember::GetPrimaryServiceID() const
+Unet::ServiceID Unet::LobbyMember::GetDataServiceID() const
 {
 	assert(IDs.size() > 0);
 
+	// Prefer our primary service, if the client supports it
 	for (auto &id : IDs) {
-		if (id.Service == UnetPrimaryService) {
-			return id;
-		}
-
 		if (id.Service == m_ctx->m_primaryService) {
 			return id;
 		}
+	}
 
+	// Prefer the client's primary service, if we support it
+	for (auto &id : IDs) {
+		if (id.Service == UnetPrimaryService) {
+			if (m_ctx->GetService(id.Service) != nullptr) {
+				return id;
+			}
+			break;
+		}
+	}
+
+	// As a fallback, just pick any ID that we support
+	for (auto &id : IDs) {
 		if (m_ctx->GetService(id.Service) != nullptr) {
 			return id;
 		}
 	}
 
+	// We can't send messages to this member
 	return ServiceID();
 }
 
