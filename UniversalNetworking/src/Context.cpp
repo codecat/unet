@@ -30,6 +30,10 @@ Unet::Context::~Context()
 	if (m_callbacks != nullptr) {
 		delete m_callbacks;
 	}
+
+	for (auto service : m_services) {
+		delete service;
+	}
 }
 
 Unet::ContextStatus Unet::Context::GetStatus()
@@ -143,6 +147,10 @@ void Unet::Context::RunCallbacks()
 	if (m_currentLobby != nullptr) {
 		for (auto service : m_services) {
 			size_t packetSize;
+
+			//TODO: Implement relay channel packet handling (channel 1)
+
+			//TODO: Move channel 0 packet handling to Lobby class
 			while (service->IsPacketAvailable(&packetSize, 0)) {
 				m_callbacks->OnLogDebug(strPrintF("[P2P] [%s] %d bytes", GetServiceNameByType(service->GetType()), (int)packetSize));
 
@@ -535,8 +543,37 @@ const std::string &Unet::Context::GetPersonaName()
 	return m_personaName;
 }
 
-void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, int channel)
+bool Unet::Context::IsMessageAvailable(int channel)
 {
+	for (auto service : m_services) {
+		if (service->IsPacketAvailable(nullptr, 2 + channel)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
+{
+	for (auto service : m_services) {
+		size_t packetSize;
+		if (service->IsPacketAvailable(&packetSize, 2 + channel)) {
+			auto newMessage = std::make_unique<NetworkMessage>(packetSize);
+			newMessage->m_channel = channel;
+			newMessage->m_size = service->ReadPacket(newMessage->m_data, packetSize, &newMessage->m_peer, 2 + channel);
+			return newMessage;
+		}
+	}
+	return nullptr;
+}
+
+void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type, int channel)
+{
+	// Sending a message to yourself isn't very useful.
+	assert(member.UnetPeer != m_localPeer);
+
+	//TODO: Make something smarter for which service to pick
+
 	auto id = member.GetPrimaryServiceID();
 	assert(id.IsValid());
 	if (!id.IsValid()) {
@@ -546,19 +583,71 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, int 
 	auto service = GetService(id.Service);
 	if (service == nullptr) {
 		//TODO: Send relay message to host on channel 1
+		assert(false);
+		return;
+	}
+
+	service->SendPacket(id, data, size, type, channel + 2);
+}
+
+void Unet::Context::SendToAll(uint8_t* data, size_t size, PacketType type, int channel)
+{
+	assert(m_currentLobby != nullptr);
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	for (auto &member : m_currentLobby->m_members) {
+		if (!member.Valid) {
+			continue;
+		}
+
+		if (member.UnetPeer == m_localPeer) {
+			continue;
+		}
+
+		SendTo(member, data, size, type, channel);
 	}
 }
 
-void Unet::Context::SendToAll(uint8_t* data, size_t size, int channel)
+void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type, int channel)
 {
+	assert(m_currentLobby != nullptr);
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	for (auto &member : m_currentLobby->m_members) {
+		if (!member.Valid) {
+			continue;
+		}
+
+		if (member.UnetPeer == m_localPeer) {
+			continue;
+		}
+
+		if (member.UnetPeer == exceptMember.UnetPeer) {
+			continue;
+		}
+
+		SendTo(member, data, size, type, channel);
+	}
 }
 
-void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, int channel)
+void Unet::Context::SendToHost(uint8_t* data, size_t size, PacketType type, int channel)
 {
-}
+	assert(m_currentLobby != nullptr);
+	if (m_currentLobby == nullptr) {
+		return;
+	}
 
-void Unet::Context::SendToHost(uint8_t* data, size_t size, int channel)
-{
+	auto hostMember = m_currentLobby->GetHostMember();
+	assert(hostMember != nullptr);
+	if (hostMember == nullptr) {
+		return;
+	}
+
+	SendTo(*hostMember, data, size, type, channel);
 }
 
 Unet::Service* Unet::Context::PrimaryService()
@@ -582,6 +671,9 @@ void Unet::Context::InternalSendTo(LobbyMember &member, uint8_t* data, size_t si
 {
 	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
 
+	// Sending a message to yourself isn't very useful.
+	assert(member.UnetPeer != m_localPeer);
+
 	auto id = member.GetPrimaryServiceID();
 	auto service = GetService(id.Service);
 
@@ -589,9 +681,6 @@ void Unet::Context::InternalSendTo(LobbyMember &member, uint8_t* data, size_t si
 	if (service == nullptr) {
 		return;
 	}
-
-	// Sending a message to yourself isn't very useful.
-	assert(member.UnetPeer != m_localPeer);
 
 	service->SendPacket(id, data, size, PacketType::Reliable, 0);
 }

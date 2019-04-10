@@ -6,6 +6,7 @@
 #include <Unet/Lobby.h>
 #include <Unet/Service.h>
 #include <Unet/MultiCallback.h>
+#include <Unet/NetworkMessage.h>
 
 namespace Unet
 {
@@ -54,10 +55,13 @@ namespace Unet
 		void SetPersonaName(const std::string &str);
 		const std::string &GetPersonaName();
 
-		void SendTo(LobbyMember &member, uint8_t* data, size_t size, int channel = 0);
-		void SendToAll(uint8_t* data, size_t size, int channel = 0);
-		void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, int channel = 0);
-		void SendToHost(uint8_t* data, size_t size, int channel = 0);
+		bool IsMessageAvailable(int channel);
+		std::unique_ptr<NetworkMessage> ReadMessage(int channel);
+
+		void SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
+		void SendToAll(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
+		void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
+		void SendToHost(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
 
 	private:
 		Service* PrimaryService();

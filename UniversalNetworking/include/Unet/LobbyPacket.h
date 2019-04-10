@@ -21,11 +21,4 @@ namespace Unet
 		/// Sent by the server the indicate that a member has connected with a new service ID
 		MemberNewService,
 	};
-
-	/*
-	class LobbyPacket
-	{
-	public:
-	};
-	*/
 }

@@ -139,6 +139,17 @@ static void RunCallbacks()
 	}
 
 	g_ctx->RunCallbacks();
+
+	while (g_ctx->IsMessageAvailable(0)) {
+		auto msg = g_ctx->ReadMessage(0);
+		auto member = g_ctx->CurrentLobby()->GetMember(msg->m_peer);
+		if (member == nullptr) {
+			assert(false);
+			LOG_ERROR("Received message from a non-member!");
+		} else {
+			LOG_INFO("Received message on channel %d: %d bytes from %s ID 0x%08llX (%s)", msg->m_channel, (int)msg->m_size, Unet::GetServiceNameByType(msg->m_peer.Service), msg->m_peer.ID, member->Name.c_str());
+		}
+	}
 }
 
 static void InitializeSteam(const char* appId)
@@ -277,6 +288,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  data [num]          - Show all lobby data by the number in the list, or the current lobby");
 		LOG_INFO("  join <num>          - Joins a lobby by the number in the list");
 		LOG_INFO("  leave               - Leaves the current lobby or cancels the join request");
+		LOG_INFO("  send <peer> <num>   - Sends the given peer a number of random bytes on channel 0");
 		LOG_INFO("");
 		LOG_INFO("Or just hit Enter to run callbacks.");
 
@@ -429,6 +441,30 @@ static void HandleCommand(const s2::string &line)
 
 	} else if (parse[0] == "leave") {
 		g_ctx->LeaveLobby();
+
+	} else if (parse[0] == "send" && parse.len() == 3) {
+		int peer = atoi(parse[1]);
+		int num = atoi(parse[2]);
+
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		auto member = currentLobby->GetMember(peer);
+		if (member == nullptr) {
+			LOG_ERROR("Peer ID %d does not belong to a member!", peer);
+			return;
+		}
+
+		uint8_t* bytes = (uint8_t*)calloc(1, num);
+		for (int i = 0; i < num; i++) {
+			bytes[i] = (uint8_t)(rand() % 255);
+		}
+		g_ctx->SendTo(*member, bytes, num);
+
+		LOG_INFO("%d bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
 
 	} else {
 		LOG_ERROR("Unknown command \"%s\"! Try \"help\".", parse[0].c_str());
