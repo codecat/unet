@@ -54,13 +54,19 @@ namespace Unet
 		void SetPersonaName(const std::string &str);
 		const std::string &GetPersonaName();
 
+		void SendTo(LobbyMember &member, uint8_t* data, size_t size, int channel = 0);
+		void SendToAll(uint8_t* data, size_t size, int channel = 0);
+		void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, int channel = 0);
+		void SendToHost(uint8_t* data, size_t size, int channel = 0);
+
 	private:
 		Service* PrimaryService();
 		Service* GetService(ServiceType type);
 
-		void SendTo(LobbyMember &member, uint8_t* data, size_t size);
-		void SendToAll(uint8_t* data, size_t size);
-		void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size);
+		void InternalSendTo(LobbyMember &member, uint8_t* data, size_t size);
+		void InternalSendToAll(uint8_t* data, size_t size);
+		void InternalSendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size);
+		void InternalSendToHost(uint8_t* data, size_t size);
 
 	private:
 		void OnLobbyCreated(const CreateLobbyResult &result);

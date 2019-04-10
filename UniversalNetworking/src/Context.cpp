@@ -182,7 +182,7 @@ void Unet::Context::RunCallbacks()
 						js["id"] = peer.ID;
 						msg = json::to_bson(js);
 
-						SendToAll(msg.data(), msg.size());
+						InternalSendToAll(msg.data(), msg.size());
 					}
 
 				} else if (type == LobbyPacketType::Hello) {
@@ -218,13 +218,13 @@ void Unet::Context::RunCallbacks()
 						}
 					}
 					msg = json::to_bson(js);
-					SendTo(*member, msg.data(), msg.size());
+					InternalSendTo(*member, msg.data(), msg.size());
 
 					// Send MemberInfo to existing members
 					js = SerializeMember(*member);
 					js["t"] = (uint8_t)LobbyPacketType::MemberInfo;
 					msg = json::to_bson(js);
-					SendToAllExcept(*member, msg.data(), msg.size());
+					InternalSendToAllExcept(*member, msg.data(), msg.size());
 
 					// Run callback
 					m_callbacks->OnLobbyPlayerJoined(*member);
@@ -535,6 +535,32 @@ const std::string &Unet::Context::GetPersonaName()
 	return m_personaName;
 }
 
+void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, int channel)
+{
+	auto id = member.GetPrimaryServiceID();
+	assert(id.IsValid());
+	if (!id.IsValid()) {
+		return;
+	}
+
+	auto service = GetService(id.Service);
+	if (service == nullptr) {
+		//TODO: Send relay message to host on channel 1
+	}
+}
+
+void Unet::Context::SendToAll(uint8_t* data, size_t size, int channel)
+{
+}
+
+void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, int channel)
+{
+}
+
+void Unet::Context::SendToHost(uint8_t* data, size_t size, int channel)
+{
+}
+
 Unet::Service* Unet::Context::PrimaryService()
 {
 	auto ret = GetService(m_primaryService);
@@ -552,7 +578,7 @@ Unet::Service* Unet::Context::GetService(ServiceType type)
 	return nullptr;
 }
 
-void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size)
+void Unet::Context::InternalSendTo(LobbyMember &member, uint8_t* data, size_t size)
 {
 	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
 
@@ -570,7 +596,7 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size)
 	service->SendPacket(id, data, size, PacketType::Reliable, 0);
 }
 
-void Unet::Context::SendToAll(uint8_t* data, size_t size)
+void Unet::Context::InternalSendToAll(uint8_t* data, size_t size)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -579,12 +605,12 @@ void Unet::Context::SendToAll(uint8_t* data, size_t size)
 
 	for (auto &member : m_currentLobby->m_members) {
 		if (member.UnetPeer != m_localPeer) {
-			SendTo(member, data, size);
+			InternalSendTo(member, data, size);
 		}
 	}
 }
 
-void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size)
+void Unet::Context::InternalSendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -593,9 +619,25 @@ void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, si
 
 	for (auto &member : m_currentLobby->m_members) {
 		if (member.UnetPeer != m_localPeer && member.UnetPeer != exceptMember.UnetPeer) {
-			SendTo(member, data, size);
+			InternalSendTo(member, data, size);
 		}
 	}
+}
+
+void Unet::Context::InternalSendToHost(uint8_t* data, size_t size)
+{
+	assert(m_currentLobby != nullptr);
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	auto hostMember = m_currentLobby->GetHostMember();
+	assert(hostMember != nullptr);
+	if (hostMember == nullptr) {
+		return;
+	}
+
+	InternalSendTo(*hostMember, data, size);
 }
 
 void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
