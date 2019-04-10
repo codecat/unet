@@ -78,6 +78,13 @@ void Unet::ServiceSteam::LeaveLobby()
 
 	SteamMatchmaking()->LeaveLobby((uint64)entryPoint->ID);
 
+	for (auto &member : lobby->GetMembers()) {
+		auto id = member.GetServiceID(ServiceType::Steam);
+		if (id.IsValid()) {
+			SteamNetworking()->CloseP2PSessionWithUser((uint64)id.ID);
+		}
+	}
+
 	auto serviceRequest = m_ctx->m_callbackLobbyLeft.AddServiceRequest(this);
 	serviceRequest->Code = Result::OK;
 	serviceRequest->Data->Reason = Unet::LeaveReason::UserLeave;
@@ -343,6 +350,8 @@ void Unet::ServiceSteam::OnLobbyChatUpdate(LobbyChatUpdate_t* result)
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player entered: 0x%08llX", result->m_ulSteamIDUserChanged));
 	} else if (BChatMemberStateChangeRemoved(result->m_rgfChatMemberStateChange)) {
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%08llX (code %X)", result->m_ulSteamIDUserChanged, result->m_rgfChatMemberStateChange));
+
+		SteamNetworking()->CloseP2PSessionWithUser(result->m_ulSteamIDUserChanged);
 
 		currentLobby->RemoveMemberService(ServiceID(ServiceType::Steam, result->m_ulSteamIDUserChanged));
 	}

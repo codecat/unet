@@ -386,6 +386,12 @@ static void HandleCommand(const s2::string &line)
 		}
 		g_ctx->CreateLobby(Unet::LobbyPrivacy::Public, 16, name.c_str());
 
+		LOG_INFO("Creating lobby");
+
+		while (g_ctx->GetStatus() == Unet::ContextStatus::Connecting) {
+			RunCallbacks();
+		}
+
 	} else if (parse[0] == "list") {
 		g_ctx->GetLobbyList();
 
@@ -439,8 +445,18 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("Joining \"%s\"", lobbyInfo.Name.c_str());
 		g_ctx->JoinLobby(lobbyInfo);
 
+		while (g_ctx->GetStatus() == Unet::ContextStatus::Connecting) {
+			RunCallbacks();
+		}
+
 	} else if (parse[0] == "leave") {
 		g_ctx->LeaveLobby();
+
+		LOG_INFO("Leaving lobby");
+
+		while (g_ctx->GetStatus() == Unet::ContextStatus::Connected) {
+			RunCallbacks();
+		}
 
 	} else if (parse[0] == "send" && parse.len() == 3) {
 		int peer = atoi(parse[1]);
@@ -458,11 +474,14 @@ static void HandleCommand(const s2::string &line)
 			return;
 		}
 
-		uint8_t* bytes = (uint8_t*)calloc(1, num);
-		for (int i = 0; i < num; i++) {
-			bytes[i] = (uint8_t)(rand() % 255);
+		uint8_t* bytes = (uint8_t*)malloc(num);
+		if (bytes != nullptr) {
+			for (int i = 0; i < num; i++) {
+				bytes[i] = (uint8_t)(rand() % 255);
+			}
+			g_ctx->SendTo(*member, bytes, num);
+			free(bytes);
 		}
-		g_ctx->SendTo(*member, bytes, num);
 
 		LOG_INFO("%d bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
 
