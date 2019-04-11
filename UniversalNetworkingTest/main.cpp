@@ -503,6 +503,10 @@ static void HandleCommand(const s2::string &line)
 		addr.port = (enet_uint16)atoi(strPort);
 		g_ctx->JoinLobby(Unet::ServiceID(Unet::ServiceType::Enet, *(uint64_t*)&addr));
 
+		while (g_ctx->GetStatus() == Unet::ContextStatus::Connecting) {
+			RunCallbacks();
+		}
+
 	} else if (parse[0] == "leave") {
 		g_ctx->LeaveLobby();
 

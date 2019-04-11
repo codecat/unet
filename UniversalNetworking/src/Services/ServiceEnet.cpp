@@ -1,6 +1,10 @@
 #include <Unet_common.h>
 #include <Unet/Services/ServiceEnet.h>
 #include <Unet/Utils.h>
+#include <Unet/LobbyPacket.h>
+
+#include <Unet/json.hpp>
+using json = nlohmann::json;
 
 #define UNET_PORT 4450
 
@@ -32,12 +36,47 @@ void Unet::ServiceEnet::RunCallbacks()
 	ENetEvent ev;
 	while (enet_host_service(m_host, &ev, 0)) {
 		if (ev.type == ENET_EVENT_TYPE_CONNECT) {
-			m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connect event: %08X", ev.peer->address.host));
+			if (m_requestLobbyJoin != nullptr && m_requestLobbyJoin->Code != Result::OK) {
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connection to host established: %08llX", *(uint64_t*)& ev.peer->address));
 
-			if (m_requestLobbyJoin != nullptr) {
 				m_requestLobbyJoin->Code = Result::OK;
 				m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(AddressToID(ev.peer->address));
+
+				json js;
+				js["t"] = (uint8_t)LobbyPacketType::Handshake;
+				js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
+				std::vector<uint8_t> msg = json::to_bson(js);
+
+				ENetPacket* newPacket = enet_packet_create(msg.data(), msg.size(), ENET_PACKET_FLAG_RELIABLE);
+				enet_peer_send(m_peerHost, 0, newPacket);
+
+			} else {
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client connected: %08llX", *(uint64_t*)&ev.peer->address));
 			}
+
+		} else if (ev.type == ENET_EVENT_TYPE_DISCONNECT) {
+			if (m_requestLobbyLeft != nullptr && m_requestLobbyLeft->Code != Result::OK) {
+				m_ctx->GetCallbacks()->OnLogDebug("[Enet] Disconnected from host");
+
+				enet_host_destroy(m_host);
+				m_host = nullptr;
+				m_peerHost = nullptr;
+
+				m_requestLobbyLeft->Code = Result::OK;
+
+			} else {
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client disconnected: %08llX", *(uint64_t*)&ev.peer->address));
+
+				auto currentLobby = m_ctx->CurrentLobby();
+				if (currentLobby != nullptr) {
+					currentLobby->RemoveMemberService(AddressToID(ev.peer->address));
+				}
+			}
+
+		} else if (ev.type == ENET_EVENT_TYPE_RECEIVE) {
+			//TODO: Queue up messages internally
+			m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Message received from %08llX: %d bytes", *(uint64_t*)&ev.peer->address, (int)ev.packet->dataLength));
+			enet_packet_destroy(ev.packet);
 		}
 	}
 }
@@ -49,7 +88,7 @@ Unet::ServiceType Unet::ServiceEnet::GetType()
 
 Unet::ServiceID Unet::ServiceEnet::GetUserID()
 {
-	//TODO: Use local IP or something
+	//TODO: Use local IP or something (or use the peer we receive in the connect event? that seems like our IP!)
 	return ServiceID(ServiceType::Enet, 0);
 }
 
@@ -68,6 +107,7 @@ void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	size_t maxChannels = 3; //TODO: Make this customizable (minimum is 3!)
 
 	m_host = enet_host_create(&addr, maxPlayers, maxChannels, 0, 0);
+	m_peerHost = nullptr;
 
 	auto req = m_ctx->m_callbackCreateLobby.AddServiceRequest(this);
 	req->Data->CreatedLobby->AddEntryPoint(AddressToID(addr));
@@ -92,26 +132,37 @@ void Unet::ServiceEnet::JoinLobby(const ServiceID &id)
 	size_t maxChannels = 3; //TODO: Make this customizable (minimum is 3!)
 
 	m_host = enet_host_create(nullptr, 1, maxChannels, 0, 0);
-	ENetPeer* peer = enet_host_connect(m_host, &addr, maxChannels, 0);
+	m_peerHost = enet_host_connect(m_host, &addr, maxChannels, 0);
+
+	m_peers.clear();
+	m_peers.emplace_back(m_peerHost);
 }
 
 void Unet::ServiceEnet::LeaveLobby()
 {
-	auto req = m_ctx->m_callbackLobbyLeft.AddServiceRequest(this);
-	req->Data->Reason = LeaveReason::UserLeave;
-	req->Code = Result::OK;
+	m_requestLobbyLeft = m_ctx->m_callbackLobbyLeft.AddServiceRequest(this);
+	m_requestLobbyLeft->Data->Reason = LeaveReason::UserLeave;
+
+	if (m_peerHost != nullptr) {
+		enet_peer_disconnect(m_peerHost, 0);
+
+	} else {
+		enet_host_destroy(m_host);
+		m_host = nullptr;
+
+		m_requestLobbyLeft->Code = Result::OK;
+	}
 }
 
 int Unet::ServiceEnet::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 {
 	//TODO
-	return 0;
+	return m_host->peerCount;
 }
 
 Unet::ServiceID Unet::ServiceEnet::GetLobbyHost(const ServiceID &lobbyId)
 {
-	//TODO
-	return ServiceID();
+	return AddressToID(m_peerHost->address);
 }
 
 std::string Unet::ServiceEnet::GetLobbyData(const ServiceID &lobbyId, const char* name)

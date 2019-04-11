@@ -18,7 +18,11 @@ namespace Unet
 	private:
 		ENetHost* m_host = nullptr;
 
+		ENetPeer* m_peerHost = nullptr;
+		std::vector<ENetPeer*> m_peers;
+
 		MultiCallback<LobbyJoinResult>::ServiceRequest* m_requestLobbyJoin = nullptr;
+		MultiCallback<LobbyLeftResult>::ServiceRequest* m_requestLobbyLeft = nullptr;
 
 	public:
 		ServiceEnet(Context* ctx);
