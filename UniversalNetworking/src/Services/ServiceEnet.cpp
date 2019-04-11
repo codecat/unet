@@ -30,7 +30,7 @@ void Unet::ServiceEnet::RunCallbacks()
 	}
 
 	ENetEvent ev;
-	while (enet_host_check_events(m_host, &ev)) {
+	while (enet_host_service(m_host, &ev, 0)) {
 		if (ev.type == ENET_EVENT_TYPE_CONNECT) {
 			m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connect event: %08X", ev.peer->address.host));
 
