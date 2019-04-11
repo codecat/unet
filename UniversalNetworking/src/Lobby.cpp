@@ -247,6 +247,16 @@ void Unet::Lobby::RemoveMemberService(const ServiceID &id)
 	}
 }
 
+void Unet::Lobby::RemoveMember(const LobbyMember &member)
+{
+	LobbyMember callbackCopy = member;
+
+	size_t i = &member - m_members.data();
+	m_members.erase(m_members.begin() + i);
+
+	m_ctx->OnLobbyPlayerLeft(callbackCopy);
+}
+
 void Unet::Lobby::SetData(const char* name, const std::string &value)
 {
 	if (!m_info.IsHosting) {

@@ -284,6 +284,22 @@ void Unet::Context::RunCallbacks()
 					auto &member = DeserializeMemberIntoLobby(CurrentLobby(), js);
 					m_callbacks->OnLobbyPlayerJoined(member);
 
+				} else if (type == LobbyPacketType::MemberLeft) {
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (lobbyInfo.IsHosting) {
+						continue;
+					}
+
+					xg::Guid guid(js["guid"].get<std::string>());
+
+					auto member = m_currentLobby->GetMember(guid);
+					assert(member != nullptr);
+					if (member == nullptr) {
+						continue;
+					}
+
+					m_currentLobby->RemoveMember(*member);
+
 				} else if (type == LobbyPacketType::MemberNewService) {
 					auto &lobbyInfo = m_currentLobby->GetInfo();
 					if (lobbyInfo.IsHosting) {
