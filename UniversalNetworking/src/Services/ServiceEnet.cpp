@@ -286,7 +286,11 @@ size_t Unet::ServiceEnet::ReadPacket(void* data, size_t maxSize, ServiceID* peer
 	memcpy(data, packet.Packet->data, actualSize);
 
 	if (peerId != nullptr) {
-		*peerId = AddressToID(packet.Peer->address);
+		if (packet.Peer == m_peerHost) {
+			*peerId = ServiceID(ServiceType::Enet, 0);
+		} else {
+			*peerId = AddressToID(packet.Peer->address);
+		}
 	}
 
 	enet_packet_destroy(packet.Packet);
