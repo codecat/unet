@@ -240,6 +240,10 @@ size_t Unet::ServiceEnet::ReadPacket(void* data, size_t maxSize, ServiceID* peer
 
 bool Unet::ServiceEnet::IsPacketAvailable(size_t* outPacketSize, uint8_t channel)
 {
+	if (m_host == nullptr) {
+		return false;
+	}
+
 	if (channel >= m_channels.size()) {
 		assert(false);
 		return false;
