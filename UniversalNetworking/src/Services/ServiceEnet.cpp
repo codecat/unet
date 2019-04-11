@@ -93,10 +93,7 @@ void Unet::ServiceEnet::RunCallbacks()
 
 				auto it = std::find(m_peers.begin(), m_peers.end(), ev.peer);
 				if (it == m_peers.end()) {
-					printf("=== Adding peer from connection\n");
 					m_peers.emplace_back(ev.peer);
-				} else {
-					printf("=== Peer is already in list\n");
 				}
 			}
 
