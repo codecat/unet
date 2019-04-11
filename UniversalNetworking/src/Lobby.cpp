@@ -243,7 +243,7 @@ void Unet::Lobby::RemoveMemberService(const ServiceID &id)
 		size_t i = member - m_members.data();
 		m_members.erase(m_members.begin() + i);
 
-		m_ctx->m_callbacks->OnLobbyPlayerLeft(callbackCopy);
+		m_ctx->OnLobbyPlayerLeft(callbackCopy);
 	}
 }
 

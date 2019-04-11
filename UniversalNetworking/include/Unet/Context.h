@@ -52,6 +52,7 @@ namespace Unet
 		std::vector<LobbyData> GetLobbyData(const LobbyInfo &lobbyInfo);
 
 		Lobby* CurrentLobby();
+		int GetLocalPeer();
 
 		void SetPersonaName(const std::string &str);
 		const std::string &GetPersonaName();
@@ -78,6 +79,8 @@ namespace Unet
 		void OnLobbyList(const LobbyListResult &result);
 		void OnLobbyJoined(const LobbyJoinResult &result);
 		void OnLobbyLeft(const LobbyLeftResult &result);
+
+		void OnLobbyPlayerLeft(const LobbyMember &member);
 
 	private:
 		std::string m_personaName;
