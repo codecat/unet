@@ -1,5 +1,6 @@
 #include <Unet_common.h>
 #include <Unet/Services/ServiceEnet.h>
+#include <Unet/Utils.h>
 
 #define UNET_PORT 4450
 
@@ -31,8 +32,12 @@ void Unet::ServiceEnet::RunCallbacks()
 	ENetEvent ev;
 	while (enet_host_check_events(m_host, &ev)) {
 		if (ev.type == ENET_EVENT_TYPE_CONNECT) {
-			m_requestLobbyJoin->Code = Result::OK;
-			m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(AddressToID(ev.peer->address));
+			m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connect event: %08X", ev.peer->address.host));
+
+			if (m_requestLobbyJoin != nullptr) {
+				m_requestLobbyJoin->Code = Result::OK;
+				m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(AddressToID(ev.peer->address));
+			}
 		}
 	}
 }
@@ -62,7 +67,7 @@ void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 
 	size_t maxChannels = 3; //TODO: Make this customizable (minimum is 3!)
 
-	ENetHost* hostServer = enet_host_create(&addr, maxPlayers, maxChannels, 0, 0);
+	m_host = enet_host_create(&addr, maxPlayers, maxChannels, 0, 0);
 
 	auto req = m_ctx->m_callbackCreateLobby.AddServiceRequest(this);
 	req->Data->CreatedLobby->AddEntryPoint(AddressToID(addr));
@@ -86,8 +91,8 @@ void Unet::ServiceEnet::JoinLobby(const ServiceID &id)
 	auto addr = IDToAddress(id);
 	size_t maxChannels = 3; //TODO: Make this customizable (minimum is 3!)
 
-	ENetHost* hostClient = enet_host_create(nullptr, 1, maxChannels, 0, 0);
-	ENetPeer* peer = enet_host_connect(hostClient, &addr, maxChannels, 0);
+	m_host = enet_host_create(nullptr, 1, maxChannels, 0, 0);
+	ENetPeer* peer = enet_host_connect(m_host, &addr, maxChannels, 0);
 }
 
 void Unet::ServiceEnet::LeaveLobby()

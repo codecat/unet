@@ -40,6 +40,7 @@ namespace Unet
 		void CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name = nullptr);
 		void GetLobbyList();
 		void JoinLobby(LobbyInfo &lobbyInfo);
+		void JoinLobby(const ServiceID &id);
 		void LeaveLobby();
 
 		/// Get maximum number of players as reported by services.

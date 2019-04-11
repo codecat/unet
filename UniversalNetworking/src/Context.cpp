@@ -406,6 +406,36 @@ void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 	}
 }
 
+void Unet::Context::JoinLobby(const ServiceID &id)
+{
+	if (m_status != ContextStatus::Idle) {
+		m_callbacks->OnLogError("Can't join new lobby while still in a lobby!");
+		return;
+	}
+
+	auto service = GetService(id.Service);
+	if (service == nullptr) {
+		m_callbacks->OnLogError(strPrintF("Can't join lobby with service ID for %d, service is not enabled!", GetServiceNameByType(id.Service)));
+		return;
+	}
+
+	m_status = ContextStatus::Connecting;
+
+	m_callbackLobbyJoin.Begin();
+
+	m_localGuid = xg::newGuid();
+	m_localPeer = -1;
+
+	auto &result = m_callbackLobbyJoin.GetResult();
+	result.JoinGuid = m_localGuid;
+
+	LobbyInfo newLobbyInfo;
+	newLobbyInfo.EntryPoints.emplace_back(id);
+	result.JoinedLobby = new Lobby(this, newLobbyInfo);
+
+	service->JoinLobby(id);
+}
+
 void Unet::Context::LeaveLobby()
 {
 	if (m_status == ContextStatus::Connected) {

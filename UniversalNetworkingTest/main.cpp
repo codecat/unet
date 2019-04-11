@@ -302,6 +302,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  list                - Requests all available lobbies");
 		LOG_INFO("  data [num]          - Shows all lobby data by the number in the list, or the current lobby");
 		LOG_INFO("  join <num>          - Joins a lobby by the number in the list");
+		LOG_INFO("  connect <ip> [port] - Connect to a server directly by IP address (if enet is enabled)");
 		LOG_INFO("  leave               - Leaves the current lobby or cancels the join request");
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a number of random bytes on channel 0");
 		LOG_INFO("");
@@ -483,6 +484,24 @@ static void HandleCommand(const s2::string &line)
 		while (g_ctx->GetStatus() == Unet::ContextStatus::Connecting) {
 			RunCallbacks();
 		}
+
+	} else if (parse[0] == "connect" && parse.len() >= 2) {
+		if (!g_enetEnabled) {
+			LOG_ERROR("Enet is not enabled!");
+			return;
+		}
+
+		s2::string strIP = parse[1];
+		s2::string strPort = "4450";
+
+		if (parse.len() == 3) {
+			strPort = parse[2];
+		}
+
+		ENetAddress addr;
+		enet_address_set_host(&addr, strIP);
+		addr.port = (enet_uint16)atoi(strPort);
+		g_ctx->JoinLobby(Unet::ServiceID(Unet::ServiceType::Enet, *(uint64_t*)&addr));
 
 	} else if (parse[0] == "leave") {
 		g_ctx->LeaveLobby();
