@@ -40,12 +40,8 @@ Unet::ServiceEnet::~ServiceEnet()
 
 void Unet::ServiceEnet::RunCallbacks()
 {
-	if (m_host == nullptr) {
-		return;
-	}
-
 	ENetEvent ev;
-	while (enet_host_service(m_host, &ev, 0)) {
+	while (m_host != nullptr && enet_host_service(m_host, &ev, 0)) {
 		if (ev.type == ENET_EVENT_TYPE_CONNECT) {
 			if (m_requestLobbyJoin != nullptr && m_requestLobbyJoin->Code != Result::OK) {
 				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connection to host established: %08llX", AddressToInt(ev.peer->address)));
@@ -105,7 +101,7 @@ Unet::ServiceType Unet::ServiceEnet::GetType()
 
 Unet::ServiceID Unet::ServiceEnet::GetUserID()
 {
-	//TODO: Use local IP or something
+	//TODO: Use local IP or something?
 	return ServiceID(ServiceType::Enet, 0);
 }
 
@@ -272,6 +268,10 @@ bool Unet::ServiceEnet::IsPacketAvailable(size_t* outPacketSize, uint8_t channel
 
 ENetPeer* Unet::ServiceEnet::GetPeer(const ServiceID &id)
 {
+	if (id.IsValid() && id.ID == 0) {
+		return m_peerHost;
+	}
+
 	for (auto peer : m_peers) {
 		if (AddressToID(peer->address) == id) {
 			return peer;
