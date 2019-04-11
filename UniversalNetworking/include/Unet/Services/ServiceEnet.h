@@ -13,6 +13,12 @@
 
 namespace Unet
 {
+	struct EnetPacket
+	{
+		ENetPacket* Packet;
+		ENetPeer* Peer;
+	};
+
 	class ServiceEnet : public Service
 	{
 	private:
@@ -21,7 +27,7 @@ namespace Unet
 		ENetPeer* m_peerHost = nullptr;
 		std::vector<ENetPeer*> m_peers;
 
-		std::vector<std::queue<ENetPacket*>> m_channels;
+		std::vector<std::queue<EnetPacket>> m_channels;
 
 		MultiCallback<LobbyJoinResult>::ServiceRequest* m_requestLobbyJoin = nullptr;
 		MultiCallback<LobbyLeftResult>::ServiceRequest* m_requestLobbyLeft = nullptr;

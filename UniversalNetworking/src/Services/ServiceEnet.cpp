@@ -91,7 +91,7 @@ void Unet::ServiceEnet::RunCallbacks()
 				continue;
 			}
 
-			m_channels[ev.channelID].push(ev.packet);
+			m_channels[ev.channelID].push({ ev.packet, ev.peer });
 		}
 	}
 }
@@ -229,12 +229,16 @@ size_t Unet::ServiceEnet::ReadPacket(void* data, size_t maxSize, ServiceID* peer
 	}
 
 	auto &queue = m_channels[channel];
-	auto packet = queue.front();
+	auto &packet = queue.front();
 
-	size_t actualSize = std::min(packet->dataLength, maxSize);
-	memcpy(data, packet->data, actualSize);
+	size_t actualSize = std::min(packet.Packet->dataLength, maxSize);
+	memcpy(data, packet.Packet->data, actualSize);
 
-	enet_packet_destroy(packet);
+	if (peerId != nullptr) {
+		*peerId = AddressToID(packet.Peer->address);
+	}
+
+	enet_packet_destroy(packet.Packet);
 	queue.pop();
 
 	return actualSize;
@@ -256,9 +260,9 @@ bool Unet::ServiceEnet::IsPacketAvailable(size_t* outPacketSize, uint8_t channel
 		return false;
 	}
 
-	auto packet = queue.front();
+	auto &packet = queue.front();
 	if (outPacketSize != nullptr) {
-		*outPacketSize = packet->dataLength;
+		*outPacketSize = packet.Packet->dataLength;
 	}
 
 	return true;
@@ -278,13 +282,14 @@ void Unet::ServiceEnet::Clear(int numChannels)
 {
 	for (auto &queue : m_channels) {
 		while (queue.size() > 0) {
-			enet_packet_destroy(queue.front());
+			auto &packet = queue.front();
+			enet_packet_destroy(packet.Packet);
 			queue.pop();
 		}
 	}
 	m_channels.clear();
 
 	for (int i = 0; i < numChannels; i++) {
-		m_channels.emplace_back(std::queue<ENetPacket*>());
+		m_channels.emplace_back(std::queue<EnetPacket>());
 	}
 }
