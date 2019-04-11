@@ -32,6 +32,8 @@ namespace Unet
 		MultiCallback<LobbyJoinResult>::ServiceRequest* m_requestLobbyJoin = nullptr;
 		MultiCallback<LobbyLeftResult>::ServiceRequest* m_requestLobbyLeft = nullptr;
 
+		bool m_waitingForPeers = false;
+
 	public:
 		ServiceEnet(Context* ctx);
 		virtual ~ServiceEnet();

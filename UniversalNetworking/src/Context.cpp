@@ -865,12 +865,14 @@ void Unet::Context::OnLobbyLeft(const LobbyLeftResult &result)
 
 void Unet::Context::OnLobbyPlayerLeft(const LobbyMember &member)
 {
-	json js;
-	js["t"] = (uint8_t)LobbyPacketType::MemberLeft;
-	js["guid"] = member.UnetGuid.str();
-	std::vector<uint8_t> msg = json::to_bson(js);
+	if (m_currentLobby->m_info.IsHosting) {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::MemberLeft;
+		js["guid"] = member.UnetGuid.str();
+		std::vector<uint8_t> msg = json::to_bson(js);
 
-	InternalSendToAll(msg.data(), msg.size());
+		InternalSendToAll(msg.data(), msg.size());
+	}
 
 	m_callbacks->OnLobbyPlayerLeft(member);
 }

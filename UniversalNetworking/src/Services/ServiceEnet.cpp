@@ -40,11 +40,11 @@ Unet::ServiceEnet::~ServiceEnet()
 
 void Unet::ServiceEnet::RunCallbacks()
 {
-	if (m_host != nullptr) {
+	if (m_host != nullptr && m_waitingForPeers) {
 		if (m_ctx->GetStatus() == ContextStatus::Connected) {
-			auto currentLobby = m_ctx->CurrentLobby();
+			m_waitingForPeers = false;
 
-			auto &members = currentLobby->GetMembers();
+			auto &members = m_ctx->CurrentLobby()->GetMembers();
 			for (auto &member : members) {
 				if (member.UnetPeer == m_ctx->GetLocalPeer()) {
 					continue;
@@ -58,6 +58,8 @@ void Unet::ServiceEnet::RunCallbacks()
 				if (GetPeer(id) != nullptr) {
 					continue;
 				}
+
+				//TODO: Can we do NAT punching via the host?
 
 				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connecting to client 0x%08llX", id.ID));
 
@@ -170,6 +172,8 @@ void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	m_peerHost = nullptr;
 	m_peers.clear();
 
+	m_waitingForPeers = false;
+
 	auto req = m_ctx->m_callbackCreateLobby.AddServiceRequest(this);
 	req->Data->CreatedLobby->AddEntryPoint(AddressToID(addr));
 	req->Code = Result::OK;
@@ -200,6 +204,8 @@ void Unet::ServiceEnet::JoinLobby(const ServiceID &id)
 
 	m_peers.clear();
 	m_peers.emplace_back(m_peerHost);
+
+	m_waitingForPeers = true;
 }
 
 void Unet::ServiceEnet::LeaveLobby()
