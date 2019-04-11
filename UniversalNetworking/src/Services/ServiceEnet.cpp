@@ -228,12 +228,14 @@ size_t Unet::ServiceEnet::ReadPacket(void* data, size_t maxSize, ServiceID* peer
 		return 0;
 	}
 
-	auto packet = m_channels[channel].front();
+	auto &queue = m_channels[channel];
+	auto packet = queue.front();
 
 	size_t actualSize = std::min(packet->dataLength, maxSize);
 	memcpy(data, packet->data, actualSize);
 
 	enet_packet_destroy(packet);
+	queue.pop();
 
 	return actualSize;
 }
