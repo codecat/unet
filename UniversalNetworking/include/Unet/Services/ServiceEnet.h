@@ -21,6 +21,8 @@ namespace Unet
 		ENetPeer* m_peerHost = nullptr;
 		std::vector<ENetPeer*> m_peers;
 
+		std::vector<std::queue<ENetPacket*>> m_channels;
+
 		MultiCallback<LobbyJoinResult>::ServiceRequest* m_requestLobbyJoin = nullptr;
 		MultiCallback<LobbyLeftResult>::ServiceRequest* m_requestLobbyLeft = nullptr;
 
@@ -52,5 +54,9 @@ namespace Unet
 		virtual void SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel) override;
 		virtual size_t ReadPacket(void* data, size_t maxSize, ServiceID* peerId, uint8_t channel) override;
 		virtual bool IsPacketAvailable(size_t* outPacketSize, uint8_t channel) override;
+
+	private:
+		ENetPeer* GetPeer(const ServiceID &id);
+		void Clear(int numChannels);
 	};
 }

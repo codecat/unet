@@ -6,11 +6,22 @@
 #include <Unet/json.hpp>
 using json = nlohmann::json;
 
+// I seriously hate Windows.h
+#if defined(min)
+#undef min
+#endif
+
 #define UNET_PORT 4450
+#define UNET_ID_MASK 0x0000FFFFFFFFFFFF
+
+static uint64_t AddressToInt(const ENetAddress &addr)
+{
+	return *(uint64_t*)& addr & UNET_ID_MASK;
+}
 
 static Unet::ServiceID AddressToID(const ENetAddress &addr)
 {
-	return Unet::ServiceID(Unet::ServiceType::Enet, *(uint64_t*)&addr);
+	return Unet::ServiceID(Unet::ServiceType::Enet, AddressToInt(addr));
 }
 
 static ENetAddress IDToAddress(const Unet::ServiceID &id)
@@ -37,7 +48,7 @@ void Unet::ServiceEnet::RunCallbacks()
 	while (enet_host_service(m_host, &ev, 0)) {
 		if (ev.type == ENET_EVENT_TYPE_CONNECT) {
 			if (m_requestLobbyJoin != nullptr && m_requestLobbyJoin->Code != Result::OK) {
-				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connection to host established: %08llX", *(uint64_t*)& ev.peer->address));
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connection to host established: %08llX", AddressToInt(ev.peer->address)));
 
 				m_requestLobbyJoin->Code = Result::OK;
 				m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(AddressToID(ev.peer->address));
@@ -51,7 +62,7 @@ void Unet::ServiceEnet::RunCallbacks()
 				enet_peer_send(m_peerHost, 0, newPacket);
 
 			} else {
-				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client connected: %08llX", *(uint64_t*)&ev.peer->address));
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client connected: %08llX", AddressToInt(ev.peer->address)));
 			}
 
 		} else if (ev.type == ENET_EVENT_TYPE_DISCONNECT) {
@@ -65,7 +76,7 @@ void Unet::ServiceEnet::RunCallbacks()
 				m_requestLobbyLeft->Code = Result::OK;
 
 			} else {
-				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client disconnected: %08llX", *(uint64_t*)&ev.peer->address));
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client disconnected: %08llX", AddressToInt(ev.peer->address)));
 
 				auto currentLobby = m_ctx->CurrentLobby();
 				if (currentLobby != nullptr) {
@@ -74,9 +85,13 @@ void Unet::ServiceEnet::RunCallbacks()
 			}
 
 		} else if (ev.type == ENET_EVENT_TYPE_RECEIVE) {
-			//TODO: Queue up messages internally
-			m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Message received from %08llX: %d bytes", *(uint64_t*)&ev.peer->address, (int)ev.packet->dataLength));
-			enet_packet_destroy(ev.packet);
+			if (ev.channelID >= m_channels.size()) {
+				m_ctx->GetCallbacks()->OnLogWarn(strPrintF("[Enet] Ignoring packet with %d bytes received in out-of-range channel ID %d", (int)ev.packet->dataLength, (int)ev.channelID));
+				enet_packet_destroy(ev.packet);
+				continue;
+			}
+
+			m_channels[ev.channelID].push(ev.packet);
 		}
 	}
 }
@@ -88,7 +103,7 @@ Unet::ServiceType Unet::ServiceEnet::GetType()
 
 Unet::ServiceID Unet::ServiceEnet::GetUserID()
 {
-	//TODO: Use local IP or something (or use the peer we receive in the connect event? that seems like our IP!)
+	//TODO: Use local IP or something
 	return ServiceID(ServiceType::Enet, 0);
 }
 
@@ -105,6 +120,8 @@ void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	addr.port = UNET_PORT;
 
 	size_t maxChannels = 3; //TODO: Make this customizable (minimum is 3!)
+
+	Clear(maxChannels);
 
 	m_host = enet_host_create(&addr, maxPlayers, maxChannels, 0, 0);
 	m_peerHost = nullptr;
@@ -130,6 +147,8 @@ void Unet::ServiceEnet::JoinLobby(const ServiceID &id)
 
 	auto addr = IDToAddress(id);
 	size_t maxChannels = 3; //TODO: Make this customizable (minimum is 3!)
+
+	Clear(maxChannels);
 
 	m_host = enet_host_create(nullptr, 1, maxChannels, 0, 0);
 	m_peerHost = enet_host_connect(m_host, &addr, maxChannels, 0);
@@ -186,17 +205,80 @@ void Unet::ServiceEnet::SetLobbyData(const ServiceID &lobbyId, const char* name,
 
 void Unet::ServiceEnet::SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel)
 {
-	//TODO
+	auto peer = GetPeer(peerId);
+	if (peer == nullptr) {
+		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("[Enet] Tried sending packet of %d bytes to unidentified peer 0x%08llX on channel %d", (int)size, peerId.ID, (int)channel));
+		return;
+	}
+
+	enet_uint32 flags = ENET_PACKET_FLAG_RELIABLE;
+	switch (type) {
+	case PacketType::Reliable: flags = ENET_PACKET_FLAG_RELIABLE; break;
+	case PacketType::Unreliable: flags = 0; break;
+	}
+
+	auto packet = enet_packet_create(data, size, flags);
+	enet_peer_send(peer, channel, packet);
 }
 
 size_t Unet::ServiceEnet::ReadPacket(void* data, size_t maxSize, ServiceID* peerId, uint8_t channel)
 {
-	//TODO
-	return 0;
+	if (channel >= m_channels.size()) {
+		assert(false);
+		return 0;
+	}
+
+	auto packet = m_channels[channel].front();
+
+	size_t actualSize = std::min(packet->dataLength, maxSize);
+	memcpy(data, packet->data, actualSize);
+
+	enet_packet_destroy(packet);
+
+	return actualSize;
 }
 
 bool Unet::ServiceEnet::IsPacketAvailable(size_t* outPacketSize, uint8_t channel)
 {
-	//TODO
-	return false;
+	if (channel >= m_channels.size()) {
+		assert(false);
+		return false;
+	}
+
+	auto &queue = m_channels[channel];
+	if (queue.size() == 0) {
+		return false;
+	}
+
+	auto packet = queue.front();
+	if (outPacketSize != nullptr) {
+		*outPacketSize = packet->dataLength;
+	}
+
+	return true;
+}
+
+ENetPeer* Unet::ServiceEnet::GetPeer(const ServiceID &id)
+{
+	for (auto peer : m_peers) {
+		if (AddressToID(peer->address) == id) {
+			return peer;
+		}
+	}
+	return nullptr;
+}
+
+void Unet::ServiceEnet::Clear(int numChannels)
+{
+	for (auto &queue : m_channels) {
+		while (queue.size() > 0) {
+			enet_packet_destroy(queue.front());
+			queue.pop();
+		}
+	}
+	m_channels.clear();
+
+	for (int i = 0; i < numChannels; i++) {
+		m_channels.emplace_back(std::queue<ENetPacket*>());
+	}
 }
