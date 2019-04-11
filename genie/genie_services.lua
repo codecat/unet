@@ -70,7 +70,7 @@ if os.get() == 'windows' then
 		links { 'enet64' }
 	configuration 'x32'
 		links { 'enet' }
-elseif os.get() == 'macosx' then
+else
 	configuration {}
 		links { 'enet' }
 end
