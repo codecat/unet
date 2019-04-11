@@ -134,7 +134,7 @@ void Unet::Lobby::AddEntryPoint(const ServiceID &entryPoint)
 	auto entry = m_info.GetEntryPoint(entryPoint.Service);
 	if (entry != nullptr) {
 		if (entry->ID != entryPoint.ID) {
-			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Tried adding an entry point for service %s that already exists, with different ID's! Old: 0x%08llX, new: 0x%08llX. Keeping old!",
+			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Tried adding an entry point for service %s that already exists, with different ID's! Old: 0x%016llX, new: 0x%016llX. Keeping old!",
 				GetServiceNameByType(entry->Service),
 				entry->ID, entryPoint.ID
 			));
@@ -183,7 +183,7 @@ Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const Ser
 			auto strGuid = guid.str();
 			auto strExistingGuid = member.UnetGuid.str();
 
-			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Tried adding %s ID 0x%08llX to member with guid %s, but another member with guid %s already has this ID! Assuming existing member is no longer connected, removing from member list.",
+			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Tried adding %s ID 0x%016llX to member with guid %s, but another member with guid %s already has this ID! Assuming existing member is no longer connected, removing from member list.",
 				GetServiceNameByType(id.Service), id.ID,
 				strGuid.c_str(), strExistingGuid.c_str()
 			));

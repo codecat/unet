@@ -343,9 +343,9 @@ void Unet::ServiceSteam::OnLobbyChatUpdate(LobbyChatUpdate_t* result)
 	}
 
 	if (result->m_rgfChatMemberStateChange & k_EChatMemberStateChangeEntered) {
-		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player entered: 0x%08llX", result->m_ulSteamIDUserChanged));
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player entered: 0x%016llX", result->m_ulSteamIDUserChanged));
 	} else if (BChatMemberStateChangeRemoved(result->m_rgfChatMemberStateChange)) {
-		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%08llX (code %X)", result->m_ulSteamIDUserChanged, result->m_rgfChatMemberStateChange));
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Player left: 0x%016llX (code %X)", result->m_ulSteamIDUserChanged, result->m_rgfChatMemberStateChange));
 
 		SteamNetworking()->CloseP2PSessionWithUser(result->m_ulSteamIDUserChanged);
 
@@ -370,11 +370,11 @@ void Unet::ServiceSteam::OnP2PSessionRequest(P2PSessionRequest_t* result)
 	for (int i = 0; i < numMembers; i++) {
 		auto memberId = SteamMatchmaking()->GetLobbyMemberByIndex((uint64)entryPoint->ID, i);
 		if (memberId == result->m_steamIDRemote) {
-			m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Accepting P2P Session Request from 0x%08llX", result->m_steamIDRemote.ConvertToUint64()));
+			m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Accepting P2P Session Request from 0x%016llX", result->m_steamIDRemote.ConvertToUint64()));
 			SteamNetworking()->AcceptP2PSessionWithUser(result->m_steamIDRemote);
 			return;
 		}
 	}
 
-	m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Rejecting P2P Session Request from 0x%08llX because they're not in the current Steam lobby!", result->m_steamIDRemote.ConvertToUint64()));
+	m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Rejecting P2P Session Request from 0x%016llX because they're not in the current Steam lobby!", result->m_steamIDRemote.ConvertToUint64()));
 }

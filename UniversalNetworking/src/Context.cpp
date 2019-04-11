@@ -169,7 +169,7 @@ void Unet::Context::RunCallbacks()
 
 				json js = json::from_bson(msg);
 				if (!js.is_object() || !js.contains("t")) {
-					m_callbacks->OnLogError(strPrintF("[P2P] [%s] Message from 0x%08llX is not a valid bson object!", GetServiceNameByType(peer.Service), peer.ID));
+					m_callbacks->OnLogError(strPrintF("[P2P] [%s] Message from 0x%016llX is not a valid bson object!", GetServiceNameByType(peer.Service), peer.ID));
 					continue;
 				}
 
@@ -206,7 +206,7 @@ void Unet::Context::RunCallbacks()
 
 					auto member = m_currentLobby->GetMember(peer);
 					if (member == nullptr) {
-						m_callbacks->OnLogWarn(strPrintF("Received Hello packet from %s ID 0x%08llX before receiving any handshakes!",
+						m_callbacks->OnLogWarn(strPrintF("Received Hello packet from %s ID 0x%016llX before receiving any handshakes!",
 							GetServiceNameByType(peer.Service), peer.ID
 						));
 						continue;

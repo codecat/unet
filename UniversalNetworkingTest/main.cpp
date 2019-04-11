@@ -89,7 +89,7 @@ public:
 			auto &lobbyInfo = result.Lobbies[i];
 			LOG_INFO("  [%d] \"%s\" (max %d)", (int)i, lobbyInfo.Name.c_str(), lobbyInfo.MaxPlayers);
 			for (auto &entry : lobbyInfo.EntryPoints) {
-				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
+				LOG_INFO("    %s (0x%016llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
 			}
 		}
 	}
@@ -149,7 +149,7 @@ static void RunCallbacks()
 			assert(false);
 			LOG_ERROR("Received message from a non-member!");
 		} else {
-			LOG_INFO("Received message on channel %d: %d bytes from %s ID 0x%08llX (%s)", msg->m_channel, (int)msg->m_size, Unet::GetServiceNameByType(msg->m_peer.Service), msg->m_peer.ID, member->Name.c_str());
+			LOG_INFO("Received message on channel %d: %d bytes from %s ID 0x%016llX (%s)", msg->m_channel, (int)msg->m_size, Unet::GetServiceNameByType(msg->m_peer.Service), msg->m_peer.ID, member->Name.c_str());
 		}
 	}
 }
@@ -394,7 +394,7 @@ static void HandleCommand(const s2::string &line)
 
 			LOG_INFO("  Entry points: %d", (int)lobbyInfo.EntryPoints.size());
 			for (auto &entry : lobbyInfo.EntryPoints) {
-				LOG_INFO("    %s (0x%08llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
+				LOG_INFO("    %s (0x%016llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
 			}
 
 			auto &members = currentLobby->GetMembers();
@@ -403,7 +403,7 @@ static void HandleCommand(const s2::string &line)
 				auto memberGuid = member.UnetGuid.str();
 				LOG_INFO("    %d: \"%s\" (%s) (%s)", member.UnetPeer, member.Name.c_str(), member.Valid ? "Valid" : "Invalid", memberGuid.c_str());
 				for (auto &id : member.IDs) {
-					LOG_INFO("      %s (0x%08llX)%s", Unet::GetServiceNameByType(id.Service), id.ID, member.UnetPrimaryService == id.Service ? " Primary" : "");
+					LOG_INFO("      %s (0x%016llX)%s", Unet::GetServiceNameByType(id.Service), id.ID, member.UnetPrimaryService == id.Service ? " Primary" : "");
 				}
 			}
 		}
