@@ -63,6 +63,8 @@ void Unet::ServiceEnet::RunCallbacks()
 
 			} else {
 				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client connected: %08llX", AddressToInt(ev.peer->address)));
+
+				m_peers.emplace_back(ev.peer);
 			}
 
 		} else if (ev.type == ENET_EVENT_TYPE_DISCONNECT) {
