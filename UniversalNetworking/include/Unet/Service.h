@@ -18,6 +18,8 @@ namespace Unet
 		Context* m_ctx = nullptr;
 
 	public:
+		virtual ~Service() {}
+
 		virtual void RunCallbacks() {}
 
 		virtual ServiceType GetType() = 0;

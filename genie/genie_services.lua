@@ -65,10 +65,15 @@ else
 end
 
 -- Link to enet
-configuration 'x64'
-	links { 'enet64' }
-configuration 'x32'
-	links { 'enet' }
+if os.get() == 'windows' then
+	configuration 'x64'
+		links { 'enet64' }
+	configuration 'x32'
+		links { 'enet' }
+elseif os.get() == 'macosx' then
+	configuration {}
+		links { 'enet' }
+end
 
 if os.get() == 'windows' then
 	configuration {}
