@@ -40,6 +40,33 @@ Unet::ServiceEnet::~ServiceEnet()
 
 void Unet::ServiceEnet::RunCallbacks()
 {
+	if (m_host != nullptr) {
+		if (m_ctx->GetStatus() == ContextStatus::Connected) {
+			auto currentLobby = m_ctx->CurrentLobby();
+
+			auto &members = currentLobby->GetMembers();
+			for (auto &member : members) {
+				if (member.UnetPeer == m_ctx->GetLocalPeer()) {
+					continue;
+				}
+
+				auto id = member.GetServiceID(ServiceType::Enet);
+				if (!id.IsValid()) {
+					continue;
+				}
+
+				if (GetPeer(id) != nullptr) {
+					continue;
+				}
+
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connecting to client 0x%08llX", id.ID));
+
+				auto addr = IDToAddress(id);
+				m_peers.emplace_back(enet_host_connect(m_host, &addr, m_channels.size(), 0));
+			}
+		}
+	}
+
 	ENetEvent ev;
 	while (m_host != nullptr && enet_host_service(m_host, &ev, 0)) {
 		if (ev.type == ENET_EVENT_TYPE_CONNECT) {
@@ -54,16 +81,26 @@ void Unet::ServiceEnet::RunCallbacks()
 				js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
 				std::vector<uint8_t> msg = json::to_bson(js);
 
+				m_requestLobbyJoin = nullptr;
+
 				ENetPacket* newPacket = enet_packet_create(msg.data(), msg.size(), ENET_PACKET_FLAG_RELIABLE);
 				enet_peer_send(m_peerHost, 0, newPacket);
 
 			} else {
 				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client connected: %08llX", AddressToInt(ev.peer->address)));
 
-				m_peers.emplace_back(ev.peer);
+				auto it = std::find(m_peers.begin(), m_peers.end(), ev.peer);
+				if (it == m_peers.end()) {
+					printf("=== Adding peer from connection\n");
+					m_peers.emplace_back(ev.peer);
+				} else {
+					printf("=== Peer is already in list\n");
+				}
 			}
 
 		} else if (ev.type == ENET_EVENT_TYPE_DISCONNECT) {
+			//TODO: If we disconnected with the host, disconnect from everyone else and disconnect the service from the lobby
+
 			if (m_requestLobbyLeft != nullptr && m_requestLobbyLeft->Code != Result::OK) {
 				m_ctx->GetCallbacks()->OnLogDebug("[Enet] Disconnected from host");
 
@@ -72,9 +109,17 @@ void Unet::ServiceEnet::RunCallbacks()
 				m_peerHost = nullptr;
 
 				m_requestLobbyLeft->Code = Result::OK;
+				m_requestLobbyLeft = nullptr;
 
 			} else {
 				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client disconnected: %08llX", AddressToInt(ev.peer->address)));
+
+				auto it = std::find(m_peers.begin(), m_peers.end(), ev.peer);
+				if (it == m_peers.end()) {
+					m_ctx->GetCallbacks()->OnLogWarn(strPrintF("[Enet] Couldn't find peer in list of connected peers!"));
+				} else {
+					m_peers.erase(it);
+				}
 
 				auto currentLobby = m_ctx->CurrentLobby();
 				if (currentLobby != nullptr) {
@@ -123,6 +168,7 @@ void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 
 	m_host = enet_host_create(&addr, maxPlayers, maxChannels, 0, 0);
 	m_peerHost = nullptr;
+	m_peers.clear();
 
 	auto req = m_ctx->m_callbackCreateLobby.AddServiceRequest(this);
 	req->Data->CreatedLobby->AddEntryPoint(AddressToID(addr));
@@ -144,11 +190,12 @@ void Unet::ServiceEnet::JoinLobby(const ServiceID &id)
 	m_requestLobbyJoin = m_ctx->m_callbackLobbyJoin.AddServiceRequest(this);
 
 	auto addr = IDToAddress(id);
+	size_t maxPeers = 128; //TODO: Make this customizable
 	size_t maxChannels = 3; //TODO: Make this customizable (minimum is 3!)
 
 	Clear(maxChannels);
 
-	m_host = enet_host_create(nullptr, 1, maxChannels, 0, 0);
+	m_host = enet_host_create(nullptr, maxPeers, maxChannels, 0, 0);
 	m_peerHost = enet_host_connect(m_host, &addr, maxChannels, 0);
 
 	m_peers.clear();
@@ -174,7 +221,7 @@ void Unet::ServiceEnet::LeaveLobby()
 int Unet::ServiceEnet::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 {
 	//TODO
-	return m_host->peerCount;
+	return (int)m_host->peerCount;
 }
 
 Unet::ServiceID Unet::ServiceEnet::GetLobbyHost(const ServiceID &lobbyId)
@@ -280,7 +327,7 @@ ENetPeer* Unet::ServiceEnet::GetPeer(const ServiceID &id)
 	return nullptr;
 }
 
-void Unet::ServiceEnet::Clear(int numChannels)
+void Unet::ServiceEnet::Clear(size_t numChannels)
 {
 	for (auto &queue : m_channels) {
 		while (queue.size() > 0) {
@@ -291,7 +338,7 @@ void Unet::ServiceEnet::Clear(int numChannels)
 	}
 	m_channels.clear();
 
-	for (int i = 0; i < numChannels; i++) {
+	for (int i = 0; i < (int)numChannels; i++) {
 		m_channels.emplace_back(std::queue<EnetPacket>());
 	}
 }

@@ -63,6 +63,6 @@ namespace Unet
 
 	private:
 		ENetPeer* GetPeer(const ServiceID &id);
-		void Clear(int numChannels);
+		void Clear(size_t numChannels);
 	};
 }

@@ -17,6 +17,8 @@ namespace Unet
 
 		/// Sent by the server to announce a new member has joined
 		MemberInfo,
+		/// Sent by the server to announce a member has left
+		MemberLeft,
 
 		/// Sent by the server the indicate that a member has connected with a new service ID
 		MemberNewService,
