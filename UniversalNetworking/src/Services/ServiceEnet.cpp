@@ -338,7 +338,7 @@ void Unet::ServiceEnet::Clear(size_t numChannels)
 	}
 	m_channels.clear();
 
-	for (int i = 0; i < numChannels; i++) {
+	for (int i = 0; i < (int)numChannels; i++) {
 		m_channels.emplace_back(std::queue<EnetPacket>());
 	}
 }
