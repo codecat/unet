@@ -73,7 +73,7 @@ void Unet::ServiceEnet::RunCallbacks()
 	while (m_host != nullptr && enet_host_service(m_host, &ev, 0)) {
 		if (ev.type == ENET_EVENT_TYPE_CONNECT) {
 			if (m_requestLobbyJoin != nullptr && m_requestLobbyJoin->Code != Result::OK) {
-				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connection to host established: %08llX", AddressToInt(ev.peer->address)));
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Connection to host established: 0x%08llX", AddressToInt(ev.peer->address)));
 
 				m_requestLobbyJoin->Code = Result::OK;
 				m_requestLobbyJoin->Data->JoinedLobby->AddEntryPoint(AddressToID(ev.peer->address));
@@ -89,7 +89,7 @@ void Unet::ServiceEnet::RunCallbacks()
 				enet_peer_send(m_peerHost, 0, newPacket);
 
 			} else {
-				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client connected: %08llX", AddressToInt(ev.peer->address)));
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client connected: 0x%08llX", AddressToInt(ev.peer->address)));
 
 				auto it = std::find(m_peers.begin(), m_peers.end(), ev.peer);
 				if (it == m_peers.end()) {
@@ -114,7 +114,7 @@ void Unet::ServiceEnet::RunCallbacks()
 				m_requestLobbyLeft = nullptr;
 
 			} else {
-				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client disconnected: %08llX", AddressToInt(ev.peer->address)));
+				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client disconnected: 0x%08llX", AddressToInt(ev.peer->address)));
 
 				auto it = std::find(m_peers.begin(), m_peers.end(), ev.peer);
 				if (it == m_peers.end()) {
