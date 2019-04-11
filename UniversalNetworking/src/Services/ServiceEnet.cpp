@@ -168,6 +168,7 @@ void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 
 	m_host = enet_host_create(&addr, maxPlayers, maxChannels, 0, 0);
 	m_peerHost = nullptr;
+	m_peers.clear();
 
 	auto req = m_ctx->m_callbackCreateLobby.AddServiceRequest(this);
 	req->Data->CreatedLobby->AddEntryPoint(AddressToID(addr));
@@ -220,7 +221,7 @@ void Unet::ServiceEnet::LeaveLobby()
 int Unet::ServiceEnet::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 {
 	//TODO
-	return m_host->peerCount;
+	return (int)m_host->peerCount;
 }
 
 Unet::ServiceID Unet::ServiceEnet::GetLobbyHost(const ServiceID &lobbyId)
@@ -326,7 +327,7 @@ ENetPeer* Unet::ServiceEnet::GetPeer(const ServiceID &id)
 	return nullptr;
 }
 
-void Unet::ServiceEnet::Clear(int numChannels)
+void Unet::ServiceEnet::Clear(size_t numChannels)
 {
 	for (auto &queue : m_channels) {
 		while (queue.size() > 0) {
