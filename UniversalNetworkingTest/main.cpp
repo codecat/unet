@@ -110,7 +110,7 @@ public:
 		const char* reasonStr = "Undefined";
 		switch (result.Reason) {
 		case Unet::LeaveReason::UserLeave: reasonStr = "User leave"; break;
-		case Unet::LeaveReason::Disconnected: reasonStr = "Lost connection"; break;
+		case Unet::LeaveReason::Disconnected: reasonStr = "Disconnected"; break;
 		}
 		LOG_INFO("Left lobby: %s", reasonStr);
 	}

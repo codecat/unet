@@ -156,12 +156,23 @@ void Unet::Lobby::ServiceDisconnected(ServiceType service)
 
 	m_info.EntryPoints.erase(it);
 
+	for (auto &member : m_members) {
+		for (int i = (int)member.IDs.size() - 1; i >= 0; i--) {
+			if (member.IDs[i].Service == service) {
+				RemoveMemberService(member.IDs[i]);
+			}
+		}
+	}
+
 	if (IsConnected()) {
 		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Lost connection to entry point %s (%d points still open)", GetServiceNameByType(service), (int)m_info.EntryPoints.size()));
 	} else {
 		m_ctx->GetCallbacks()->OnLogError("Lost connection to all entry points!");
 
-		//TODO: Run some callback and close the lobby?
+		LobbyLeftResult result;
+		result.Code = Result::OK;
+		result.Reason = LeaveReason::Disconnected;
+		m_ctx->OnLobbyLeft(result);
 	}
 }
 

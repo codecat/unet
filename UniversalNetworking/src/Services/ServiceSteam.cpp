@@ -190,6 +190,8 @@ void Unet::ServiceSteam::OnLobbyCreated(LobbyCreated_t* result, bool bIOFailure)
 		return;
 	}
 
+	m_hostID = SteamUser()->GetSteamID();
+
 	m_requestLobbyCreated->Data->CreatedLobby->AddEntryPoint(ServiceID(ServiceType::Steam, result->m_ulSteamIDLobby));
 	m_requestLobbyCreated->Code = Result::OK;
 
@@ -242,6 +244,8 @@ void Unet::ServiceSteam::OnLobbyJoin(LobbyEnter_t* result, bool bIOFailure)
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Steam] Failed joining lobby, error %d", (int)result->m_EChatRoomEnterResponse));
 		return;
 	}
+
+	m_hostID = SteamMatchmaking()->GetLobbyOwner(result->m_ulSteamIDLobby);
 
 	ServiceID newEntryPoint;
 	newEntryPoint.Service = GetType();
@@ -349,7 +353,20 @@ void Unet::ServiceSteam::OnLobbyChatUpdate(LobbyChatUpdate_t* result)
 
 		SteamNetworking()->CloseP2PSessionWithUser(result->m_ulSteamIDUserChanged);
 
-		currentLobby->RemoveMemberService(ServiceID(ServiceType::Steam, result->m_ulSteamIDUserChanged));
+		if (m_hostID == result->m_ulSteamIDUserChanged) {
+			m_ctx->GetCallbacks()->OnLogDebug("[Steam] Host disconnected from lobby, disconnecting and leaving!");
+
+			int numMembers = SteamMatchmaking()->GetNumLobbyMembers(result->m_ulSteamIDLobby);
+			for (int i = 0; i < numMembers; i++) {
+				auto memberId = SteamMatchmaking()->GetLobbyMemberByIndex(result->m_ulSteamIDLobby, i);
+				SteamNetworking()->CloseP2PSessionWithUser(memberId);
+			}
+			SteamMatchmaking()->LeaveLobby(result->m_ulSteamIDLobby);
+
+			currentLobby->ServiceDisconnected(ServiceType::Steam);
+		} else {
+			currentLobby->RemoveMemberService(ServiceID(ServiceType::Steam, result->m_ulSteamIDUserChanged));
+		}
 	}
 }
 

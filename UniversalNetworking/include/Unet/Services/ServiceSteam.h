@@ -28,6 +28,8 @@ namespace Unet
 
 		CCallback<ServiceSteam, P2PSessionRequest_t> m_callP2PSessionRequest;
 
+		CSteamID m_hostID;
+
 	public:
 		ServiceSteam(Context* ctx);
 		virtual ~ServiceSteam();
