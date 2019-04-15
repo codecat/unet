@@ -232,7 +232,7 @@ Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const Ser
 	LobbyMember newMember(m_ctx);
 	newMember.Valid = false;
 	newMember.UnetGuid = guid;
-	newMember.UnetPeer = m_members.size();
+	newMember.UnetPeer = GetNextAvailablePeer();
 	newMember.IDs.emplace_back(id);
 	m_members.emplace_back(newMember);
 
@@ -348,4 +348,13 @@ std::string Unet::Lobby::GetData(const char* name)
 const std::vector<Unet::LobbyData> &Unet::Lobby::GetData()
 {
 	return m_data;
+}
+
+int Unet::Lobby::GetNextAvailablePeer()
+{
+	int i = 0;
+	while (GetMember(i) != nullptr) {
+		i++;
+	}
+	return i;
 }

@@ -74,5 +74,8 @@ namespace Unet
 		void SetData(const char* name, const std::string &value);
 		std::string GetData(const char* name);
 		const std::vector<LobbyData> &GetData();
+
+	private:
+		int GetNextAvailablePeer();
 	};
 }
