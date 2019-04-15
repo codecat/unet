@@ -231,7 +231,7 @@ void Unet::Context::RunCallbacks()
 
 					auto newMessage = new NetworkMessage(data, size);
 					newMessage->m_channel = (int)channel;
-					newMessage->m_peer = memberSender->GetDataServiceID();
+					newMessage->m_peer = memberSender->GetPrimaryServiceID();
 					m_queuedMessages[channel].push(newMessage);
 				}
 			}

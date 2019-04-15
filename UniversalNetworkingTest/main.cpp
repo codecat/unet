@@ -146,8 +146,7 @@ static void RunCallbacks()
 		auto msg = g_ctx->ReadMessage(0);
 		auto member = g_ctx->CurrentLobby()->GetMember(msg->m_peer);
 		if (member == nullptr) {
-			assert(false);
-			LOG_ERROR("Received message from a non-member!");
+			LOG_ERROR("Received message from a %s ID 0x%016llX", Unet::GetServiceNameByType(msg->m_peer.Service), msg->m_peer.ID);
 		} else {
 			LOG_INFO("Received message on channel %d: %d bytes from %s ID 0x%016llX (%s)", msg->m_channel, (int)msg->m_size, Unet::GetServiceNameByType(msg->m_peer.Service), msg->m_peer.ID, member->Name.c_str());
 		}

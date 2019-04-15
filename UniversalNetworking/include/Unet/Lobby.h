@@ -35,6 +35,7 @@ namespace Unet
 
 		ServiceID GetServiceID(ServiceType type) const;
 		ServiceID GetDataServiceID() const;
+		ServiceID GetPrimaryServiceID() const;
 	};
 
 	class Lobby
@@ -73,5 +74,8 @@ namespace Unet
 		void SetData(const char* name, const std::string &value);
 		std::string GetData(const char* name);
 		const std::vector<LobbyData> &GetData();
+
+	private:
+		int GetNextAvailablePeer();
 	};
 }
