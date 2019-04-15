@@ -753,13 +753,9 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 	}
 
 	auto id = member.GetDataServiceID();
-	assert(id.IsValid());
-	if (!id.IsValid()) {
-		return;
-	}
-
 	auto service = GetService(id.Service);
-	if (service == nullptr) {
+
+	if (!id.IsValid() || service == nullptr) {
 		// Data service to peer is not available, so we have to relay it through the host
 		auto hostMember = m_currentLobby->GetHostMember();
 		assert(hostMember != nullptr);
