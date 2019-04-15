@@ -41,13 +41,12 @@ Unet::ServiceEnet::~ServiceEnet()
 void Unet::ServiceEnet::SimulateOutage()
 {
 	for (auto peer : m_peers) {
-		enet_peer_disconnect(peer, 0);
+		enet_peer_disconnect_now(peer, 0);
 	}
 	m_peers.clear();
 
 	if (m_host != nullptr) {
 		enet_host_destroy(m_host);
-		m_host = nullptr;
 	}
 
 	m_host = nullptr;
