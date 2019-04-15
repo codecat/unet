@@ -50,6 +50,11 @@ Unet::ServiceID Unet::LobbyMember::GetDataServiceID() const
 	return ServiceID();
 }
 
+Unet::ServiceID Unet::LobbyMember::GetPrimaryServiceID() const
+{
+	return GetServiceID(UnetPrimaryService);
+}
+
 Unet::Lobby::Lobby(Context* ctx, const LobbyInfo &lobbyInfo)
 {
 	m_ctx = ctx;
