@@ -177,7 +177,7 @@ void Unet::Context::RunCallbacks()
 					// We have to relay a packet to some client
 					uint8_t peerRecipient = msg[0];
 					uint8_t channel = msg[1];
-					PacketType type = (PacketType)msg[3];
+					PacketType type = (PacketType)msg[2];
 
 					uint8_t* data = msg.data() + 3;
 					size_t size = packetSize - 3;
@@ -748,6 +748,9 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 {
 	// Sending a message to yourself isn't very useful.
 	assert(member.UnetPeer != m_localPeer);
+	if (member.UnetPeer == m_localPeer) {
+		return;
+	}
 
 	auto id = member.GetDataServiceID();
 	assert(id.IsValid());
@@ -757,8 +760,24 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 
 	auto service = GetService(id.Service);
 	if (service == nullptr) {
-		//TODO: Send relay message to host on channel 1
-		assert(false);
+		// Data service to peer is not available, so we have to relay it through the host
+		auto hostMember = m_currentLobby->GetHostMember();
+		assert(hostMember != nullptr);
+
+		auto idHost = hostMember->GetDataServiceID();
+		auto serviceHost = GetService(idHost.Service);
+		assert(serviceHost != nullptr);
+
+		std::vector<uint8_t> msg;
+		msg.assign(size + 3, 0);
+
+		msg[0] = (uint8_t)member.UnetPeer;
+		msg[1] = (uint8_t)channel;
+		msg[2] = (uint8_t)type;
+		memcpy(msg.data() + 3, data, size);
+
+		//TODO: Send this with the actual type instead? (That would make it twice as unreliable if it's sent unreliably!)
+		serviceHost->SendPacket(idHost, msg.data(), msg.size(), PacketType::Reliable, 1);
 		return;
 	}
 
@@ -845,6 +864,7 @@ Unet::Service* Unet::Context::GetService(ServiceType type)
 void Unet::Context::InternalSendTo(LobbyMember &member, uint8_t* data, size_t size)
 {
 	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
+	//NOTE: The above is not important yet for internal messages, as all internal messages are sent between client & server, not client & client
 
 	// Sending a message to yourself isn't very useful.
 	assert(member.UnetPeer != m_localPeer);
