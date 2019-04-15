@@ -23,7 +23,7 @@ namespace Unet
 		friend class LobbyMember;
 
 	public:
-		Context();
+		Context(int numChannels = 1);
 		virtual ~Context();
 
 		ContextStatus GetStatus();
@@ -85,6 +85,8 @@ namespace Unet
 	private:
 		std::string m_personaName;
 
+		int m_numChannels;
+
 		ContextStatus m_status;
 		ServiceType m_primaryService;
 
@@ -95,6 +97,7 @@ namespace Unet
 		int m_localPeer;
 
 		std::vector<Service*> m_services;
+		std::vector<std::queue<NetworkMessage*>> m_queuedMessages;
 
 	public:
 		MultiCallback<CreateLobbyResult> m_callbackCreateLobby;

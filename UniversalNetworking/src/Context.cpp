@@ -10,8 +10,11 @@
 #include <Unet/json.hpp>
 using json = nlohmann::json;
 
-Unet::Context::Context()
+Unet::Context::Context(int numChannels)
 {
+	m_numChannels = numChannels;
+	m_queuedMessages.assign(numChannels, {});
+
 	m_status = ContextStatus::Idle;
 	m_primaryService = ServiceType::None;
 
@@ -34,6 +37,13 @@ Unet::Context::~Context()
 
 	for (auto service : m_services) {
 		delete service;
+	}
+
+	for (auto &channel : m_queuedMessages) {
+		while (channel.size() > 0) {
+			delete channel.front();
+			channel.pop();
+		}
 	}
 }
 
@@ -153,7 +163,78 @@ void Unet::Context::RunCallbacks()
 		for (auto service : m_services) {
 			size_t packetSize;
 
-			//TODO: Implement relay channel packet handling (channel 1)
+			// Relay packet channel
+			while (service->IsPacketAvailable(&packetSize, 1)) {
+				std::vector<uint8_t> msg;
+				msg.assign(packetSize, 0);
+
+				ServiceID peer;
+				service->ReadPacket(msg.data(), packetSize, &peer, 1);
+
+				auto peerMember = m_currentLobby->GetMember(peer);
+
+				if (m_currentLobby->m_info.IsHosting) {
+					// We have to relay a packet to some client
+					uint8_t peerRecipient = msg[0];
+					uint8_t channel = msg[1];
+					PacketType type = (PacketType)msg[3];
+
+					uint8_t* data = msg.data() + 3;
+					size_t size = packetSize - 3;
+
+					auto recipientMember = m_currentLobby->GetMember((int)peerRecipient);
+					if (recipientMember == nullptr) {
+						m_callbacks->OnLogError(strPrintF("Tried relaying packet of %d bytes to unknown peer %d!", (int)size, (int)peerRecipient));
+						continue;
+					}
+
+					std::vector<uint8_t> relayMsg;
+					relayMsg.assign(size + 2, 0);
+
+					relayMsg[0] = (uint8_t)peerMember->UnetPeer;
+					relayMsg[1] = channel;
+					memcpy(relayMsg.data() + 2, data, size);
+
+					auto id = recipientMember->GetDataServiceID();
+					assert(id.IsValid());
+					if (!id.IsValid()) {
+						continue;
+					}
+
+					auto service = GetService(id.Service);
+					assert(service != nullptr);
+					if (service == nullptr) {
+						continue;
+					}
+
+					service->SendPacket(id, relayMsg.data(), relayMsg.size(), type, 1);
+
+				} else {
+					// We received a relayed packet from some client
+					uint8_t peerSender = msg[0];
+					uint8_t channel = msg[1];
+
+					uint8_t* data = msg.data() + 2;
+					size_t size = packetSize - 2;
+
+					if (channel >= (uint8_t)m_queuedMessages.size()) {
+						m_callbacks->OnLogError(strPrintF("Invalid channel index in relay packet: %d", (int)channel));
+						continue;
+					}
+
+					auto memberSender = m_currentLobby->GetMember(peerSender);
+					assert(memberSender != nullptr);
+					if (memberSender == nullptr) {
+						m_callbacks->OnLogError(strPrintF("Received a relay packet from unknown peer %d", (int)peerSender));
+						continue;
+					}
+
+					auto newMessage = new NetworkMessage(data, size);
+					newMessage->m_channel = (int)channel;
+					newMessage->m_peer = memberSender->GetDataServiceID();
+					m_queuedMessages[channel].push(newMessage);
+				}
+			}
 
 			//TODO: Move channel 0 packet handling to Lobby class
 			while (service->IsPacketAvailable(&packetSize, 0)) {
@@ -371,6 +452,13 @@ void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char
 	m_localGuid = xg::newGuid();
 	m_localPeer = 0;
 
+	for (auto &channel : m_queuedMessages) {
+		while (channel.size() > 0) {
+			delete channel.front();
+			channel.pop();
+		}
+	}
+
 	auto &result = m_callbackCreateLobby.GetResult();
 	LobbyInfo newLobbyInfo;
 	newLobbyInfo.IsHosting = true;
@@ -409,6 +497,13 @@ void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 
 	m_localGuid = xg::newGuid();
 	m_localPeer = -1;
+
+	for (auto &channel : m_queuedMessages) {
+		while (channel.size() > 0) {
+			delete channel.front();
+			channel.pop();
+		}
+	}
 
 	auto &result = m_callbackLobbyJoin.GetResult();
 	result.JoinGuid = m_localGuid;
@@ -602,6 +697,17 @@ const std::string &Unet::Context::GetPersonaName()
 
 bool Unet::Context::IsMessageAvailable(int channel)
 {
+	if (channel < 0) {
+		return false;
+	}
+
+	if (channel < (int)m_queuedMessages.size()) {
+		auto &queuedChannel = m_queuedMessages[channel];
+		if (queuedChannel.size() > 0) {
+			return true;
+		}
+	}
+
 	for (auto service : m_services) {
 		if (service->IsPacketAvailable(nullptr, 2 + channel)) {
 			return true;
@@ -612,6 +718,19 @@ bool Unet::Context::IsMessageAvailable(int channel)
 
 std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
 {
+	if (channel < 0) {
+		return nullptr;
+	}
+
+	if (channel < (int)m_queuedMessages.size()) {
+		auto &queuedChannel = m_queuedMessages[channel];
+		if (queuedChannel.size() > 0) {
+			std::unique_ptr<NetworkMessage> ret(queuedChannel.front());
+			queuedChannel.pop();
+			return ret;
+		}
+	}
+
 	for (auto service : m_services) {
 		size_t packetSize;
 		if (service->IsPacketAvailable(&packetSize, 2 + channel)) {
@@ -621,6 +740,7 @@ std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
 			return newMessage;
 		}
 	}
+
 	return nullptr;
 }
 
@@ -874,6 +994,13 @@ void Unet::Context::OnLobbyLeft(const LobbyLeftResult &result)
 	if (m_currentLobby != nullptr) {
 		delete m_currentLobby;
 		m_currentLobby = nullptr;
+	}
+
+	for (auto &channel : m_queuedMessages) {
+		while (channel.size() > 0) {
+			delete channel.front();
+			channel.pop();
+		}
 	}
 
 	m_callbacks->OnLobbyLeft(result);
