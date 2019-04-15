@@ -13,7 +13,7 @@ using json = nlohmann::json;
 Unet::Context::Context(int numChannels)
 {
 	m_numChannels = numChannels;
-	m_queuedMessages.assign(numChannels, {});
+	m_queuedMessages.assign(numChannels, std::queue<NetworkMessage*>());
 
 	m_status = ContextStatus::Idle;
 	m_primaryService = ServiceType::None;
