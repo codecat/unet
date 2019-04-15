@@ -114,23 +114,13 @@ void Unet::ServiceEnet::RunCallbacks()
 			}
 
 		} else if (ev.type == ENET_EVENT_TYPE_DISCONNECT) {
-			//TODO: If we disconnected with the host, disconnect from everyone else and disconnect the service from the lobby
-
-			auto currentLobby = m_ctx->CurrentLobby();
-
 			if (m_requestLobbyLeft != nullptr && m_requestLobbyLeft->Code != Result::OK) {
-				m_ctx->GetCallbacks()->OnLogDebug("[Enet] Disconnected from host");
-
 				enet_host_destroy(m_host);
 				m_host = nullptr;
 				m_peerHost = nullptr;
 
 				m_requestLobbyLeft->Code = Result::OK;
 				m_requestLobbyLeft = nullptr;
-
-				if (currentLobby != nullptr) {
-					currentLobby->ServiceDisconnected(ServiceType::Enet);
-				}
 
 			} else {
 				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client disconnected: 0x%016llX", AddressToInt(ev.peer->address)));
@@ -142,8 +132,27 @@ void Unet::ServiceEnet::RunCallbacks()
 					m_peers.erase(it);
 				}
 
+				auto currentLobby = m_ctx->CurrentLobby();
+
 				if (currentLobby != nullptr) {
 					currentLobby->RemoveMemberService(AddressToID(ev.peer->address));
+				}
+
+				if (ev.peer == m_peerHost) {
+					m_ctx->GetCallbacks()->OnLogDebug("[Enet] Disconnected from host!");
+
+					for (auto peer : m_peers) {
+						enet_peer_disconnect_now(peer, 0);
+					}
+					m_peers.clear();
+
+					enet_host_destroy(m_host);
+					m_host = nullptr;
+					m_peerHost = nullptr;
+
+					if (currentLobby != nullptr) {
+						currentLobby->ServiceDisconnected(ServiceType::Enet);
+					}
 				}
 			}
 
