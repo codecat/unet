@@ -22,6 +22,8 @@ namespace Unet
 
 		virtual void RunCallbacks() {}
 
+		virtual void SimulateOutage() = 0;
+
 		virtual ServiceType GetType() = 0;
 
 		virtual ServiceID GetUserID() = 0;

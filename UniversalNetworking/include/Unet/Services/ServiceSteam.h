@@ -34,6 +34,8 @@ namespace Unet
 		ServiceSteam(Context* ctx);
 		virtual ~ServiceSteam();
 
+		virtual void SimulateOutage() override;
+
 		virtual ServiceType GetType() override;
 
 		virtual ServiceID GetUserID() override;

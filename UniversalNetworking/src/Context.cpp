@@ -443,6 +443,19 @@ int Unet::Context::ServiceCount()
 	return (int)m_services.size();
 }
 
+void Unet::Context::SimulateServiceOutage(ServiceType type)
+{
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	auto service = GetService(type);
+	if (service != nullptr) {
+		service->SimulateOutage();
+		m_currentLobby->ServiceDisconnected(type);
+	}
+}
+
 void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name)
 {
 	m_status = ContextStatus::Connecting;

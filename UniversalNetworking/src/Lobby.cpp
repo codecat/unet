@@ -153,7 +153,7 @@ void Unet::Lobby::ServiceDisconnected(ServiceType service)
 {
 	auto it = std::find_if(m_info.EntryPoints.begin(), m_info.EntryPoints.end(), [service](const ServiceID & entryPoint) {
 		return entryPoint.Service == service;
-		});
+	});
 
 	if (it == m_info.EntryPoints.end()) {
 		return;

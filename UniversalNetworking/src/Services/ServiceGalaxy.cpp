@@ -98,6 +98,26 @@ Unet::ServiceGalaxy::~ServiceGalaxy()
 	galaxy::api::ListenerRegistrar()->Unregister(galaxy::api::LOBBY_MEMBER_STATE, (galaxy::api::ILobbyMemberStateListener*)this);
 }
 
+void Unet::ServiceGalaxy::SimulateOutage()
+{
+	auto lobby = m_ctx->CurrentLobby();
+	if (lobby == nullptr) {
+		return;
+	}
+
+	auto &lobbyInfo = lobby->GetInfo();
+	auto entryPoint = lobbyInfo.GetEntryPoint(Unet::ServiceType::Galaxy);
+	if (entryPoint == nullptr) {
+		return;
+	}
+
+	try {
+		galaxy::api::Matchmaking()->LeaveLobby(entryPoint->ID);
+	} catch (const galaxy::api::IError &error) {
+		m_ctx->GetCallbacks()->OnLogError(strPrintF("[Galaxy] Failed to simulate outage: %s", error.GetMsg()));
+	}
+}
+
 Unet::ServiceType Unet::ServiceGalaxy::GetType()
 {
 	return ServiceType::Galaxy;
@@ -177,7 +197,7 @@ void Unet::ServiceGalaxy::LeaveLobby()
 		galaxy::api::Matchmaking()->LeaveLobby(entryPoint->ID, this);
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyLeft->Code = Result::Error;
-		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to leave lobby: %s", error.GetMsg()));
+		m_ctx->GetCallbacks()->OnLogError(strPrintF("[Galaxy] Failed to leave lobby: %s", error.GetMsg()));
 	}
 }
 

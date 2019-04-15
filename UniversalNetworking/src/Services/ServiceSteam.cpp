@@ -19,6 +19,29 @@ Unet::ServiceSteam::~ServiceSteam()
 {
 }
 
+void Unet::ServiceSteam::SimulateOutage()
+{
+	auto lobby = m_ctx->CurrentLobby();
+	if (lobby == nullptr) {
+		return;
+	}
+
+	auto &lobbyInfo = lobby->GetInfo();
+	auto entryPoint = lobbyInfo.GetEntryPoint(GetType());
+	if (entryPoint == nullptr) {
+		return;
+	}
+
+	SteamMatchmaking()->LeaveLobby((uint64)entryPoint->ID);
+
+	for (auto &member : lobby->GetMembers()) {
+		auto id = member.GetServiceID(ServiceType::Steam);
+		if (id.IsValid()) {
+			SteamNetworking()->CloseP2PSessionWithUser((uint64)id.ID);
+		}
+	}
+}
+
 Unet::ServiceType Unet::ServiceSteam::GetType()
 {
 	return ServiceType::Steam;

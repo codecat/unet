@@ -38,6 +38,8 @@ namespace Unet
 		ServiceEnet(Context* ctx);
 		virtual ~ServiceEnet();
 
+		virtual void SimulateOutage() override;
+
 		virtual void RunCallbacks() override;
 
 		virtual ServiceType GetType() override;

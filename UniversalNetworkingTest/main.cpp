@@ -302,7 +302,8 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  data [num]          - Shows all lobby data by the number in the list, or the current lobby");
 		LOG_INFO("  join <num>          - Joins a lobby by the number in the list");
 		LOG_INFO("  connect <ip> [port] - Connect to a server directly by IP address (if enet is enabled)");
-		LOG_INFO("  leave               - Leaves the current lobby or cancels the join request");
+		LOG_INFO("  leave               - Leaves the current lobby with all services");
+		LOG_INFO("  outage <service>    - Simulates a service outage");
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a number of random bytes on channel 0");
 		LOG_INFO("");
 		LOG_INFO("Or just hit Enter to run callbacks.");
@@ -514,6 +515,17 @@ static void HandleCommand(const s2::string &line)
 		while (g_ctx->GetStatus() == Unet::ContextStatus::Connected) {
 			RunCallbacks();
 		}
+
+	} else if (parse[0] == "outage" && parse.len() == 2) {
+		s2::string strService = parse[1];
+		Unet::ServiceType service = Unet::GetServiceTypeByName(strService);
+
+		if (service == Unet::ServiceType::None) {
+			LOG_ERROR("Invalid service type!");
+			return;
+		}
+
+		g_ctx->SimulateServiceOutage(service);
 
 	} else if (parse[0] == "send" && parse.len() == 3) {
 		int peer = atoi(parse[1]);

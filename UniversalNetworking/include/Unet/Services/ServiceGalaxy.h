@@ -46,6 +46,8 @@ namespace Unet
 		ServiceGalaxy(Context* ctx);
 		virtual ~ServiceGalaxy();
 
+		virtual void SimulateOutage() override;
+
 		virtual ServiceType GetType() override;
 
 		virtual ServiceID GetUserID() override;

@@ -36,6 +36,7 @@ namespace Unet
 		void SetPrimaryService(ServiceType service);
 		void EnableService(ServiceType service);
 		int ServiceCount();
+		void SimulateServiceOutage(ServiceType service);
 
 		void CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name = nullptr);
 		void GetLobbyList();
