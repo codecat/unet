@@ -126,6 +126,17 @@ public:
 	{
 		LOG_FROM_CALLBACK("Player left: %s", member.Name.c_str());
 	}
+
+	virtual void OnLobbyDataChanged(const std::string &name) override
+	{
+		auto currentLobby = g_ctx->CurrentLobby();
+		auto value = currentLobby->GetData(name);
+		if (value == "") {
+			LOG_FROM_CALLBACK("Lobby data removed: \"%s\"", name.c_str());
+		} else {
+			LOG_FROM_CALLBACK("Lobby data changed: \"%s\" => \"%s\"", name.c_str(), value.c_str());
+		}
+	}
 };
 
 static void RunCallbacks()
@@ -301,12 +312,16 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("");
 		LOG_INFO("  create [name]       - Creates a public lobby");
 		LOG_INFO("  list                - Requests all available lobbies");
-		LOG_INFO("  data [num]          - Shows all lobby data by the number in the list, or the current lobby");
 		LOG_INFO("  join <num>          - Joins a lobby by the number in the list");
 		LOG_INFO("  connect <ip> [port] - Connect to a server directly by IP address (if enet is enabled)");
 		LOG_INFO("  leave               - Leaves the current lobby with all services");
 		LOG_INFO("  outage <service>    - Simulates a service outage");
 		LOG_INFO("");
+		LOG_INFO("  data [num]          - Shows all lobby data by the number in the list, or the current lobby");
+		LOG_INFO("  setdata <name> <value> - Sets lobby data (only available on the host)");
+		//LOG_INFO("  setmemberdata <peer> <name> <value> - Sets member lobby data (only available on the host and the local peer)");
+		LOG_INFO("  remdata <name>      - Removes lobby data (only available on the host)");
+		//LOG_INFO("  remmemberdata <peer> <name> - Removes member lobby data (only available on the host and the local peer)");
 		LOG_INFO("  kick <peer>         - Kicks the given peer with an optional reason");
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a reliable packet with a number of random bytes on channel 0");
 		LOG_INFO("  sendu <peer> <num>  - Sends the given peer an unreliable packet with a number of random bytes on channel 0");
@@ -476,6 +491,39 @@ static void HandleCommand(const s2::string &line)
 		for (auto &data : lobbyData) {
 			LOG_INFO("  \"%s\" = \"%s\"", data.Name.c_str(), data.Value.c_str());
 		}
+
+	} else if (parse[0] == "setdata" && parse.len() == 3) {
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		if (!currentLobby->GetInfo().IsHosting) {
+			LOG_ERROR("Lobby data can only be set by the host.");
+			return;
+		}
+
+		s2::string name = parse[1];
+		s2::string value = parse[2];
+
+		currentLobby->SetData(name.c_str(), value.c_str());
+
+	} else if (parse[0] == "remdata" && parse.len() == 2) {
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		if (!currentLobby->GetInfo().IsHosting) {
+			LOG_ERROR("Lobby data can only be removed by the host.");
+			return;
+		}
+
+		s2::string name = parse[1];
+
+		currentLobby->RemoveData(name.c_str());
 
 	} else if (parse[0] == "join" && parse.len() == 2) {
 		if (g_lastLobbyList.Code != Unet::Result::OK) {

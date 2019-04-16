@@ -248,6 +248,13 @@ void Unet::ServiceGalaxy::SetLobbyData(const ServiceID &lobbyId, const char* nam
 	galaxy::api::Matchmaking()->SetLobbyData(lobbyId.ID, name, value);
 }
 
+void Unet::ServiceGalaxy::RemoveLobbyData(const ServiceID &lobbyId, const char* name)
+{
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
+	galaxy::api::Matchmaking()->DeleteLobbyData(lobbyId.ID, name);
+}
+
 void Unet::ServiceGalaxy::SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(peerId.Service == ServiceType::Galaxy);

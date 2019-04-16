@@ -281,6 +281,27 @@ std::string Unet::Lobby::GetData(const std::string &name) const
 	return ret;
 }
 
+void Unet::Lobby::RemoveData(const std::string &name)
+{
+	LobbyDataContainer::RemoveData(name);
+
+	if (m_info.IsHosting) {
+		for (auto &entry : m_info.EntryPoints) {
+			auto service = m_ctx->GetService(entry.Service);
+			if (service != nullptr) {
+				service->RemoveLobbyData(entry, name.c_str());
+			}
+		}
+
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyDataRemoved;
+		js["name"] = name;
+		std::vector<uint8_t> msg = json::to_bson(js);
+
+		m_ctx->InternalSendToAll(msg.data(), msg.size());
+	}
+}
+
 int Unet::Lobby::GetNextAvailablePeer()
 {
 	int i = 0;

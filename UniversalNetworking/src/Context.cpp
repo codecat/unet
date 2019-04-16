@@ -390,6 +390,18 @@ void Unet::Context::RunCallbacks()
 					auto value = js["value"].get<std::string>();
 
 					m_currentLobby->SetData(name, value);
+					m_callbacks->OnLobbyDataChanged(name);
+
+				} else if (type == LobbyPacketType::LobbyDataRemoved) {
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (lobbyInfo.IsHosting) {
+						continue;
+					}
+
+					auto name = js["name"].get<std::string>();
+
+					m_currentLobby->RemoveData(name);
+					m_callbacks->OnLobbyDataChanged(name);
 
 				} else {
 					m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));

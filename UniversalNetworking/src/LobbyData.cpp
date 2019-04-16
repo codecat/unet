@@ -19,21 +19,17 @@ void Unet::LobbyDataContainer::SetData(const std::string &name, const std::strin
 	//	return;
 	//}
 
-	bool found = false;
 	for (auto &data : m_data) {
 		if (data.Name == name) {
 			data.Value = value;
-			found = true;
-			break;
+			return;
 		}
 	}
 
-	if (!found) {
-		LobbyData newData;
-		newData.Name = name;
-		newData.Value = value;
-		m_data.emplace_back(newData);
-	}
+	LobbyData newData;
+	newData.Name = name;
+	newData.Value = value;
+	m_data.emplace_back(newData);
 }
 
 std::string Unet::LobbyDataContainer::GetData(const std::string &name) const
@@ -44,6 +40,17 @@ std::string Unet::LobbyDataContainer::GetData(const std::string &name) const
 		}
 	}
 	return "";
+}
+
+void Unet::LobbyDataContainer::RemoveData(const std::string &name)
+{
+	auto it = std::find_if(m_data.begin(), m_data.end(), [&name](const LobbyData &pair) {
+		return pair.Name == name;
+	});
+
+	if (it != m_data.end()) {
+		m_data.erase(it);
+	}
 }
 
 json Unet::LobbyDataContainer::SerializeData() const

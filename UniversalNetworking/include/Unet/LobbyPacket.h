@@ -27,7 +27,11 @@ namespace Unet
 
 		/// Sent by the server to announce changed lobby data
 		LobbyData,
+		/// Sent by the server to announce removed lobby data
+		LobbyDataRemoved,
 		/// Sent by the server to announce changed member lobby data
 		LobbyMemberData,
+		/// Sent by the server to announce removed member lobby data
+		LobbyMemberDataRemoved,
 	};
 }

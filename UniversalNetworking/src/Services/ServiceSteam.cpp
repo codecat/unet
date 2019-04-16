@@ -160,6 +160,13 @@ void Unet::ServiceSteam::SetLobbyData(const ServiceID &lobbyId, const char* name
 	SteamMatchmaking()->SetLobbyData((uint64)lobbyId.ID, name, value);
 }
 
+void Unet::ServiceSteam::RemoveLobbyData(const ServiceID &lobbyId, const char* name)
+{
+	assert(lobbyId.Service == ServiceType::Steam);
+
+	SteamMatchmaking()->DeleteLobbyData((uint64)lobbyId.ID, name);
+}
+
 void Unet::ServiceSteam::SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(peerId.Service == ServiceType::Steam);

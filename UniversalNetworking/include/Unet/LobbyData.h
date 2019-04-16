@@ -21,6 +21,7 @@ namespace Unet
 	public:
 		virtual void SetData(const std::string &name, const std::string &value);
 		virtual std::string GetData(const std::string &name) const;
+		virtual void RemoveData(const std::string &name);
 
 		virtual json SerializeData() const;
 		virtual void DeserializeData(const json &js);

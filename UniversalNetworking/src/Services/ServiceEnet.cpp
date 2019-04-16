@@ -282,6 +282,10 @@ void Unet::ServiceEnet::SetLobbyData(const ServiceID &lobbyId, const char* name,
 {
 }
 
+void Unet::ServiceEnet::RemoveLobbyData(const ServiceID &lobbyId, const char* name)
+{
+}
+
 void Unet::ServiceEnet::SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel)
 {
 	auto peer = GetPeer(peerId);
