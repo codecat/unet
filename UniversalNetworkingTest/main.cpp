@@ -308,7 +308,8 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  outage <service>    - Simulates a service outage");
 		LOG_INFO("");
 		LOG_INFO("  kick <peer>         - Kicks the given peer with an optional reason");
-		LOG_INFO("  send <peer> <num>   - Sends the given peer a number of random bytes on channel 0");
+		LOG_INFO("  send <peer> <num>   - Sends the given peer a reliable packet with a number of random bytes on channel 0");
+		LOG_INFO("  sendu <peer> <num>  - Sends the given peer an unreliable packet with a number of random bytes on channel 0");
 		LOG_INFO("");
 		LOG_INFO("Or just hit Enter to run callbacks.");
 
@@ -581,11 +582,38 @@ static void HandleCommand(const s2::string &line)
 			for (int i = 0; i < num; i++) {
 				bytes[i] = (uint8_t)(rand() % 255);
 			}
-			g_ctx->SendTo(*member, bytes, num);
+			g_ctx->SendTo(*member, bytes, num, Unet::PacketType::Reliable);
 			free(bytes);
 		}
 
-		LOG_INFO("%d bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
+		LOG_INFO("%d reliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
+
+	} else if (parse[0] == "sendu" && parse.len() == 3) {
+		int peer = atoi(parse[1]);
+		int num = atoi(parse[2]);
+
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		auto member = currentLobby->GetMember(peer);
+		if (member == nullptr) {
+			LOG_ERROR("Peer ID %d does not belong to a member!", peer);
+			return;
+		}
+
+		uint8_t* bytes = (uint8_t*)malloc(num);
+		if (bytes != nullptr) {
+			for (int i = 0; i < num; i++) {
+				bytes[i] = (uint8_t)(rand() % 255);
+			}
+			g_ctx->SendTo(*member, bytes, num, Unet::PacketType::Unreliable);
+			free(bytes);
+		}
+
+		LOG_INFO("%d unreliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
 
 	} else {
 		LOG_ERROR("Unknown command \"%s\"! Try \"help\".", parse[0].c_str());
