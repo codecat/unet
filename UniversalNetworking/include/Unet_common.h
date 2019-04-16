@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <memory>
 
+#include <guid.hpp>
+
 namespace Unet
 {
 	class Callbacks;

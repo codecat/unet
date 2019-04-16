@@ -2,42 +2,11 @@
 
 #include <Unet_common.h>
 #include <Unet/LobbyInfo.h>
+#include <Unet/LobbyMember.h>
+#include <Unet/LobbyData.h>
 
 namespace Unet
 {
-	struct LobbyData
-	{
-		std::string Name;
-		std::string Value;
-	};
-
-	class LobbyMember
-	{
-	private:
-		Context* m_ctx;
-
-	public:
-		/// Only true if all fundamental user data has been received after joining the lobby (should only be a concern on the host)
-		bool Valid = true;
-
-		xg::Guid UnetGuid;
-		int UnetPeer = -1;
-
-		/// The primary service this member uses to communicate (this is decided by which service the Hello packet is sent through)
-		ServiceType UnetPrimaryService = ServiceType::None;
-
-		std::string Name;
-		std::vector<ServiceID> IDs;
-		std::vector<LobbyData> Data;
-
-	public:
-		LobbyMember(Context* ctx);
-
-		ServiceID GetServiceID(ServiceType type) const;
-		ServiceID GetDataServiceID() const;
-		ServiceID GetPrimaryServiceID() const;
-	};
-
 	class Lobby
 	{
 		friend class Context;

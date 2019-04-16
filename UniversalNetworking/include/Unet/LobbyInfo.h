@@ -2,7 +2,6 @@
 
 #include <Unet_common.h>
 #include <Unet/ServiceID.h>
-#include <guid.hpp>
 
 namespace Unet
 {
