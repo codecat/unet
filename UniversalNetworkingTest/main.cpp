@@ -24,7 +24,8 @@
 #define LOG_TYPE(prefix, func) func(); printf("[" prefix "] "); termcolor::reset()
 #define LOG_ERROR(fmt, ...) LOG_TYPE("ERROR", termcolor::red); printf(fmt "\n", ##__VA_ARGS__)
 #define LOG_INFO(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...) LOG_TYPE(" WARN", termcolor::yellow); printf(fmt "\n", ##__VA_ARGS__)
+#define LOG_FROM_CALLBACK(fmt, ...) LOG_TYPE("CALLBACK", termcolor::cyan); printf(fmt "\n", ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...) LOG_TYPE("WARN", termcolor::yellow); printf(fmt "\n", ##__VA_ARGS__)
 #if defined(DEBUG)
 # define LOG_DEBUG(fmt, ...) LOG_TYPE("DEBUG", termcolor::blue); printf(fmt "\n", ##__VA_ARGS__)
 #else
@@ -72,7 +73,7 @@ public:
 		}
 
 		auto &info = result.CreatedLobby->GetInfo();
-		LOG_INFO("Lobby created: \"%s\"", info.Name.c_str());
+		LOG_FROM_CALLBACK("Lobby created: \"%s\"", info.Name.c_str());
 	}
 
 	virtual void OnLobbyList(const Unet::LobbyListResult &result) override
@@ -84,12 +85,12 @@ public:
 
 		g_lastLobbyList = result;
 
-		LOG_INFO("%d lobbies:", (int)result.Lobbies.size());
+		LOG_FROM_CALLBACK("%d lobbies:", (int)result.Lobbies.size());
 		for (size_t i = 0; i < result.Lobbies.size(); i++) {
 			auto &lobbyInfo = result.Lobbies[i];
-			LOG_INFO("  [%d] \"%s\" (max %d)", (int)i, lobbyInfo.Name.c_str(), lobbyInfo.MaxPlayers);
+			LOG_FROM_CALLBACK("  [%d] \"%s\" (max %d)", (int)i, lobbyInfo.Name.c_str(), lobbyInfo.MaxPlayers);
 			for (auto &entry : lobbyInfo.EntryPoints) {
-				LOG_INFO("    %s (0x%016llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
+				LOG_FROM_CALLBACK("    %s (0x%016llX)", Unet::GetServiceNameByType(entry.Service), entry.ID);
 			}
 		}
 	}
@@ -102,7 +103,7 @@ public:
 		}
 
 		auto &info = result.JoinedLobby->GetInfo();
-		LOG_INFO("Joined lobby: \"%s\"", info.Name.c_str());
+		LOG_FROM_CALLBACK("Joined lobby: \"%s\"", info.Name.c_str());
 	}
 
 	virtual void OnLobbyLeft(const Unet::LobbyLeftResult &result) override
@@ -113,17 +114,17 @@ public:
 		case Unet::LeaveReason::Disconnected: reasonStr = "Disconnected"; break;
 		case Unet::LeaveReason::Kicked: reasonStr = "Kicked"; break;
 		}
-		LOG_INFO("Left lobby: %s", reasonStr);
+		LOG_FROM_CALLBACK("Left lobby: %s", reasonStr);
 	}
 
 	virtual void OnLobbyPlayerJoined(const Unet::LobbyMember &member) override
 	{
-		LOG_INFO("Player joined: %s", member.Name.c_str());
+		LOG_FROM_CALLBACK("Player joined: %s", member.Name.c_str());
 	}
 
 	virtual void OnLobbyPlayerLeft(const Unet::LobbyMember &member) override
 	{
-		LOG_INFO("Player left: %s", member.Name.c_str());
+		LOG_FROM_CALLBACK("Player left: %s", member.Name.c_str());
 	}
 };
 
@@ -296,7 +297,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  persona <name>      - Sets your persona name");
 		LOG_INFO("");
 		LOG_INFO("  status              - Prints current network status");
-		LOG_INFO("  wait                - Keeps running callbacks until a key is pressed");
+		LOG_INFO("  wait                - Keeps running callbacks until a key is pressed or when disconnected");
 		LOG_INFO("");
 		LOG_INFO("  create [name]       - Creates a public lobby");
 		LOG_INFO("  list                - Requests all available lobbies");
@@ -414,8 +415,16 @@ static void HandleCommand(const s2::string &line)
 	} else if (parse[0] == "wait") {
 		LOG_INFO("Entering wait mode. Press any key to stop.");
 
-		while (!IsKeyPressed()) {
+		while (true) {
 			RunCallbacks();
+
+			if (IsKeyPressed()) {
+				break;
+			}
+
+			if (g_ctx->GetStatus() == Unet::ContextStatus::Idle) {
+				break;
+			}
 		}
 
 	} else if (parse[0] == "create") {
