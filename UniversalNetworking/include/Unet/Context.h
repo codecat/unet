@@ -42,7 +42,7 @@ namespace Unet
 		void GetLobbyList();
 		void JoinLobby(LobbyInfo &lobbyInfo);
 		void JoinLobby(const ServiceID &id);
-		void LeaveLobby();
+		void LeaveLobby(LeaveReason reason = LeaveReason::UserLeave);
 
 		/// Get maximum number of players as reported by services.
 		int GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo);
@@ -65,6 +65,8 @@ namespace Unet
 		void SendToAll(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
 		void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
 		void SendToHost(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
+
+		void Kick(LobbyMember &member);
 
 	private:
 		Service* PrimaryService();

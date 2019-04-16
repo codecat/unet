@@ -111,6 +111,7 @@ public:
 		switch (result.Reason) {
 		case Unet::LeaveReason::UserLeave: reasonStr = "User leave"; break;
 		case Unet::LeaveReason::Disconnected: reasonStr = "Disconnected"; break;
+		case Unet::LeaveReason::Kicked: reasonStr = "Kicked"; break;
 		}
 		LOG_INFO("Left lobby: %s", reasonStr);
 	}
@@ -304,6 +305,8 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  connect <ip> [port] - Connect to a server directly by IP address (if enet is enabled)");
 		LOG_INFO("  leave               - Leaves the current lobby with all services");
 		LOG_INFO("  outage <service>    - Simulates a service outage");
+		LOG_INFO("");
+		LOG_INFO("  kick <peer>         - Kicks the given peer with an optional reason");
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a number of random bytes on channel 0");
 		LOG_INFO("");
 		LOG_INFO("Or just hit Enter to run callbacks.");
@@ -526,6 +529,27 @@ static void HandleCommand(const s2::string &line)
 		}
 
 		g_ctx->SimulateServiceOutage(service);
+
+	} else if (parse[0] == "kick" && parse.len() == 2) {
+		int peer = atoi(parse[1]);
+		if (peer == g_ctx->GetLocalPeer()) {
+			LOG_ERROR("You can't kick yourself!");
+			return;
+		}
+
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		auto member = currentLobby->GetMember(peer);
+		if (member == nullptr) {
+			LOG_ERROR("Peer ID %d does not belong to a member!", peer);
+			return;
+		}
+
+		g_ctx->Kick(*member);
 
 	} else if (parse[0] == "send" && parse.len() == 3) {
 		int peer = atoi(parse[1]);

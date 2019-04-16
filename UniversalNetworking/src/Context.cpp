@@ -381,6 +381,14 @@ void Unet::Context::RunCallbacks()
 
 					m_currentLobby->RemoveMember(*member);
 
+				} else if (type == LobbyPacketType::MemberKick) {
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (lobbyInfo.IsHosting) {
+						continue;
+					}
+
+					LeaveLobby(LeaveReason::Kicked);
+
 				} else if (type == LobbyPacketType::MemberNewService) {
 					auto &lobbyInfo = m_currentLobby->GetInfo();
 					if (lobbyInfo.IsHosting) {
@@ -560,10 +568,11 @@ void Unet::Context::JoinLobby(const ServiceID &id)
 	service->JoinLobby(id);
 }
 
-void Unet::Context::LeaveLobby()
+void Unet::Context::LeaveLobby(LeaveReason reason)
 {
 	if (m_status == ContextStatus::Connected) {
 		m_callbackLobbyLeft.Begin();
+		m_callbackLobbyLeft.GetResult().Reason = reason;
 
 		for (auto service : m_services) {
 			service->LeaveLobby();
@@ -851,6 +860,20 @@ void Unet::Context::SendToHost(uint8_t* data, size_t size, PacketType type, int 
 	}
 
 	SendTo(*hostMember, data, size, type, channel);
+}
+
+void Unet::Context::Kick(LobbyMember &member)
+{
+	if (!m_currentLobby->m_info.IsHosting) {
+		m_callbacks->OnLogError("Can't kick members when not hosting!");
+		return;
+	}
+
+	json js;
+	js["t"] = (uint8_t)LobbyPacketType::MemberKick;
+	std::vector<uint8_t> msg = json::to_bson(js);
+
+	InternalSendTo(member, msg.data(), msg.size());
 }
 
 Unet::Service* Unet::Context::PrimaryService()

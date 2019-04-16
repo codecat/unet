@@ -237,7 +237,6 @@ void Unet::ServiceEnet::JoinLobby(const ServiceID &id)
 void Unet::ServiceEnet::LeaveLobby()
 {
 	m_requestLobbyLeft = m_ctx->m_callbackLobbyLeft.AddServiceRequest(this);
-	m_requestLobbyLeft->Data->Reason = LeaveReason::UserLeave;
 
 	if (m_peerHost != nullptr) {
 		enet_peer_disconnect(m_peerHost, 0);

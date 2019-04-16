@@ -191,7 +191,6 @@ void Unet::ServiceGalaxy::LeaveLobby()
 	}
 
 	m_requestLobbyLeft = m_ctx->m_callbackLobbyLeft.AddServiceRequest(this);
-	m_requestLobbyLeft->Data->Reason = LeaveReason::UserLeave;
 
 	try {
 		galaxy::api::Matchmaking()->LeaveLobby(entryPoint->ID, this);

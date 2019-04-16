@@ -109,7 +109,6 @@ void Unet::ServiceSteam::LeaveLobby()
 	}
 
 	auto serviceRequest = m_ctx->m_callbackLobbyLeft.AddServiceRequest(this);
-	serviceRequest->Data->Reason = Unet::LeaveReason::UserLeave;
 	serviceRequest->Code = Result::OK;
 }
 

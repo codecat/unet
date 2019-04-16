@@ -12,6 +12,9 @@ namespace Unet
 
 		/// All service entry points have been disconnected
 		Disconnected,
+
+		/// User was kicked from the lobby
+		Kicked,
 	};
 
 	struct LobbyLeftResult : public ResultObject

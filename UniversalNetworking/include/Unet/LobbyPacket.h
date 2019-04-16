@@ -19,6 +19,8 @@ namespace Unet
 		MemberInfo,
 		/// Sent by the server to announce a member has left
 		MemberLeft,
+		/// Sent by the server telling a member to leave (TODO: Force player to leave if they don't disconnect after a timeout)
+		MemberKick,
 
 		/// Sent by the server the indicate that a member has connected with a new service ID
 		MemberNewService,
