@@ -4,7 +4,6 @@
 #include <Unet/Services/ServiceSteam.h>
 #include <Unet/Services/ServiceGalaxy.h>
 #include <Unet/Services/ServiceEnet.h>
-#include <Unet/Utils.h>
 #include <Unet/LobbyPacket.h>
 
 Unet::Context::Context(int numChannels)
@@ -235,7 +234,7 @@ void Unet::Context::RunCallbacks()
 
 				auto peerMember = m_currentLobby->GetMember(peer);
 
-				json js = json::from_bson(msg);
+				json js = JsonUnpack(msg);
 				if (!js.is_object() || !js.contains("t")) {
 					m_callbacks->OnLogError(strPrintF("[P2P] [%s] Message from 0x%016llX is not a valid bson object!", GetServiceNameByType(peer.Service), peer.ID));
 					continue;
@@ -261,7 +260,7 @@ void Unet::Context::RunCallbacks()
 						js["guid"] = guid.str();
 						js["service"] = (int)peer.Service;
 						js["id"] = peer.ID;
-						msg = json::to_bson(js);
+						msg = JsonPack(js);
 
 						InternalSendToAll(msg.data(), msg.size());
 					}
@@ -295,13 +294,13 @@ void Unet::Context::RunCallbacks()
 							js["members"].emplace_back(SerializeMember(member));
 						}
 					}
-					msg = json::to_bson(js);
+					msg = JsonPack(js);
 					InternalSendTo(*member, msg.data(), msg.size());
 
 					// Send MemberInfo to existing members
 					js = SerializeMember(*member);
 					js["t"] = (uint8_t)LobbyPacketType::MemberInfo;
-					msg = json::to_bson(js);
+					msg = JsonPack(js);
 					InternalSendToAllExcept(*member, msg.data(), msg.size());
 
 					// Run callback
@@ -871,7 +870,7 @@ void Unet::Context::Kick(LobbyMember &member)
 
 	json js;
 	js["t"] = (uint8_t)LobbyPacketType::MemberKick;
-	std::vector<uint8_t> msg = json::to_bson(js);
+	std::vector<uint8_t> msg = JsonPack(js);
 
 	InternalSendTo(member, msg.data(), msg.size());
 }
@@ -1031,7 +1030,7 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 	json js;
 	js["t"] = (uint8_t)LobbyPacketType::Hello;
 	js["name"] = m_personaName;
-	std::vector<uint8_t> msg = json::to_bson(js);
+	std::vector<uint8_t> msg = JsonPack(js);
 
 	service->SendPacket(lobbyHost, msg.data(), msg.size(), PacketType::Reliable, 0);
 
@@ -1064,7 +1063,7 @@ void Unet::Context::OnLobbyPlayerLeft(const LobbyMember &member)
 		json js;
 		js["t"] = (uint8_t)LobbyPacketType::MemberLeft;
 		js["guid"] = member.UnetGuid.str();
-		std::vector<uint8_t> msg = json::to_bson(js);
+		std::vector<uint8_t> msg = JsonPack(js);
 
 		InternalSendToAll(msg.data(), msg.size());
 	}

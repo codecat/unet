@@ -1,6 +1,5 @@
 #include <Unet_common.h>
 #include <Unet/Services/ServiceEnet.h>
-#include <Unet/Utils.h>
 #include <Unet/LobbyPacket.h>
 
 // I seriously hate Windows.h
@@ -93,7 +92,7 @@ void Unet::ServiceEnet::RunCallbacks()
 				json js;
 				js["t"] = (uint8_t)LobbyPacketType::Handshake;
 				js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
-				std::vector<uint8_t> msg = json::to_bson(js);
+				std::vector<uint8_t> msg = JsonPack(js);
 
 				m_requestLobbyJoin = nullptr;
 

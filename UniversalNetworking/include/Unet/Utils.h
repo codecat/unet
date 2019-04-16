@@ -12,4 +12,8 @@ namespace Unet
 		snprintf(buf.get(), size, format.c_str(), args ...);
 		return std::string(buf.get(), buf.get() + size - 1);
 	}
+
+	std::vector<uint8_t> JsonPack(const json &js);
+	json JsonUnpack(const std::vector<uint8_t> &data);
+	json JsonUnpack(uint8_t* data, size_t size);
 }

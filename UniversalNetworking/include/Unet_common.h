@@ -17,6 +17,8 @@
 #include <Unet/json.hpp>
 using json = nlohmann::json;
 
+#include <Unet/Utils.h>
+
 namespace Unet
 {
 	class Callbacks;
