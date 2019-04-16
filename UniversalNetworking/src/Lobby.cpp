@@ -271,7 +271,7 @@ std::string Unet::Lobby::GetData(const std::string &name) const
 			ret = str;
 		} else if (ret != str) {
 			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Data \"%s\" is different between service %s and %s! (\"%s\" and \"%s\")",
-				name,
+				name.c_str(),
 				GetServiceNameByType(firstService), GetServiceNameByType(entry.Service),
 				ret.c_str(), str.c_str()
 			));
