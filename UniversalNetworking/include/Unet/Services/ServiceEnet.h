@@ -65,8 +65,6 @@ namespace Unet
 		virtual size_t ReadPacket(void* data, size_t maxSize, ServiceID* peerId, uint8_t channel) override;
 		virtual bool IsPacketAvailable(size_t* outPacketSize, uint8_t channel) override;
 
-		virtual void KickPlayer(const ServiceID &peerId) override;
-
 	private:
 		ENetPeer* GetPeer(const ServiceID &id);
 		void Clear(size_t numChannels);
