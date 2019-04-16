@@ -380,6 +380,17 @@ void Unet::Context::RunCallbacks()
 
 					m_currentLobby->AddMemberService(guid, id);
 
+				} else if (type == LobbyPacketType::LobbyData) {
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (lobbyInfo.IsHosting) {
+						continue;
+					}
+
+					auto name = js["name"].get<std::string>();
+					auto value = js["value"].get<std::string>();
+
+					m_currentLobby->SetData(name, value);
+
 				} else {
 					m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
 				}

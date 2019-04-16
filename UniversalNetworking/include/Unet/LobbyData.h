@@ -19,8 +19,8 @@ namespace Unet
 		std::vector<LobbyData> m_data;
 
 	public:
-		virtual void SetData(const char* name, const std::string &value);
-		virtual std::string GetData(const char* name) const;
+		virtual void SetData(const std::string &name, const std::string &value);
+		virtual std::string GetData(const std::string &name) const;
 
 		virtual json SerializeData() const;
 		virtual void DeserializeData(const json &js);

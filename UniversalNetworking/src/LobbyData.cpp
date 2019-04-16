@@ -12,7 +12,7 @@ Unet::LobbyData::LobbyData(const std::string &name, const std::string &value)
 	Value = value;
 }
 
-void Unet::LobbyDataContainer::SetData(const char* name, const std::string &value)
+void Unet::LobbyDataContainer::SetData(const std::string &name, const std::string &value)
 {
 	//TODO: Consider uncommenting?
 	//if (!strncmp(name, "unet-", 5)) {
@@ -36,7 +36,7 @@ void Unet::LobbyDataContainer::SetData(const char* name, const std::string &valu
 	}
 }
 
-std::string Unet::LobbyDataContainer::GetData(const char* name) const
+std::string Unet::LobbyDataContainer::GetData(const std::string &name) const
 {
 	for (auto &data : m_data) {
 		if (data.Name == name) {

@@ -39,8 +39,8 @@ namespace Unet
 		void RemoveMemberService(const ServiceID &id);
 		void RemoveMember(const LobbyMember &member);
 
-		virtual void SetData(const char* name, const std::string &value) override;
-		virtual std::string GetData(const char* name) const override;
+		virtual void SetData(const std::string &name, const std::string &value) override;
+		virtual std::string GetData(const std::string &name) const override;
 
 	private:
 		int GetNextAvailablePeer();

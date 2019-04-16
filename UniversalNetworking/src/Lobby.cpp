@@ -2,6 +2,7 @@
 #include <Unet/Lobby.h>
 #include <Unet/Utils.h>
 #include <Unet/Context.h>
+#include <Unet/LobbyPacket.h>
 
 Unet::Lobby::Lobby(Context* ctx, const LobbyInfo &lobbyInfo)
 {
@@ -221,23 +222,29 @@ void Unet::Lobby::RemoveMember(const LobbyMember &member)
 	m_ctx->OnLobbyPlayerLeft(callbackCopy);
 }
 
-void Unet::Lobby::SetData(const char* name, const std::string &value)
+void Unet::Lobby::SetData(const std::string &name, const std::string &value)
 {
-	if (!m_info.IsHosting) {
-		return;
-	}
-
 	LobbyDataContainer::SetData(name, value);
 
-	for (auto &entry : m_info.EntryPoints) {
-		auto service = m_ctx->GetService(entry.Service);
-		if (service != nullptr) {
-			service->SetLobbyData(entry, name, value.c_str());
+	if (m_info.IsHosting) {
+		for (auto &entry : m_info.EntryPoints) {
+			auto service = m_ctx->GetService(entry.Service);
+			if (service != nullptr) {
+				service->SetLobbyData(entry, name.c_str(), value.c_str());
+			}
 		}
+
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyData;
+		js["name"] = name;
+		js["value"] = value;
+		std::vector<uint8_t> msg = json::to_bson(js);
+
+		m_ctx->InternalSendToAll(msg.data(), msg.size());
 	}
 }
 
-std::string Unet::Lobby::GetData(const char* name) const
+std::string Unet::Lobby::GetData(const std::string &name) const
 {
 	std::string ret = LobbyDataContainer::GetData(name);
 	if (ret != "") {
@@ -254,7 +261,7 @@ std::string Unet::Lobby::GetData(const char* name) const
 			continue;
 		}
 
-		std::string str = service->GetLobbyData(entry, name);
+		std::string str = service->GetLobbyData(entry, name.c_str());
 		if (str == "") {
 			continue;
 		}

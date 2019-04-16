@@ -22,7 +22,12 @@ namespace Unet
 		/// Sent by the server telling a member to leave (TODO: Force player to leave if they don't disconnect after a timeout)
 		MemberKick,
 
-		/// Sent by the server the indicate that a member has connected with a new service ID
+		/// Sent by the server to announce that a member has connected with a new service ID
 		MemberNewService,
+
+		/// Sent by the server to announce changed lobby data
+		LobbyData,
+		/// Sent by the server to announce changed member lobby data
+		LobbyMemberData,
 	};
 }
