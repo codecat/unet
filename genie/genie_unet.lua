@@ -3,6 +3,9 @@ local DIR_UNET = (path.getabsolute('..') .. '/') .. 'UniversalNetworking/'
 project 'unet'
 	kind 'StaticLib'
 
+	pchheader 'Unet_common.h'
+	pchsource(DIR_UNET .. 'src/Unet_common.cpp')
+
 	dofile('genie_common.lua')
 	dofile('genie_services.lua')
 
