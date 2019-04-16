@@ -88,6 +88,7 @@ static void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &call
 	callback.Clear();
 }
 
+//TODO: Refactor these 2 functions so they're part of LobbyMember instead?
 static json SerializeMember(const Unet::LobbyMember &member)
 {
 	json js;
@@ -99,10 +100,7 @@ static json SerializeMember(const Unet::LobbyMember &member)
 	for (auto &id : member.IDs) {
 		js["ids"].emplace_back(json::array({ (int)id.Service, id.ID }));
 	}
-	js["data"] = json::object();
-	for (auto &memberData : member.Data) {
-		js["data"][memberData.Name] = memberData.Value;
-	}
+	js["data"] = member.SerializeData();
 	return js;
 }
 
@@ -124,15 +122,7 @@ static Unet::LobbyMember &DeserializeMemberIntoLobby(Unet::Lobby* lobby, const j
 	lobbyMember->UnetPrimaryService = (Unet::ServiceType)member["primary"].get<int>();
 	lobbyMember->Name = member["name"].get<std::string>();
 	lobbyMember->Valid = true;
-
-	for (auto &pair : member["data"].items()) {
-		for (auto &data : lobbyMember->Data) {
-			if (data.Name == pair.key()) {
-				data.Value = pair.value().get<std::string>();
-				break;
-			}
-		}
-	}
+	lobbyMember->DeserializeData(member["data"]);
 
 	return *lobbyMember;
 }
@@ -301,10 +291,7 @@ void Unet::Context::RunCallbacks()
 					// Send LobbyInfo to new member
 					js = json::object();
 					js["t"] = (uint8_t)LobbyPacketType::LobbyInfo;
-					js["data"] = json::object();
-					for (auto &data : m_currentLobby->m_data) {
-						js["data"][data.Name] = data.Value;
-					}
+					js["data"] = m_currentLobby->SerializeData();
 					js["members"] = json::array();
 					for (auto &member : m_currentLobby->m_members) {
 						if (member.Valid) {
@@ -329,14 +316,7 @@ void Unet::Context::RunCallbacks()
 						continue;
 					}
 
-					for (auto &pair : js["data"].items()) {
-						for (auto &data : m_currentLobby->m_data) {
-							if (data.Name == pair.key()) {
-								data.Value = pair.value().get<std::string>();
-								break;
-							}
-						}
-					}
+					m_currentLobby->DeserializeData(js["data"]);
 
 					for (auto &member : js["members"]) {
 						DeserializeMemberIntoLobby(CurrentLobby(), member);

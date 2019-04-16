@@ -40,7 +40,7 @@ namespace Unet
 		void RemoveMember(const LobbyMember &member);
 
 		virtual void SetData(const char* name, const std::string &value) override;
-		virtual std::string GetData(const char* name) override;
+		virtual std::string GetData(const char* name) const override;
 
 	private:
 		int GetNextAvailablePeer();

@@ -469,7 +469,7 @@ static void HandleCommand(const s2::string &line)
 				return;
 			}
 
-			lobbyData = currentLobby->GetAllData();
+			lobbyData = currentLobby->m_data;
 		}
 
 		LOG_INFO("%d keys:", (int)lobbyData.size());

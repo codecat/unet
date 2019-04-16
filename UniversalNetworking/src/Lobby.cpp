@@ -237,7 +237,7 @@ void Unet::Lobby::SetData(const char* name, const std::string &value)
 	}
 }
 
-std::string Unet::Lobby::GetData(const char* name)
+std::string Unet::Lobby::GetData(const char* name) const
 {
 	std::string ret = LobbyDataContainer::GetData(name);
 	if (ret != "") {

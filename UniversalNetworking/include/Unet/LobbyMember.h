@@ -6,7 +6,7 @@
 
 namespace Unet
 {
-	class LobbyMember
+	class LobbyMember : public LobbyDataContainer
 	{
 	private:
 		Context* m_ctx;
@@ -23,7 +23,6 @@ namespace Unet
 
 		std::string Name;
 		std::vector<ServiceID> IDs;
-		std::vector<LobbyData> Data;
 
 	public:
 		LobbyMember(Context* ctx);
