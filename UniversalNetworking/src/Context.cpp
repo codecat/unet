@@ -388,7 +388,7 @@ void Unet::Context::RunCallbacks()
 					auto name = js["name"].get<std::string>();
 					auto value = js["value"].get<std::string>();
 
-					m_currentLobby->SetData(name, value);
+					m_currentLobby->InternalSetData(name, value);
 					m_callbacks->OnLobbyDataChanged(name);
 
 				} else if (type == LobbyPacketType::LobbyDataRemoved) {
@@ -399,8 +399,60 @@ void Unet::Context::RunCallbacks()
 
 					auto name = js["name"].get<std::string>();
 
-					m_currentLobby->RemoveData(name);
+					m_currentLobby->InternalRemoveData(name);
 					m_callbacks->OnLobbyDataChanged(name);
+
+				} else if (type == LobbyPacketType::LobbyMemberData) {
+					auto name = js["name"].get<std::string>();
+					auto value = js["value"].get<std::string>();
+
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (lobbyInfo.IsHosting) {
+						peerMember->InternalSetData(name, value);
+
+						js = json::object();
+						js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
+						js["guid"] = peerMember->UnetGuid.str();
+						js["name"] = name;
+						js["value"] = value;
+						msg = JsonPack(js);
+
+						InternalSendToAllExcept(*peerMember, msg.data(), msg.size());
+
+					} else {
+						xg::Guid guid(js["guid"].get<std::string>());
+
+						auto member = m_currentLobby->GetMember(guid);
+						assert(member != nullptr);
+						if (member != nullptr) {
+							member->InternalSetData(name, value);
+						}
+					}
+
+				} else if (type == LobbyPacketType::LobbyMemberDataRemoved) {
+					auto name = js["name"].get<std::string>();
+
+					auto &lobbyInfo = m_currentLobby->GetInfo();
+					if (lobbyInfo.IsHosting) {
+						peerMember->InternalRemoveData(name);
+
+						js = json::object();
+						js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
+						js["guid"] = peerMember->UnetGuid.str();
+						js["name"] = name;
+						msg = JsonPack(js);
+
+						InternalSendToAllExcept(*peerMember, msg.data(), msg.size());
+
+					} else {
+						xg::Guid guid(js["guid"].get<std::string>());
+
+						auto member = m_currentLobby->GetMember(guid);
+						assert(member != nullptr);
+						if (member != nullptr) {
+							member->InternalRemoveData(name);
+						}
+					}
 
 				} else {
 					m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));

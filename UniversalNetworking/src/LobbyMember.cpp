@@ -1,6 +1,7 @@
 #include <Unet_common.h>
 #include <Unet/LobbyMember.h>
 #include <Unet/Context.h>
+#include <Unet/LobbyPacket.h>
 
 Unet::LobbyMember::LobbyMember(Context* ctx)
 {
@@ -52,4 +53,56 @@ Unet::ServiceID Unet::LobbyMember::GetDataServiceID() const
 Unet::ServiceID Unet::LobbyMember::GetPrimaryServiceID() const
 {
 	return GetServiceID(UnetPrimaryService);
+}
+
+void Unet::LobbyMember::SetData(const std::string &name, const std::string &value)
+{
+	LobbyDataContainer::SetData(name, value);
+
+	auto currentLobby = m_ctx->CurrentLobby();
+	assert(currentLobby != nullptr);
+	if (currentLobby != nullptr && currentLobby->GetInfo().IsHosting) {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
+		js["guid"] = UnetGuid.str();
+		js["name"] = name;
+		js["value"] = value;
+		std::vector<uint8_t> msg = JsonPack(js);
+
+		m_ctx->InternalSendToAll(msg.data(), msg.size());
+
+	} else if (UnetPeer == m_ctx->m_localPeer) {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
+		js["name"] = name;
+		js["value"] = value;
+		std::vector<uint8_t> msg = JsonPack(js);
+
+		m_ctx->InternalSendToHost(msg.data(), msg.size());
+	}
+}
+
+void Unet::LobbyMember::RemoveData(const std::string &name)
+{
+	LobbyDataContainer::RemoveData(name);
+
+	auto currentLobby = m_ctx->CurrentLobby();
+	assert(currentLobby != nullptr);
+	if (currentLobby != nullptr && currentLobby->GetInfo().IsHosting) {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberDataRemoved;
+		js["guid"] = UnetGuid.str();
+		js["name"] = name;
+		std::vector<uint8_t> msg = JsonPack(js);
+
+		m_ctx->InternalSendToAll(msg.data(), msg.size());
+
+	} else if (UnetPeer == m_ctx->m_localPeer) {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberDataRemoved;
+		js["name"] = name;
+		std::vector<uint8_t> msg = JsonPack(js);
+
+		m_ctx->InternalSendToHost(msg.data(), msg.size());
+	}
 }

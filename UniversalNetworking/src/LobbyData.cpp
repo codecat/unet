@@ -14,22 +14,7 @@ Unet::LobbyData::LobbyData(const std::string &name, const std::string &value)
 
 void Unet::LobbyDataContainer::SetData(const std::string &name, const std::string &value)
 {
-	//TODO: Consider uncommenting?
-	//if (!strncmp(name, "unet-", 5)) {
-	//	return;
-	//}
-
-	for (auto &data : m_data) {
-		if (data.Name == name) {
-			data.Value = value;
-			return;
-		}
-	}
-
-	LobbyData newData;
-	newData.Name = name;
-	newData.Value = value;
-	m_data.emplace_back(newData);
+	InternalSetData(name, value);
 }
 
 std::string Unet::LobbyDataContainer::GetData(const std::string &name) const
@@ -44,13 +29,7 @@ std::string Unet::LobbyDataContainer::GetData(const std::string &name) const
 
 void Unet::LobbyDataContainer::RemoveData(const std::string &name)
 {
-	auto it = std::find_if(m_data.begin(), m_data.end(), [&name](const LobbyData &pair) {
-		return pair.Name == name;
-	});
-
-	if (it != m_data.end()) {
-		m_data.erase(it);
-	}
+	InternalRemoveData(name);
 }
 
 json Unet::LobbyDataContainer::SerializeData() const
@@ -77,5 +56,36 @@ void Unet::LobbyDataContainer::DeserializeData(const json &js)
 		if (!found) {
 			m_data.emplace_back(LobbyData(pair.key(), pair.value().get<std::string>()));
 		}
+	}
+}
+
+void Unet::LobbyDataContainer::InternalSetData(const std::string &name, const std::string &value)
+{
+	//TODO: Consider uncommenting?
+	//if (!strncmp(name, "unet-", 5)) {
+	//	return;
+	//}
+
+	for (auto &data : m_data) {
+		if (data.Name == name) {
+			data.Value = value;
+			return;
+		}
+	}
+
+	LobbyData newData;
+	newData.Name = name;
+	newData.Value = value;
+	m_data.emplace_back(newData);
+}
+
+void Unet::LobbyDataContainer::InternalRemoveData(const std::string &name)
+{
+	auto it = std::find_if(m_data.begin(), m_data.end(), [&name](const LobbyData & pair) {
+		return pair.Name == name;
+	});
+
+	if (it != m_data.end()) {
+		m_data.erase(it);
 	}
 }

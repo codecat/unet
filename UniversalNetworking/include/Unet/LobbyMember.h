@@ -30,5 +30,8 @@ namespace Unet
 		ServiceID GetServiceID(ServiceType type) const;
 		ServiceID GetDataServiceID() const;
 		ServiceID GetPrimaryServiceID() const;
+
+		virtual void SetData(const std::string &name, const std::string &value) override;
+		virtual void RemoveData(const std::string &name) override;
 	};
 }

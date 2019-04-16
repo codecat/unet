@@ -137,6 +137,16 @@ public:
 			LOG_FROM_CALLBACK("Lobby data changed: \"%s\" => \"%s\"", name.c_str(), value.c_str());
 		}
 	}
+
+	virtual void OnLobbyMemberDataChanged(Unet::LobbyMember &member, const std::string &name) override
+	{
+		auto value = member.GetData(name);
+		if (value == "") {
+			LOG_FROM_CALLBACK("Lobby member data removed: \"%s\"", name.c_str());
+		} else {
+			LOG_FROM_CALLBACK("Lobby member data changed: \"%s\" => \"%s\"", name.c_str(), value.c_str());
+		}
+	}
 };
 
 static void RunCallbacks()
@@ -318,10 +328,11 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  outage <service>    - Simulates a service outage");
 		LOG_INFO("");
 		LOG_INFO("  data [num]          - Shows all lobby data by the number in the list, or the current lobby");
+		LOG_INFO("  memberdata [peer]   - Shows all lobby member data for the given peer, or the local member");
 		LOG_INFO("  setdata <name> <value> - Sets lobby data (only available on the host)");
-		//LOG_INFO("  setmemberdata <peer> <name> <value> - Sets member lobby data (only available on the host and the local peer)");
 		LOG_INFO("  remdata <name>      - Removes lobby data (only available on the host)");
-		//LOG_INFO("  remmemberdata <peer> <name> - Removes member lobby data (only available on the host and the local peer)");
+		LOG_INFO("  setmemberdata <peer> <name> <value> - Sets member lobby data (only available on the host and the local peer)");
+		LOG_INFO("  remmemberdata <peer> <name> - Removes member lobby data (only available on the host and the local peer)");
 		LOG_INFO("  kick <peer>         - Kicks the given peer with an optional reason");
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a reliable packet with a number of random bytes on channel 0");
 		LOG_INFO("  sendu <peer> <num>  - Sends the given peer an unreliable packet with a number of random bytes on channel 0");
@@ -421,7 +432,7 @@ static void HandleCommand(const s2::string &line)
 			LOG_INFO("  Members: %d", (int)members.size());
 			for (auto &member : members) {
 				auto memberGuid = member.UnetGuid.str();
-				LOG_INFO("    %d: \"%s\" (%s) (%s)", member.UnetPeer, member.Name.c_str(), member.Valid ? "Valid" : "Invalid", memberGuid.c_str());
+				LOG_INFO("    %d: \"%s\" (%s) (%s) (%d datas)", member.UnetPeer, member.Name.c_str(), member.Valid ? "Valid" : "Invalid", memberGuid.c_str(), (int)member.m_data.size());
 				for (auto &id : member.IDs) {
 					LOG_INFO("      %s (0x%016llX)%s", Unet::GetServiceNameByType(id.Service), id.ID, member.UnetPrimaryService == id.Service ? " Primary" : "");
 				}
@@ -492,6 +503,32 @@ static void HandleCommand(const s2::string &line)
 			LOG_INFO("  \"%s\" = \"%s\"", data.Name.c_str(), data.Value.c_str());
 		}
 
+	} else if (parse[0] == "memberdata") {
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		std::vector<Unet::LobbyData> lobbyData;
+
+		int peer = g_ctx->GetLocalPeer();
+
+		if (parse.len() == 2) {
+			peer = atoi(parse[1]);
+		}
+
+		auto member = currentLobby->GetMember(peer);
+		if (member == nullptr) {
+			LOG_ERROR("Couldn't find member for peer %d", peer);
+			return;
+		}
+
+		LOG_INFO("%d keys:", (int)member->m_data.size());
+		for (auto &data : member->m_data) {
+			LOG_INFO("  \"%s\" = \"%s\"", data.Name.c_str(), data.Value.c_str());
+		}
+
 	} else if (parse[0] == "setdata" && parse.len() == 3) {
 		auto currentLobby = g_ctx->CurrentLobby();
 		if (currentLobby == nullptr) {
@@ -524,6 +561,53 @@ static void HandleCommand(const s2::string &line)
 		s2::string name = parse[1];
 
 		currentLobby->RemoveData(name.c_str());
+
+	} else if (parse[0] == "setmemberdata" && parse.len() == 4) {
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		int peer = atoi(parse[1]);
+		if (!currentLobby->GetInfo().IsHosting && peer != g_ctx->GetLocalPeer()) {
+			LOG_ERROR("You can't change data for this peer!");
+			return;
+		}
+
+		auto member = currentLobby->GetMember(peer);
+		if (member == nullptr) {
+			LOG_ERROR("Peer ID %d does not belong to a member!", peer);
+			return;
+		}
+
+		s2::string name = parse[2];
+		s2::string value = parse[3];
+
+		member->SetData(name.c_str(), value.c_str());
+
+	} else if (parse[0] == "remmemberdata" && parse.len() == 3) {
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		int peer = atoi(parse[1]);
+		if (!currentLobby->GetInfo().IsHosting && peer != g_ctx->GetLocalPeer()) {
+			LOG_ERROR("You can't remove data for this peer!");
+			return;
+		}
+
+		auto member = currentLobby->GetMember(peer);
+		if (member == nullptr) {
+			LOG_ERROR("Peer ID %d does not belong to a member!", peer);
+			return;
+		}
+
+		s2::string name = parse[2];
+
+		member->RemoveData(name.c_str());
 
 	} else if (parse[0] == "join" && parse.len() == 2) {
 		if (g_lastLobbyList.Code != Unet::Result::OK) {

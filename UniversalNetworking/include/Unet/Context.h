@@ -44,9 +44,9 @@ namespace Unet
 		void JoinLobby(const ServiceID &id);
 		void LeaveLobby(LeaveReason reason = LeaveReason::UserLeave);
 
+		//TODO: Move these 3 functions to LobbyListResult, as they're only relevant there and are otherwise confusing here
 		/// Get maximum number of players as reported by services.
 		int GetServiceLobbyMaxPlayers(const LobbyInfo &lobbyInfo);
-
 		/// Get lobby data as reported by services.
 		std::string GetServiceLobbyData(const LobbyInfo &lobbyInfo, const char* name);
 		/// Get all lobby data as reported by services.

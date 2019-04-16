@@ -15,6 +15,8 @@ namespace Unet
 
 	class LobbyDataContainer
 	{
+		friend class Context;
+
 	public:
 		std::vector<LobbyData> m_data;
 
@@ -25,5 +27,9 @@ namespace Unet
 
 		virtual json SerializeData() const;
 		virtual void DeserializeData(const json &js);
+
+	protected:
+		void InternalSetData(const std::string &name, const std::string &value);
+		void InternalRemoveData(const std::string &name);
 	};
 }

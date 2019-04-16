@@ -29,5 +29,6 @@ namespace Unet
 
 		// Lobby data events
 		virtual void OnLobbyDataChanged(const std::string &name) {}
+		virtual void OnLobbyMemberDataChanged(LobbyMember &member, const std::string &name) {}
 	};
 }
