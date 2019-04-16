@@ -260,9 +260,7 @@ void Unet::Context::RunCallbacks()
 						js["guid"] = guid.str();
 						js["service"] = (int)peer.Service;
 						js["id"] = peer.ID;
-						msg = JsonPack(js);
-
-						InternalSendToAll(msg.data(), msg.size());
+						InternalSendToAll(js);
 					}
 
 				} else if (type == LobbyPacketType::Hello) {
@@ -294,14 +292,12 @@ void Unet::Context::RunCallbacks()
 							js["members"].emplace_back(SerializeMember(member));
 						}
 					}
-					msg = JsonPack(js);
-					InternalSendTo(*member, msg.data(), msg.size());
+					InternalSendTo(*member, js);
 
 					// Send MemberInfo to existing members
 					js = SerializeMember(*member);
 					js["t"] = (uint8_t)LobbyPacketType::MemberInfo;
-					msg = JsonPack(js);
-					InternalSendToAllExcept(*member, msg.data(), msg.size());
+					InternalSendToAllExcept(*member, js);
 
 					// Run callback
 					m_callbacks->OnLobbyPlayerJoined(*member);
@@ -415,9 +411,7 @@ void Unet::Context::RunCallbacks()
 						js["guid"] = peerMember->UnetGuid.str();
 						js["name"] = name;
 						js["value"] = value;
-						msg = JsonPack(js);
-
-						InternalSendToAllExcept(*peerMember, msg.data(), msg.size());
+						InternalSendToAllExcept(*peerMember, js);
 
 						m_callbacks->OnLobbyMemberDataChanged(*peerMember, name);
 
@@ -445,9 +439,7 @@ void Unet::Context::RunCallbacks()
 						js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
 						js["guid"] = peerMember->UnetGuid.str();
 						js["name"] = name;
-						msg = JsonPack(js);
-
-						InternalSendToAllExcept(*peerMember, msg.data(), msg.size());
+						InternalSendToAllExcept(*peerMember, js);
 
 						m_callbacks->OnLobbyMemberDataChanged(*peerMember, name);
 
@@ -932,9 +924,7 @@ void Unet::Context::Kick(LobbyMember &member)
 
 	json js;
 	js["t"] = (uint8_t)LobbyPacketType::MemberKick;
-	std::vector<uint8_t> msg = JsonPack(js);
-
-	InternalSendTo(member, msg.data(), msg.size());
+	InternalSendTo(member, js);
 }
 
 Unet::Service* Unet::Context::PrimaryService()
@@ -954,8 +944,10 @@ Unet::Service* Unet::Context::GetService(ServiceType type)
 	return nullptr;
 }
 
-void Unet::Context::InternalSendTo(LobbyMember &member, uint8_t* data, size_t size)
+void Unet::Context::InternalSendTo(LobbyMember &member, const json &js)
 {
+	auto msg = JsonPack(js);
+
 	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
 	//NOTE: The above is not important yet for internal messages, as all internal messages are sent between client & server, not client & client
 
@@ -974,10 +966,10 @@ void Unet::Context::InternalSendTo(LobbyMember &member, uint8_t* data, size_t si
 		return;
 	}
 
-	service->SendPacket(id, data, size, PacketType::Reliable, 0);
+	service->SendPacket(id, msg.data(), msg.size(), PacketType::Reliable, 0);
 }
 
-void Unet::Context::InternalSendToAll(uint8_t* data, size_t size)
+void Unet::Context::InternalSendToAll(const json &js)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -986,12 +978,12 @@ void Unet::Context::InternalSendToAll(uint8_t* data, size_t size)
 
 	for (auto &member : m_currentLobby->m_members) {
 		if (member.UnetPeer != m_localPeer) {
-			InternalSendTo(member, data, size);
+			InternalSendTo(member, js);
 		}
 	}
 }
 
-void Unet::Context::InternalSendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size)
+void Unet::Context::InternalSendToAllExcept(LobbyMember &exceptMember, const json &js)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -1000,12 +992,12 @@ void Unet::Context::InternalSendToAllExcept(LobbyMember &exceptMember, uint8_t* 
 
 	for (auto &member : m_currentLobby->m_members) {
 		if (member.UnetPeer != m_localPeer && member.UnetPeer != exceptMember.UnetPeer) {
-			InternalSendTo(member, data, size);
+			InternalSendTo(member, js);
 		}
 	}
 }
 
-void Unet::Context::InternalSendToHost(uint8_t* data, size_t size)
+void Unet::Context::InternalSendToHost(const json &js)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -1018,7 +1010,7 @@ void Unet::Context::InternalSendToHost(uint8_t* data, size_t size)
 		return;
 	}
 
-	InternalSendTo(*hostMember, data, size);
+	InternalSendTo(*hostMember, js);
 }
 
 void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
@@ -1092,7 +1084,7 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 	json js;
 	js["t"] = (uint8_t)LobbyPacketType::Hello;
 	js["name"] = m_personaName;
-	std::vector<uint8_t> msg = JsonPack(js);
+	auto msg = JsonPack(js);
 
 	service->SendPacket(lobbyHost, msg.data(), msg.size(), PacketType::Reliable, 0);
 
@@ -1125,9 +1117,7 @@ void Unet::Context::OnLobbyPlayerLeft(const LobbyMember &member)
 		json js;
 		js["t"] = (uint8_t)LobbyPacketType::MemberLeft;
 		js["guid"] = member.UnetGuid.str();
-		std::vector<uint8_t> msg = JsonPack(js);
-
-		InternalSendToAll(msg.data(), msg.size());
+		InternalSendToAll(js);
 	}
 
 	m_callbacks->OnLobbyPlayerLeft(member);

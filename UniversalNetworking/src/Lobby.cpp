@@ -237,9 +237,7 @@ void Unet::Lobby::SetData(const std::string &name, const std::string &value)
 		js["t"] = (uint8_t)LobbyPacketType::LobbyData;
 		js["name"] = name;
 		js["value"] = value;
-		std::vector<uint8_t> msg = JsonPack(js);
-
-		m_ctx->InternalSendToAll(msg.data(), msg.size());
+		m_ctx->InternalSendToAll(js);
 	}
 }
 
@@ -295,9 +293,7 @@ void Unet::Lobby::RemoveData(const std::string &name)
 		json js;
 		js["t"] = (uint8_t)LobbyPacketType::LobbyDataRemoved;
 		js["name"] = name;
-		std::vector<uint8_t> msg = JsonPack(js);
-
-		m_ctx->InternalSendToAll(msg.data(), msg.size());
+		m_ctx->InternalSendToAll(js);
 	}
 }
 

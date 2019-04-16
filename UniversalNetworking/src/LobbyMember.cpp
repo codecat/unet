@@ -67,18 +67,14 @@ void Unet::LobbyMember::SetData(const std::string &name, const std::string &valu
 		js["guid"] = UnetGuid.str();
 		js["name"] = name;
 		js["value"] = value;
-		std::vector<uint8_t> msg = JsonPack(js);
-
-		m_ctx->InternalSendToAll(msg.data(), msg.size());
+		m_ctx->InternalSendToAll(js);
 
 	} else if (UnetPeer == m_ctx->m_localPeer) {
 		json js;
 		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
 		js["name"] = name;
 		js["value"] = value;
-		std::vector<uint8_t> msg = JsonPack(js);
-
-		m_ctx->InternalSendToHost(msg.data(), msg.size());
+		m_ctx->InternalSendToHost(js);
 	}
 }
 
@@ -93,16 +89,12 @@ void Unet::LobbyMember::RemoveData(const std::string &name)
 		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberDataRemoved;
 		js["guid"] = UnetGuid.str();
 		js["name"] = name;
-		std::vector<uint8_t> msg = JsonPack(js);
-
-		m_ctx->InternalSendToAll(msg.data(), msg.size());
+		m_ctx->InternalSendToAll(js);
 
 	} else if (UnetPeer == m_ctx->m_localPeer) {
 		json js;
 		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberDataRemoved;
 		js["name"] = name;
-		std::vector<uint8_t> msg = JsonPack(js);
-
-		m_ctx->InternalSendToHost(msg.data(), msg.size());
+		m_ctx->InternalSendToHost(js);
 	}
 }

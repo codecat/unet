@@ -327,7 +327,7 @@ void Unet::ServiceGalaxy::OnLobbyEntered(const galaxy::api::GalaxyID& lobbyID, g
 	json js;
 	js["t"] = (uint8_t)LobbyPacketType::Handshake;
 	js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
-	std::vector<uint8_t> msg = JsonPack(js);
+	auto msg = JsonPack(js);
 
 	auto lobbyOwner = galaxy::api::Matchmaking()->GetLobbyOwner(lobbyID);
 	galaxy::api::Networking()->SendP2PPacket(lobbyOwner, msg.data(), (uint32_t)msg.size(), galaxy::api::P2P_SEND_RELIABLE);

@@ -92,7 +92,7 @@ void Unet::ServiceEnet::RunCallbacks()
 				json js;
 				js["t"] = (uint8_t)LobbyPacketType::Handshake;
 				js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
-				std::vector<uint8_t> msg = JsonPack(js);
+				auto msg = JsonPack(js);
 
 				m_requestLobbyJoin = nullptr;
 
