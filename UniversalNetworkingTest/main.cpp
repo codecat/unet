@@ -460,7 +460,7 @@ static void HandleCommand(const s2::string &line)
 			}
 
 			auto &lobbyInfo = g_lastLobbyList.Lobbies[num];
-			lobbyData = g_ctx->GetLobbyData(lobbyInfo);
+			lobbyData = g_ctx->GetServiceLobbyData(lobbyInfo);
 
 		} else {
 			auto currentLobby = g_ctx->CurrentLobby();
@@ -469,7 +469,7 @@ static void HandleCommand(const s2::string &line)
 				return;
 			}
 
-			lobbyData = currentLobby->GetData();
+			lobbyData = currentLobby->GetAllData();
 		}
 
 		LOG_INFO("%d keys:", (int)lobbyData.size());

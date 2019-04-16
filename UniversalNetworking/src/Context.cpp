@@ -591,7 +591,7 @@ void Unet::Context::LeaveLobby(LeaveReason reason)
 	}
 }
 
-int Unet::Context::GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo)
+int Unet::Context::GetServiceLobbyMaxPlayers(const LobbyInfo &lobbyInfo)
 {
 	std::vector<std::pair<ServiceType, int>> items;
 
@@ -625,7 +625,7 @@ int Unet::Context::GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo)
 	return lowest;
 }
 
-std::string Unet::Context::GetLobbyData(const LobbyInfo &lobbyInfo, const char* name)
+std::string Unet::Context::GetServiceLobbyData(const LobbyInfo &lobbyInfo, const char* name)
 {
 	ServiceType firstService = ServiceType::None;
 	std::string ret;
@@ -658,7 +658,7 @@ std::string Unet::Context::GetLobbyData(const LobbyInfo &lobbyInfo, const char* 
 	return ret;
 }
 
-std::vector<Unet::LobbyData> Unet::Context::GetLobbyData(const LobbyInfo &lobbyInfo)
+std::vector<Unet::LobbyData> Unet::Context::GetServiceLobbyData(const LobbyInfo &lobbyInfo)
 {
 	std::vector<std::pair<ServiceType, LobbyData>> items;
 
@@ -997,8 +997,8 @@ void Unet::Context::OnLobbyList(const LobbyListResult &result)
 	LobbyListResult newResult(result);
 
 	for (auto &lobbyInfo : newResult.Lobbies) {
-		lobbyInfo.MaxPlayers = GetLobbyMaxPlayers(lobbyInfo);
-		lobbyInfo.Name = GetLobbyData(lobbyInfo, "unet-name");
+		lobbyInfo.MaxPlayers = GetServiceLobbyMaxPlayers(lobbyInfo);
+		lobbyInfo.Name = GetServiceLobbyData(lobbyInfo, "unet-name");
 	}
 
 	if (m_callbacks != nullptr) {

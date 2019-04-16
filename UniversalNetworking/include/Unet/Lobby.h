@@ -7,7 +7,7 @@
 
 namespace Unet
 {
-	class Lobby
+	class Lobby : public LobbyDataContainer
 	{
 		friend class Context;
 
@@ -15,7 +15,6 @@ namespace Unet
 		Context* m_ctx;
 		LobbyInfo m_info;
 
-		std::vector<LobbyData> m_data;
 		std::vector<LobbyMember> m_members;
 
 	public:
@@ -40,9 +39,8 @@ namespace Unet
 		void RemoveMemberService(const ServiceID &id);
 		void RemoveMember(const LobbyMember &member);
 
-		void SetData(const char* name, const std::string &value);
-		std::string GetData(const char* name);
-		const std::vector<LobbyData> &GetData();
+		virtual void SetData(const char* name, const std::string &value) override;
+		virtual std::string GetData(const char* name) override;
 
 	private:
 		int GetNextAvailablePeer();

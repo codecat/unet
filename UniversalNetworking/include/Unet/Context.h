@@ -45,12 +45,12 @@ namespace Unet
 		void LeaveLobby(LeaveReason reason = LeaveReason::UserLeave);
 
 		/// Get maximum number of players as reported by services.
-		int GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo);
+		int GetServiceLobbyMaxPlayers(const LobbyInfo &lobbyInfo);
 
 		/// Get lobby data as reported by services.
-		std::string GetLobbyData(const LobbyInfo &lobbyInfo, const char* name);
+		std::string GetServiceLobbyData(const LobbyInfo &lobbyInfo, const char* name);
 		/// Get all lobby data as reported by services.
-		std::vector<LobbyData> GetLobbyData(const LobbyInfo &lobbyInfo);
+		std::vector<LobbyData> GetServiceLobbyData(const LobbyInfo &lobbyInfo);
 
 		Lobby* CurrentLobby();
 		int GetLocalPeer();

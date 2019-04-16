@@ -9,7 +9,7 @@ Unet::Lobby::Lobby(Context* ctx, const LobbyInfo &lobbyInfo)
 	m_info = lobbyInfo;
 	m_info.EntryPoints.clear();
 
-	m_data = m_ctx->GetLobbyData(m_info);
+	m_data = m_ctx->GetServiceLobbyData(m_info);
 }
 
 Unet::Lobby::~Lobby()
@@ -227,24 +227,7 @@ void Unet::Lobby::SetData(const char* name, const std::string &value)
 		return;
 	}
 
-	//TODO: Consider uncommenting?
-	//if (strncmp(name, "unet-", 5) != 0) {
-		bool found = false;
-		for (auto &data : m_data) {
-			if (data.Name == name) {
-				data.Value = value;
-				found = true;
-				break;
-			}
-		}
-
-		if (!found) {
-			LobbyData newData;
-			newData.Name = name;
-			newData.Value = value;
-			m_data.emplace_back(newData);
-		}
-	//}
+	LobbyDataContainer::SetData(name, value);
 
 	for (auto &entry : m_info.EntryPoints) {
 		auto service = m_ctx->GetService(entry.Service);
@@ -256,14 +239,12 @@ void Unet::Lobby::SetData(const char* name, const std::string &value)
 
 std::string Unet::Lobby::GetData(const char* name)
 {
-	for (auto &data : m_data) {
-		if (data.Name == name) {
-			return data.Value;
-		}
+	std::string ret = LobbyDataContainer::GetData(name);
+	if (ret != "") {
+		return ret;
 	}
 
 	ServiceType firstService = ServiceType::None;
-	std::string ret;
 
 	for (size_t i = 0; i < m_info.EntryPoints.size(); i++) {
 		auto &entry = m_info.EntryPoints[i];
@@ -291,11 +272,6 @@ std::string Unet::Lobby::GetData(const char* name)
 	}
 
 	return ret;
-}
-
-const std::vector<Unet::LobbyData> &Unet::Lobby::GetData()
-{
-	return m_data;
 }
 
 int Unet::Lobby::GetNextAvailablePeer()
