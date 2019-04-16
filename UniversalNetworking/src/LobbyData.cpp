@@ -2,8 +2,6 @@
 #include <Unet/LobbyData.h>
 #include <Unet/ServiceType.h>
 
-using json = nlohmann::json;
-
 Unet::LobbyData::LobbyData()
 {
 }

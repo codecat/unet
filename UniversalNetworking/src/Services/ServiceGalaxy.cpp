@@ -3,9 +3,6 @@
 #include <Unet/Utils.h>
 #include <Unet/LobbyPacket.h>
 
-#include <Unet/json.hpp>
-using json = nlohmann::json;
-
 void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::LobbyListResult result)
 {
 	m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Lobby list received (%d)", (int)lobbyCount));

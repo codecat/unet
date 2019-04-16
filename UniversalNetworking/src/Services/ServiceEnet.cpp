@@ -3,9 +3,6 @@
 #include <Unet/Utils.h>
 #include <Unet/LobbyPacket.h>
 
-#include <Unet/json.hpp>
-using json = nlohmann::json;
-
 // I seriously hate Windows.h
 #if defined(min)
 #undef min

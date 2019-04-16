@@ -3,9 +3,6 @@
 #include <Unet/Utils.h>
 #include <Unet/LobbyPacket.h>
 
-#include <Unet/json.hpp>
-using json = nlohmann::json;
-
 Unet::ServiceSteam::ServiceSteam(Context* ctx) :
 	m_callLobbyDataUpdate(this, &ServiceSteam::OnLobbyDataUpdate),
 	m_callLobbyKicked(this, &ServiceSteam::OnLobbyKicked),

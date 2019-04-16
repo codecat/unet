@@ -12,7 +12,10 @@
 #include <algorithm>
 #include <memory>
 
-#include <guid.hpp>
+#include <Unet/guid.hpp>
+
+#include <Unet/json.hpp>
+using json = nlohmann::json;
 
 namespace Unet
 {

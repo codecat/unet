@@ -2,8 +2,6 @@
 
 #include <Unet_common.h>
 
-#include <Unet/json.hpp>
-
 namespace Unet
 {
 	struct LobbyData
@@ -24,7 +22,7 @@ namespace Unet
 		virtual void SetData(const char* name, const std::string &value);
 		virtual std::string GetData(const char* name) const;
 
-		virtual nlohmann::json SerializeData() const;
-		virtual void DeserializeData(const nlohmann::json &js);
+		virtual json SerializeData() const;
+		virtual void DeserializeData(const json &js);
 	};
 }

@@ -7,9 +7,6 @@
 #include <Unet/Utils.h>
 #include <Unet/LobbyPacket.h>
 
-#include <Unet/json.hpp>
-using json = nlohmann::json;
-
 Unet::Context::Context(int numChannels)
 {
 	m_numChannels = numChannels;
