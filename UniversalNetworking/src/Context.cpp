@@ -419,14 +419,19 @@ void Unet::Context::RunCallbacks()
 
 						InternalSendToAllExcept(*peerMember, msg.data(), msg.size());
 
+						m_callbacks->OnLobbyMemberDataChanged(*peerMember, name);
+
 					} else {
 						xg::Guid guid(js["guid"].get<std::string>());
 
 						auto member = m_currentLobby->GetMember(guid);
 						assert(member != nullptr);
-						if (member != nullptr) {
-							member->InternalSetData(name, value);
+						if (member == nullptr) {
+							continue;
 						}
+
+						member->InternalSetData(name, value);
+						m_callbacks->OnLobbyMemberDataChanged(*member, name);
 					}
 
 				} else if (type == LobbyPacketType::LobbyMemberDataRemoved) {
@@ -444,14 +449,19 @@ void Unet::Context::RunCallbacks()
 
 						InternalSendToAllExcept(*peerMember, msg.data(), msg.size());
 
+						m_callbacks->OnLobbyMemberDataChanged(*peerMember, name);
+
 					} else {
 						xg::Guid guid(js["guid"].get<std::string>());
 
 						auto member = m_currentLobby->GetMember(guid);
 						assert(member != nullptr);
-						if (member != nullptr) {
-							member->InternalRemoveData(name);
+						if (member == nullptr) {
+							continue;
 						}
+
+						member->InternalRemoveData(name);
+						m_callbacks->OnLobbyMemberDataChanged(*member, name);
 					}
 
 				} else {
