@@ -307,6 +307,7 @@ void Unet::Context::RunCallbacks()
 
 					m_currentLobby->DeserializeData(js["data"]);
 					m_currentLobby->m_info.Name = m_currentLobby->GetData("unet-name");
+					m_currentLobby->m_info.UnetGuid = xg::Guid(m_currentLobby->GetData("unet-guid"));
 
 					for (auto &member : js["members"]) {
 						DeserializeMemberIntoLobby(CurrentLobby(), member);
