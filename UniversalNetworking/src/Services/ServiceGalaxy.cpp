@@ -263,14 +263,14 @@ void Unet::ServiceGalaxy::SendPacket(const ServiceID &peerId, const void* data, 
 	case PacketType::Unreliable: sendType = galaxy::api::P2P_SEND_UNRELIABLE; break;
 	case PacketType::Reliable: sendType = galaxy::api::P2P_SEND_RELIABLE; break;
 	}
-	galaxy::api::Networking()->SendP2PPacket(peerId.ID, data, size, sendType, channel);
+	galaxy::api::Networking()->SendP2PPacket(peerId.ID, data, (uint32_t)size, sendType, channel);
 }
 
 size_t Unet::ServiceGalaxy::ReadPacket(void* data, size_t maxSize, ServiceID* peerId, uint8_t channel)
 {
 	uint32_t readSize;
 	galaxy::api::GalaxyID peer;
-	galaxy::api::Networking()->ReadP2PPacket(data, maxSize, &readSize, peer, channel);
+	galaxy::api::Networking()->ReadP2PPacket(data, (uint32_t)maxSize, &readSize, peer, channel);
 
 	if (peerId != nullptr) {
 		*peerId = ServiceID(ServiceType::Galaxy, peer.ToUint64());
