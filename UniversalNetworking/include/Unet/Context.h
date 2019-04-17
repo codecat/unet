@@ -21,7 +21,7 @@ namespace Unet
 	{
 		friend class Lobby;
 		friend class LobbyMember;
-		friend class LobbyListResult;
+		friend struct LobbyListResult;
 
 	public:
 		Context(int numChannels = 1);
