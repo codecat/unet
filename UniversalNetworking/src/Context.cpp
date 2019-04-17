@@ -246,8 +246,7 @@ void Unet::Context::RunCallbacks()
 				auto type = (LobbyPacketType)(uint8_t)js["t"];
 
 				if (type == LobbyPacketType::Handshake) {
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (!lobbyInfo.IsHosting) {
+					if (!m_currentLobby->m_info.IsHosting) {
 						continue;
 					}
 
@@ -264,8 +263,7 @@ void Unet::Context::RunCallbacks()
 					}
 
 				} else if (type == LobbyPacketType::Hello) {
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (!lobbyInfo.IsHosting) {
+					if (!m_currentLobby->m_info.IsHosting) {
 						continue;
 					}
 
@@ -303,12 +301,12 @@ void Unet::Context::RunCallbacks()
 					m_callbacks->OnLobbyPlayerJoined(*member);
 
 				} else if (type == LobbyPacketType::LobbyInfo) {
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (lobbyInfo.IsHosting) {
+					if (m_currentLobby->m_info.IsHosting) {
 						continue;
 					}
 
 					m_currentLobby->DeserializeData(js["data"]);
+					m_currentLobby->m_info.Name = m_currentLobby->GetData("unet-name");
 
 					for (auto &member : js["members"]) {
 						DeserializeMemberIntoLobby(CurrentLobby(), member);
@@ -328,8 +326,7 @@ void Unet::Context::RunCallbacks()
 					m_callbacks->OnLobbyJoined(result);
 
 				} else if (type == LobbyPacketType::MemberInfo) {
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (lobbyInfo.IsHosting) {
+					if (m_currentLobby->m_info.IsHosting) {
 						continue;
 					}
 
@@ -337,8 +334,7 @@ void Unet::Context::RunCallbacks()
 					m_callbacks->OnLobbyPlayerJoined(member);
 
 				} else if (type == LobbyPacketType::MemberLeft) {
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (lobbyInfo.IsHosting) {
+					if (m_currentLobby->m_info.IsHosting) {
 						continue;
 					}
 
@@ -353,16 +349,14 @@ void Unet::Context::RunCallbacks()
 					m_currentLobby->RemoveMember(*member);
 
 				} else if (type == LobbyPacketType::MemberKick) {
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (lobbyInfo.IsHosting) {
+					if (m_currentLobby->m_info.IsHosting) {
 						continue;
 					}
 
 					LeaveLobby(LeaveReason::Kicked);
 
 				} else if (type == LobbyPacketType::MemberNewService) {
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (lobbyInfo.IsHosting) {
+					if (m_currentLobby->m_info.IsHosting) {
 						continue;
 					}
 
@@ -375,8 +369,7 @@ void Unet::Context::RunCallbacks()
 					m_currentLobby->AddMemberService(guid, id);
 
 				} else if (type == LobbyPacketType::LobbyData) {
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (lobbyInfo.IsHosting) {
+					if (m_currentLobby->m_info.IsHosting) {
 						continue;
 					}
 
@@ -387,8 +380,7 @@ void Unet::Context::RunCallbacks()
 					m_callbacks->OnLobbyDataChanged(name);
 
 				} else if (type == LobbyPacketType::LobbyDataRemoved) {
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (lobbyInfo.IsHosting) {
+					if (m_currentLobby->m_info.IsHosting) {
 						continue;
 					}
 
@@ -401,8 +393,7 @@ void Unet::Context::RunCallbacks()
 					auto name = js["name"].get<std::string>();
 					auto value = js["value"].get<std::string>();
 
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (lobbyInfo.IsHosting) {
+					if (m_currentLobby->m_info.IsHosting) {
 						peerMember->InternalSetData(name, value);
 
 						js = json::object();
@@ -430,8 +421,7 @@ void Unet::Context::RunCallbacks()
 				} else if (type == LobbyPacketType::LobbyMemberDataRemoved) {
 					auto name = js["name"].get<std::string>();
 
-					auto &lobbyInfo = m_currentLobby->GetInfo();
-					if (lobbyInfo.IsHosting) {
+					if (m_currentLobby->m_info.IsHosting) {
 						peerMember->InternalRemoveData(name);
 
 						js = json::object();
