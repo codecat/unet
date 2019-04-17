@@ -551,6 +551,7 @@ void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char
 void Unet::Context::GetLobbyList()
 {
 	m_callbackLobbyList.Begin();
+	m_callbackLobbyList.GetResult().Ctx = this;
 
 	for (auto service : m_services) {
 		service->GetLobbyList();
@@ -641,112 +642,6 @@ void Unet::Context::LeaveLobby(LeaveReason reason)
 
 		m_status = ContextStatus::Idle;
 	}
-}
-
-int Unet::Context::GetServiceLobbyMaxPlayers(const LobbyInfo &lobbyInfo)
-{
-	std::vector<std::pair<ServiceType, int>> items;
-
-	for (auto service : m_services) {
-		auto entry = lobbyInfo.GetEntryPoint(service->GetType());
-		if (entry == nullptr) {
-			continue;
-		}
-
-		int maxPlayers = service->GetLobbyMaxPlayers(*entry);
-		items.emplace_back(std::make_pair(entry->Service, maxPlayers));
-	}
-
-	ServiceType lowestService = ServiceType::None;
-	int lowest = 0;
-
-	for (auto &pair : items) {
-		if (lowest > 0 && pair.second != lowest) {
-			m_callbacks->OnLogWarn(strPrintF("Max players is different between service %s and %s! (%d and %d)",
-				GetServiceNameByType(lowestService), GetServiceNameByType(pair.first),
-				lowest, pair.second
-			));
-		}
-
-		if (lowest == 0 || pair.second < lowest) {
-			lowestService = pair.first;
-			lowest = pair.second;
-		}
-	}
-
-	return lowest;
-}
-
-std::string Unet::Context::GetServiceLobbyData(const LobbyInfo &lobbyInfo, const char* name)
-{
-	ServiceType firstService = ServiceType::None;
-	std::string ret;
-
-	for (size_t i = 0; i < lobbyInfo.EntryPoints.size(); i++) {
-		auto &entry = lobbyInfo.EntryPoints[i];
-
-		auto service = GetService(entry.Service);
-		if (service == nullptr) {
-			continue;
-		}
-
-		std::string str = service->GetLobbyData(entry, name);
-		if (str == "") {
-			continue;
-		}
-
-		if (i == 0) {
-			firstService = entry.Service;
-			ret = str;
-		} else if (ret != str) {
-			m_callbacks->OnLogWarn(strPrintF("Data \"%s\" is different between service %s and %s! (\"%s\" and \"%s\")",
-				name,
-				GetServiceNameByType(firstService), GetServiceNameByType(entry.Service),
-				ret.c_str(), str.c_str()
-			));
-		}
-	}
-
-	return ret;
-}
-
-std::vector<Unet::LobbyData> Unet::Context::GetServiceLobbyData(const LobbyInfo &lobbyInfo)
-{
-	std::vector<std::pair<ServiceType, LobbyData>> items;
-
-	for (auto &entry : lobbyInfo.EntryPoints) {
-		auto service = GetService(entry.Service);
-		if (service == nullptr) {
-			continue;
-		}
-
-		int numData = service->GetLobbyDataCount(entry);
-		for (int i = 0; i < numData; i++) {
-			auto data = service->GetLobbyData(entry, i);
-
-			auto it = std::find_if(items.begin(), items.end(), [&data](const std::pair<ServiceType, LobbyData> &d) {
-				return d.second.Name == data.Name;
-			});
-
-			if (it == items.end()) {
-				items.emplace_back(std::make_pair(entry.Service, data));
-			} else {
-				if (it->second.Value != data.Value) {
-					m_callbacks->OnLogWarn(strPrintF("Data \"%s\" is different between service %s and %s! (\"%s\" and \"%s\")",
-						data.Name.c_str(),
-						GetServiceNameByType(it->first), GetServiceNameByType(entry.Service),
-						it->second.Value.c_str(), data.Value.c_str()
-					));
-				}
-			}
-		}
-	}
-
-	std::vector<LobbyData> ret;
-	for (auto &pair : items) {
-		ret.emplace_back(pair.second);
-	}
-	return ret;
 }
 
 Unet::Lobby* Unet::Context::CurrentLobby()
@@ -1049,8 +944,8 @@ void Unet::Context::OnLobbyList(const LobbyListResult &result)
 	LobbyListResult newResult(result);
 
 	for (auto &lobbyInfo : newResult.Lobbies) {
-		lobbyInfo.MaxPlayers = GetServiceLobbyMaxPlayers(lobbyInfo);
-		lobbyInfo.Name = GetServiceLobbyData(lobbyInfo, "unet-name");
+		lobbyInfo.MaxPlayers = result.GetLobbyMaxPlayers(lobbyInfo);
+		lobbyInfo.Name = result.GetLobbyData(lobbyInfo, "unet-name");
 	}
 
 	if (m_callbacks != nullptr) {

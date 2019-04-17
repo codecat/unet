@@ -486,7 +486,7 @@ static void HandleCommand(const s2::string &line)
 			}
 
 			auto &lobbyInfo = g_lastLobbyList.Lobbies[num];
-			lobbyData = g_ctx->GetServiceLobbyData(lobbyInfo);
+			lobbyData = g_lastLobbyList.GetLobbyData(lobbyInfo);
 
 		} else {
 			auto currentLobby = g_ctx->CurrentLobby();

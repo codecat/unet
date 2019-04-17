@@ -175,14 +175,14 @@ void Unet::ServiceSteam::SendPacket(const ServiceID &peerId, const void* data, s
 	case PacketType::Unreliable: sendType = k_EP2PSendUnreliable; break;
 	case PacketType::Reliable: sendType = k_EP2PSendReliable; break;
 	}
-	SteamNetworking()->SendP2PPacket((uint64)peerId.ID, data, size, sendType, (int)channel);
+	SteamNetworking()->SendP2PPacket((uint64)peerId.ID, data, (uint32)size, sendType, (int)channel);
 }
 
 size_t Unet::ServiceSteam::ReadPacket(void* data, size_t maxSize, ServiceID* peerId, uint8_t channel)
 {
 	uint32 readSize;
 	CSteamID peer;
-	SteamNetworking()->ReadP2PPacket(data, maxSize, &readSize, &peer, (int)channel);
+	SteamNetworking()->ReadP2PPacket(data, (uint32)maxSize, &readSize, &peer, (int)channel);
 
 	if (peerId != nullptr) {
 		*peerId = ServiceID(ServiceType::Steam, peer.ConvertToUint64());
