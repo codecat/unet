@@ -324,7 +324,6 @@ void Unet::Context::RunCallbacks()
 
 					LobbyJoinResult result;
 					result.Code = Result::OK;
-					//TODO: Set result.JoinGuid? It's not super important..
 					result.JoinedLobby = m_currentLobby;
 					m_callbacks->OnLobbyJoined(result);
 

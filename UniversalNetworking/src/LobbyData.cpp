@@ -61,11 +61,6 @@ void Unet::LobbyDataContainer::DeserializeData(const json &js)
 
 void Unet::LobbyDataContainer::InternalSetData(const std::string &name, const std::string &value)
 {
-	//TODO: Consider uncommenting?
-	//if (!strncmp(name, "unet-", 5)) {
-	//	return;
-	//}
-
 	for (auto &data : m_data) {
 		if (data.Name == name) {
 			data.Value = value;
