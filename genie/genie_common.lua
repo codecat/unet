@@ -3,6 +3,7 @@ if os.get() == 'windows' then
 	defines {
 		'PLATFORM_WINDOWS',
 		'_CRT_SECURE_NO_WARNINGS',
+		'NOMINMAX',
 	}
 elseif os.get() == 'linux' then
 	defines { 'PLATFORM_LINUX' }
