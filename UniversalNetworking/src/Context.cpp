@@ -84,22 +84,6 @@ static void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &call
 	callback.Clear();
 }
 
-//TODO: Refactor these 2 functions so they're part of LobbyMember instead?
-static json SerializeMember(const Unet::LobbyMember &member)
-{
-	json js;
-	js["guid"] = member.UnetGuid.str();
-	js["peer"] = member.UnetPeer;
-	js["primary"] = (int)member.UnetPrimaryService;
-	js["name"] = member.Name;
-	js["ids"] = json::array();
-	for (auto &id : member.IDs) {
-		js["ids"].emplace_back(json::array({ (int)id.Service, id.ID }));
-	}
-	js["data"] = member.SerializeData();
-	return js;
-}
-
 static Unet::LobbyMember &DeserializeMemberIntoLobby(Unet::Lobby* lobby, const json &member)
 {
 	xg::Guid guid(member["guid"].get<std::string>());
@@ -114,11 +98,7 @@ static Unet::LobbyMember &DeserializeMemberIntoLobby(Unet::Lobby* lobby, const j
 	auto lobbyMember = lobby->GetMember(guid);
 	assert(lobbyMember != nullptr); // If this fails, there's no service IDs available for this member
 
-	lobbyMember->UnetPeer = member["peer"].get<int>();
-	lobbyMember->UnetPrimaryService = (Unet::ServiceType)member["primary"].get<int>();
-	lobbyMember->Name = member["name"].get<std::string>();
-	lobbyMember->Valid = true;
-	lobbyMember->DeserializeData(member["data"]);
+	lobbyMember->Deserialize(member);
 
 	return *lobbyMember;
 }
@@ -287,13 +267,13 @@ void Unet::Context::RunCallbacks()
 					js["members"] = json::array();
 					for (auto &member : m_currentLobby->m_members) {
 						if (member.Valid) {
-							js["members"].emplace_back(SerializeMember(member));
+							js["members"].emplace_back(member.Serialize());
 						}
 					}
 					InternalSendTo(*member, js);
 
 					// Send MemberInfo to existing members
-					js = SerializeMember(*member);
+					js = member->Serialize();
 					js["t"] = (uint8_t)LobbyPacketType::MemberInfo;
 					InternalSendToAllExcept(*member, js);
 

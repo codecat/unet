@@ -31,6 +31,9 @@ namespace Unet
 		ServiceID GetDataServiceID() const;
 		ServiceID GetPrimaryServiceID() const;
 
+		json Serialize() const;
+		void Deserialize(const json &js);
+
 		virtual void SetData(const std::string &name, const std::string &value) override;
 		virtual void RemoveData(const std::string &name) override;
 	};

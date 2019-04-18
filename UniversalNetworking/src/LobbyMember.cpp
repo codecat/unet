@@ -55,6 +55,32 @@ Unet::ServiceID Unet::LobbyMember::GetPrimaryServiceID() const
 	return GetServiceID(UnetPrimaryService);
 }
 
+json Unet::LobbyMember::Serialize() const
+{
+	json js;
+	js["guid"] = UnetGuid.str();
+	js["peer"] = UnetPeer;
+	js["primary"] = (int)UnetPrimaryService;
+	js["name"] = Name;
+	js["ids"] = json::array();
+	for (auto &id : IDs) {
+		js["ids"].emplace_back(json::array({ (int)id.Service, id.ID }));
+	}
+	js["data"] = SerializeData();
+	return js;
+}
+
+void Unet::LobbyMember::Deserialize(const json &js)
+{
+	Valid = true;
+
+	UnetPeer = js["peer"].get<int>();
+	UnetPrimaryService = (Unet::ServiceType)js["primary"].get<int>();
+	Name = js["name"].get<std::string>();
+
+	DeserializeData(js["data"]);
+}
+
 void Unet::LobbyMember::SetData(const std::string &name, const std::string &value)
 {
 	LobbyDataContainer::SetData(name, value);
