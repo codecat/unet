@@ -56,6 +56,8 @@ namespace Unet
 		virtual void SetLobbyData(const ServiceID &lobbyId, const char* name, const char* value) override;
 		virtual void RemoveLobbyData(const ServiceID &lobbyId, const char* name) override;
 
+		virtual size_t ReliablePacketLimit() override;
+
 		virtual void SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel) override;
 		virtual size_t ReadPacket(void* data, size_t maxSize, ServiceID* peerId, uint8_t channel) override;
 		virtual bool IsPacketAvailable(size_t* outPacketSize, uint8_t channel) override;

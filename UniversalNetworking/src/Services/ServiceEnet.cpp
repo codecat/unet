@@ -285,6 +285,11 @@ void Unet::ServiceEnet::RemoveLobbyData(const ServiceID &lobbyId, const char* na
 {
 }
 
+size_t Unet::ServiceEnet::ReliablePacketLimit()
+{
+	return 0;
+}
+
 void Unet::ServiceEnet::SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel)
 {
 	auto peer = GetPeer(peerId);

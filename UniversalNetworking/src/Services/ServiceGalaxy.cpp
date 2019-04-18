@@ -254,6 +254,11 @@ void Unet::ServiceGalaxy::RemoveLobbyData(const ServiceID &lobbyId, const char* 
 	galaxy::api::Matchmaking()->DeleteLobbyData(lobbyId.ID, name);
 }
 
+size_t Unet::ServiceGalaxy::ReliablePacketLimit()
+{
+	return 0;
+}
+
 void Unet::ServiceGalaxy::SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(peerId.Service == ServiceType::Galaxy);

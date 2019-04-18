@@ -166,6 +166,11 @@ void Unet::ServiceSteam::RemoveLobbyData(const ServiceID &lobbyId, const char* n
 	SteamMatchmaking()->DeleteLobbyData((uint64)lobbyId.ID, name);
 }
 
+size_t Unet::ServiceSteam::ReliablePacketLimit()
+{
+	return 1024 * 1024;
+}
+
 void Unet::ServiceSteam::SendPacket(const ServiceID &peerId, const void* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(peerId.Service == ServiceType::Steam);
