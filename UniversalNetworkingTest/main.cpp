@@ -354,8 +354,12 @@ static void HandleCommand(const s2::string &line)
 				break;
 			}
 
-			s2::string strLine(line);
-			HandleCommand(strLine.trim());
+			s2::string strLine = s2::string(line).trim();
+			if (strLine == "" || strLine.startswith("//")) {
+				continue;
+			}
+
+			HandleCommand(strLine);
 		}
 
 		fclose(fh);
