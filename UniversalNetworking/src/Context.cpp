@@ -500,6 +500,11 @@ void Unet::Context::RunCallbacks()
 							msg->m_packetsLeft--;
 							msg->Append(msgData, packetSize);
 							if (msg->m_packetsLeft == 0) {
+								uint32_t finalHash = XXH32(msg->m_data, msg->m_size, 0);
+								if (finalHash != msg->m_sequenceHash) {
+									m_callbacks->OnLogError(strPrintF("Sequence hash for fragmented packet does not match! Packet size: %d", (int)msg->m_size));
+								}
+
 								m_fragmentedMessages.erase(existingMsg);
 								m_queuedMessages[msg->m_channel].push(msg);
 							}
