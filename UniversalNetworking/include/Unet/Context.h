@@ -54,10 +54,11 @@ namespace Unet
 		bool IsMessageAvailable(int channel);
 		std::unique_ptr<NetworkMessage> ReadMessage(int channel);
 
-		void SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
-		void SendToAll(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
-		void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
-		void SendToHost(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, int channel = 0);
+		void SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
+		void SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
+		void SendToAll(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
+		void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
+		void SendToHost(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
 
 		void Kick(LobbyMember &member);
 
@@ -93,7 +94,12 @@ namespace Unet
 		int m_localPeer;
 
 		std::vector<Service*> m_services;
+
 		std::vector<std::queue<NetworkMessage*>> m_queuedMessages;
+		std::vector<NetworkMessage*> m_fragmentedMessages;
+
+		std::vector<uint8_t> m_tempBuffer;
+		uint8_t m_sequenceId = 0;
 
 	public:
 		MultiCallback<CreateLobbyResult> m_callbackCreateLobby;

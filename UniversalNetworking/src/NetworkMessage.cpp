@@ -21,3 +21,16 @@ Unet::NetworkMessage::~NetworkMessage()
 		free(m_data);
 	}
 }
+
+void Unet::NetworkMessage::Append(uint8_t* data, size_t size)
+{
+	uint8_t* newData = (uint8_t*)realloc(m_data, m_size + size);
+	assert(newData != nullptr);
+	if (newData == nullptr) {
+		return;
+	}
+
+	m_data = newData;
+	memcpy(m_data + m_size, data, size);
+	m_size += size;
+}

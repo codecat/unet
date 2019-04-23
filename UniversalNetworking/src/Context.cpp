@@ -6,6 +6,9 @@
 #include <Unet/Services/ServiceEnet.h>
 #include <Unet/LobbyPacket.h>
 
+#define XXH_INLINE_ALL
+#include <Unet/xxhash.h>
+
 Unet::Context::Context(int numChannels)
 {
 	m_numChannels = numChannels;
@@ -40,6 +43,10 @@ Unet::Context::~Context()
 			delete channel.front();
 			channel.pop();
 		}
+	}
+
+	for (auto msg : m_fragmentedMessages) {
+		delete msg;
 	}
 }
 
@@ -126,40 +133,42 @@ void Unet::Context::RunCallbacks()
 	}
 
 	if (m_currentLobby != nullptr) {
+		std::vector<uint8_t> msg;
+
 		for (auto service : m_services) {
+			size_t packetSizeLimit = service->ReliablePacketLimit();
+
 			size_t packetSize;
 
 			// Relay packet channel
 			while (service->IsPacketAvailable(&packetSize, 1)) {
-				std::vector<uint8_t> msg;
-				msg.assign(packetSize, 0);
+				msg.resize(packetSize);
 
 				ServiceID peer;
 				service->ReadPacket(msg.data(), packetSize, &peer, 1);
+				uint8_t* msgData = msg.data();
 
 				auto peerMember = m_currentLobby->GetMember(peer);
 
 				if (m_currentLobby->m_info.IsHosting) {
 					// We have to relay a packet to some client
-					uint8_t peerRecipient = msg[0];
-					uint8_t channel = msg[1];
-					PacketType type = (PacketType)msg[2];
-
-					uint8_t* data = msg.data() + 3;
-					size_t size = packetSize - 3;
+					uint8_t peerRecipient = *(msgData++);
+					uint8_t channel = *(msgData++);
+					PacketType type = (PacketType)*(msgData++);
+					packetSize -= 3;
 
 					auto recipientMember = m_currentLobby->GetMember((int)peerRecipient);
 					if (recipientMember == nullptr) {
-						m_callbacks->OnLogError(strPrintF("Tried relaying packet of %d bytes to unknown peer %d!", (int)size, (int)peerRecipient));
+						m_callbacks->OnLogError(strPrintF("Tried relaying packet of %d bytes to unknown peer %d!", (int)packetSize, (int)peerRecipient));
 						continue;
 					}
 
 					std::vector<uint8_t> relayMsg;
-					relayMsg.assign(size + 2, 0);
+					relayMsg.assign(packetSize + 2, 0);
 
 					relayMsg[0] = (uint8_t)peerMember->UnetPeer;
 					relayMsg[1] = channel;
-					memcpy(relayMsg.data() + 2, data, size);
+					memcpy(relayMsg.data() + 2, msgData, packetSize);
 
 					auto id = recipientMember->GetDataServiceID();
 					assert(id.IsValid());
@@ -167,21 +176,19 @@ void Unet::Context::RunCallbacks()
 						continue;
 					}
 
-					auto service = GetService(id.Service);
-					assert(service != nullptr);
-					if (service == nullptr) {
+					auto recipientService = GetService(id.Service);
+					assert(recipientService != nullptr);
+					if (recipientService == nullptr) {
 						continue;
 					}
 
-					service->SendPacket(id, relayMsg.data(), relayMsg.size(), type, 1);
+					recipientService->SendPacket(id, relayMsg.data(), relayMsg.size(), type, 1);
 
 				} else {
 					// We received a relayed packet from some client
-					uint8_t peerSender = msg[0];
-					uint8_t channel = msg[1];
-
-					uint8_t* data = msg.data() + 2;
-					size_t size = packetSize - 2;
+					uint8_t peerSender = *(msgData++);
+					uint8_t channel = *(msgData++);
+					packetSize -= 2;
 
 					if (channel >= (uint8_t)m_queuedMessages.size()) {
 						m_callbacks->OnLogError(strPrintF("Invalid channel index in relay packet: %d", (int)channel));
@@ -195,7 +202,46 @@ void Unet::Context::RunCallbacks()
 						continue;
 					}
 
-					auto newMessage = new NetworkMessage(data, size);
+					if (packetSizeLimit > 0) {
+						uint8_t sequenceId = *(msgData++);
+						packetSize--;
+
+						auto existingMsg = std::find_if(m_fragmentedMessages.begin(), m_fragmentedMessages.end(), [sequenceId](NetworkMessage* msg) {
+							return msg->m_sequenceId == sequenceId;
+						});
+
+						if (existingMsg != m_fragmentedMessages.end()) {
+							auto msg = *existingMsg;
+							assert(msg->m_packetsLeft > 0);
+							msg->m_packetsLeft--;
+							msg->Append(msgData, packetSize);
+							if (msg->m_packetsLeft == 0) {
+								m_fragmentedMessages.erase(existingMsg);
+								m_queuedMessages[msg->m_channel].push(msg);
+							}
+							continue;
+						}
+
+						uint8_t packetCount = *(msgData++);
+						packetSize--;
+
+						if (packetCount > 0) {
+							uint32_t packetHash = *(uint32_t*)msgData;
+							msgData += 4;
+							packetSize -= 4;
+
+							auto newMessage = new NetworkMessage(msgData, packetSize);
+							newMessage->m_sequenceId = sequenceId;
+							newMessage->m_packetsLeft = packetCount;
+							newMessage->m_sequenceHash = packetHash;
+							newMessage->m_channel = (int)channel;
+							newMessage->m_peer = memberSender->GetPrimaryServiceID();
+							m_fragmentedMessages.emplace_back(newMessage);
+							continue;
+						}
+					}
+
+					auto newMessage = new NetworkMessage(msgData, packetSize);
 					newMessage->m_channel = (int)channel;
 					newMessage->m_peer = memberSender->GetPrimaryServiceID();
 					m_queuedMessages[channel].push(newMessage);
@@ -430,6 +476,61 @@ void Unet::Context::RunCallbacks()
 					m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
 				}
 			}
+
+			// General purpose channels for fragmented messages
+			if (packetSizeLimit > 0) {
+				for (int channel = 0; channel < m_numChannels; channel++) {
+					while (service->IsPacketAvailable(&packetSize, channel)) {
+						msg.resize(packetSize);
+
+						ServiceID peer;
+						service->ReadPacket(msg.data(), packetSize, &peer, channel);
+						uint8_t* msgData = msg.data();
+
+						uint8_t sequenceId = *(msgData++);
+						packetSize--;
+
+						auto existingMsg = std::find_if(m_fragmentedMessages.begin(), m_fragmentedMessages.end(), [sequenceId](NetworkMessage * msg) {
+							return msg->m_sequenceId == sequenceId;
+						});
+
+						if (existingMsg != m_fragmentedMessages.end()) {
+							auto msg = *existingMsg;
+							assert(msg->m_packetsLeft > 0);
+							msg->m_packetsLeft--;
+							msg->Append(msgData, packetSize);
+							if (msg->m_packetsLeft == 0) {
+								m_fragmentedMessages.erase(existingMsg);
+								m_queuedMessages[msg->m_channel].push(msg);
+							}
+							continue;
+						}
+
+						uint8_t packetCount = *(msgData++);
+						packetSize--;
+
+						if (packetCount > 0) {
+							uint32_t packetHash = *(uint32_t*)msgData;
+							msgData += 4;
+							packetSize -= 4;
+
+							auto newMessage = new NetworkMessage(msgData, packetSize);
+							newMessage->m_sequenceId = sequenceId;
+							newMessage->m_packetsLeft = packetCount;
+							newMessage->m_sequenceHash = packetHash;
+							newMessage->m_channel = (int)channel;
+							newMessage->m_peer = peer;
+							m_fragmentedMessages.emplace_back(newMessage);
+							continue;
+						}
+
+						auto newMessage = new NetworkMessage(msgData, packetSize);
+						newMessage->m_channel = (int)channel;
+						newMessage->m_peer = peer;
+						m_queuedMessages[channel].push(newMessage);
+					}
+				}
+			}
 		}
 	}
 }
@@ -649,10 +750,16 @@ bool Unet::Context::IsMessageAvailable(int channel)
 	}
 
 	for (auto service : m_services) {
+		// For services that have a reliable packet limit, we only allow queued messages
+		if (service->ReliablePacketLimit() > 0) {
+			continue;
+		}
+
 		if (service->IsPacketAvailable(nullptr, 2 + channel)) {
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -672,6 +779,11 @@ std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
 	}
 
 	for (auto service : m_services) {
+		// For services that have a reliable packet limit, we only allow queued messages
+		if (service->ReliablePacketLimit() > 0) {
+			continue;
+		}
+
 		size_t packetSize;
 		if (service->IsPacketAvailable(&packetSize, 2 + channel)) {
 			std::unique_ptr<NetworkMessage> newMessage(new NetworkMessage(packetSize));
@@ -684,7 +796,7 @@ std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
 	return nullptr;
 }
 
-void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type, int channel)
+void Unet::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	// Sending a message to yourself isn't very useful.
 	assert(member.UnetPeer != m_localPeer);
@@ -701,6 +813,7 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 		assert(hostMember != nullptr);
 
 		auto idHost = hostMember->GetDataServiceID();
+		assert(idHost.IsValid());
 		auto serviceHost = GetService(idHost.Service);
 		assert(serviceHost != nullptr);
 
@@ -708,7 +821,7 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 		msg.assign(size + 3, 0);
 
 		msg[0] = (uint8_t)member.UnetPeer;
-		msg[1] = (uint8_t)channel;
+		msg[1] = channel;
 		msg[2] = (uint8_t)type;
 		memcpy(msg.data() + 3, data, size);
 
@@ -720,7 +833,85 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 	service->SendPacket(id, data, size, type, channel + 2);
 }
 
-void Unet::Context::SendToAll(uint8_t* data, size_t size, PacketType type, int channel)
+void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
+{
+	//TODO: Do something so that we can use this same code with InternalSendTo as well!
+	//TODO: Clean up the function names.. it's a mess right now
+
+	auto id = member.GetDataServiceID();
+	auto service = GetService(id.Service);
+
+	size_t sizeLimit = service->ReliablePacketLimit();
+	if (sizeLimit == 0) {
+		SendTo_Impl(member, data, size, PacketType::Reliable, channel);
+		return;
+	}
+
+	m_sequenceId++;
+
+	if (type == PacketType::Unreliable) {
+		m_tempBuffer.resize(size + 1);
+		m_tempBuffer[0] = m_sequenceId;
+		m_tempBuffer[1] = 0;
+		memcpy(m_tempBuffer.data() + 1, data, size);
+		SendTo_Impl(member, m_tempBuffer.data(), m_tempBuffer.size(), type, channel);
+		return;
+	}
+
+	//TODO: Do the below selectively, only if relay is actually required?
+	// Subtract 3 to ensure that, in the case of these being relay packets, we can still send them
+	sizeLimit -= 3;
+
+	size_t numPackets = (size / sizeLimit) + 1;
+	uint8_t* ptr = data;
+
+	assert(numPackets > 0);
+	assert(numPackets <= 256); // It's currently not possible to send more than 256 partial packets at a time
+
+	XXH32_hash_t hashData = 0;
+	if (numPackets > 1) {
+		hashData = XXH32(data, size, 0);
+	}
+
+	for (size_t i = 0; i < numPackets; i++) {
+		size_t bytesLeft = size - (ptr - data);
+		size_t dataSize = 0;
+
+		if (i == 0) {
+			size_t extraData = 2;
+			if (numPackets > 1) {
+				extraData += 4; // 4 bytes for the full packet hash
+			}
+
+			dataSize = std::min(bytesLeft, sizeLimit - extraData);
+
+			m_tempBuffer.resize(dataSize + extraData);
+			m_tempBuffer[0] = m_sequenceId;
+			m_tempBuffer[1] = (uint8_t)numPackets - 1;
+			if (numPackets > 1) {
+				memcpy(m_tempBuffer.data() + 2, &hashData, 4);
+			}
+			memcpy(m_tempBuffer.data() + extraData, ptr, dataSize);
+
+			SendTo_Impl(member, m_tempBuffer.data(), m_tempBuffer.size(), PacketType::Reliable, channel);
+
+		} else {
+			size_t extraData = 1;
+
+			dataSize = std::min(bytesLeft, sizeLimit - extraData);
+
+			m_tempBuffer.resize(dataSize + extraData);
+			m_tempBuffer[0] = m_sequenceId;
+			memcpy(m_tempBuffer.data() + extraData, ptr, dataSize);
+
+			SendTo_Impl(member, ptr, dataSize, PacketType::Reliable, channel);
+		}
+
+		ptr += dataSize;
+	}
+}
+
+void Unet::Context::SendToAll(uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -740,7 +931,7 @@ void Unet::Context::SendToAll(uint8_t* data, size_t size, PacketType type, int c
 	}
 }
 
-void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type, int channel)
+void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -764,7 +955,7 @@ void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, si
 	}
 }
 
-void Unet::Context::SendToHost(uint8_t* data, size_t size, PacketType type, int channel)
+void Unet::Context::SendToHost(uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
