@@ -480,11 +480,11 @@ void Unet::Context::RunCallbacks()
 			// General purpose channels for fragmented messages
 			if (packetSizeLimit > 0) {
 				for (int channel = 0; channel < m_numChannels; channel++) {
-					while (service->IsPacketAvailable(&packetSize, channel)) {
+					while (service->IsPacketAvailable(&packetSize, 2 + channel)) {
 						msg.resize(packetSize);
 
 						ServiceID peer;
-						service->ReadPacket(msg.data(), packetSize, &peer, channel);
+						service->ReadPacket(msg.data(), packetSize, &peer, 2 + channel);
 						uint8_t* msgData = msg.data();
 
 						uint8_t sequenceId = *(msgData++);
