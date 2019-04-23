@@ -909,7 +909,7 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 			m_tempBuffer[0] = m_sequenceId;
 			memcpy(m_tempBuffer.data() + extraData, ptr, dataSize);
 
-			SendTo_Impl(member, ptr, dataSize, PacketType::Reliable, channel);
+			SendTo_Impl(member, m_tempBuffer.data(), m_tempBuffer.size(), PacketType::Reliable, channel);
 		}
 
 		ptr += dataSize;
