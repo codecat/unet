@@ -7,6 +7,7 @@
 #include <Unet/Service.h>
 #include <Unet/MultiCallback.h>
 #include <Unet/NetworkMessage.h>
+#include <Unet/Reassembly.h>
 
 namespace Unet
 {
@@ -66,6 +67,7 @@ namespace Unet
 		Service* PrimaryService();
 		Service* GetService(ServiceType type);
 
+		void InternalSendTo_Impl(LobbyMember &member, const json &js);
 		void InternalSendTo(LobbyMember &member, const json &js);
 		void InternalSendToAll(const json &js);
 		void InternalSendToAllExcept(LobbyMember &exceptMember, const json &js);
@@ -96,10 +98,8 @@ namespace Unet
 		std::vector<Service*> m_services;
 
 		std::vector<std::queue<NetworkMessage*>> m_queuedMessages;
-		std::vector<NetworkMessage*> m_fragmentedMessages;
-
-		std::vector<uint8_t> m_tempBuffer;
-		uint8_t m_sequenceId = 0;
+		std::queue<NetworkMessage*> m_queuedInternalMessages;
+		Reassembly m_reassembly;
 
 	public:
 		MultiCallback<CreateLobbyResult> m_callbackCreateLobby;

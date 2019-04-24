@@ -10,6 +10,7 @@
 #include <Unet/xxhash.h>
 
 Unet::Context::Context(int numChannels)
+	: m_reassembly(this)
 {
 	m_numChannels = numChannels;
 	m_queuedMessages.assign(numChannels, std::queue<NetworkMessage*>());
@@ -43,10 +44,6 @@ Unet::Context::~Context()
 			delete channel.front();
 			channel.pop();
 		}
-	}
-
-	for (auto msg : m_fragmentedMessages) {
-		delete msg;
 	}
 }
 
@@ -203,48 +200,13 @@ void Unet::Context::RunCallbacks()
 					}
 
 					if (packetSizeLimit > 0) {
-						uint8_t sequenceId = *(msgData++);
-						packetSize--;
-
-						auto existingMsg = std::find_if(m_fragmentedMessages.begin(), m_fragmentedMessages.end(), [sequenceId](NetworkMessage* msg) {
-							return msg->m_sequenceId == sequenceId;
-						});
-
-						if (existingMsg != m_fragmentedMessages.end()) {
-							auto msg = *existingMsg;
-							assert(msg->m_packetsLeft > 0);
-							msg->m_packetsLeft--;
-							msg->Append(msgData, packetSize);
-							if (msg->m_packetsLeft == 0) {
-								m_fragmentedMessages.erase(existingMsg);
-								m_queuedMessages[msg->m_channel].push(msg);
-							}
-							continue;
-						}
-
-						uint8_t packetCount = *(msgData++);
-						packetSize--;
-
-						if (packetCount > 0) {
-							uint32_t packetHash = *(uint32_t*)msgData;
-							msgData += 4;
-							packetSize -= 4;
-
-							auto newMessage = new NetworkMessage(msgData, packetSize);
-							newMessage->m_sequenceId = sequenceId;
-							newMessage->m_packetsLeft = packetCount;
-							newMessage->m_sequenceHash = packetHash;
-							newMessage->m_channel = (int)channel;
-							newMessage->m_peer = memberSender->GetPrimaryServiceID();
-							m_fragmentedMessages.emplace_back(newMessage);
-							continue;
-						}
+						m_reassembly.HandleMessage(memberSender->GetPrimaryServiceID(), (int)channel, msgData, packetSize);
+					} else {
+						auto newMessage = new NetworkMessage(msgData, packetSize);
+						newMessage->m_channel = (int)channel;
+						newMessage->m_peer = memberSender->GetPrimaryServiceID();
+						m_queuedMessages[channel].push(newMessage);
 					}
-
-					auto newMessage = new NetworkMessage(msgData, packetSize);
-					newMessage->m_channel = (int)channel;
-					newMessage->m_peer = memberSender->GetPrimaryServiceID();
-					m_queuedMessages[channel].push(newMessage);
 				}
 			}
 
@@ -487,55 +449,19 @@ void Unet::Context::RunCallbacks()
 						service->ReadPacket(msg.data(), packetSize, &peer, 2 + channel);
 						uint8_t* msgData = msg.data();
 
-						uint8_t sequenceId = *(msgData++);
-						packetSize--;
-
-						auto existingMsg = std::find_if(m_fragmentedMessages.begin(), m_fragmentedMessages.end(), [sequenceId](NetworkMessage * msg) {
-							return msg->m_sequenceId == sequenceId;
-						});
-
-						if (existingMsg != m_fragmentedMessages.end()) {
-							auto msg = *existingMsg;
-							assert(msg->m_packetsLeft > 0);
-							msg->m_packetsLeft--;
-							msg->Append(msgData, packetSize);
-							if (msg->m_packetsLeft == 0) {
-								uint32_t finalHash = XXH32(msg->m_data, msg->m_size, 0);
-								if (finalHash != msg->m_sequenceHash) {
-									m_callbacks->OnLogError(strPrintF("Sequence hash for fragmented packet does not match! Packet size: %d", (int)msg->m_size));
-								}
-
-								m_fragmentedMessages.erase(existingMsg);
-								m_queuedMessages[msg->m_channel].push(msg);
-							}
-							continue;
-						}
-
-						uint8_t packetCount = *(msgData++);
-						packetSize--;
-
-						if (packetCount > 0) {
-							uint32_t packetHash = *(uint32_t*)msgData;
-							msgData += 4;
-							packetSize -= 4;
-
-							auto newMessage = new NetworkMessage(msgData, packetSize);
-							newMessage->m_sequenceId = sequenceId;
-							newMessage->m_packetsLeft = packetCount;
-							newMessage->m_sequenceHash = packetHash;
-							newMessage->m_channel = (int)channel;
-							newMessage->m_peer = peer;
-							m_fragmentedMessages.emplace_back(newMessage);
-							continue;
-						}
-
-						auto newMessage = new NetworkMessage(msgData, packetSize);
-						newMessage->m_channel = (int)channel;
-						newMessage->m_peer = peer;
-						m_queuedMessages[channel].push(newMessage);
+						m_reassembly.HandleMessage(peer, channel, msgData, packetSize);
 					}
 				}
 			}
+		}
+	}
+
+	// Pop any fragmented messages into the message queue
+	while (auto msg = m_reassembly.PopReady()) {
+		if (msg->m_channel == -1) {
+			m_queuedInternalMessages.push(msg);
+		} else {
+			m_queuedMessages[msg->m_channel].push(msg);
 		}
 	}
 }
@@ -840,9 +766,6 @@ void Unet::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size,
 
 void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
-	//TODO: Do something so that we can use this same code with InternalSendTo as well!
-	//TODO: Clean up the function names.. it's a mess right now
-
 	auto id = member.GetDataServiceID();
 	auto service = GetService(id.Service);
 
@@ -852,68 +775,9 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 		return;
 	}
 
-	m_sequenceId++;
-
-	if (type == PacketType::Unreliable) {
-		m_tempBuffer.resize(size + 1);
-		m_tempBuffer[0] = m_sequenceId;
-		m_tempBuffer[1] = 0;
-		memcpy(m_tempBuffer.data() + 1, data, size);
-		SendTo_Impl(member, m_tempBuffer.data(), m_tempBuffer.size(), type, channel);
-		return;
-	}
-
-	//TODO: Do the below selectively, only if relay is actually required?
-	// Subtract 3 to ensure that, in the case of these being relay packets, we can still send them
-	sizeLimit -= 3;
-
-	size_t numPackets = (size / sizeLimit) + 1;
-	uint8_t* ptr = data;
-
-	assert(numPackets > 0);
-	assert(numPackets <= 256); // It's currently not possible to send more than 256 partial packets at a time
-
-	XXH32_hash_t hashData = 0;
-	if (numPackets > 1) {
-		hashData = XXH32(data, size, 0);
-	}
-
-	for (size_t i = 0; i < numPackets; i++) {
-		size_t bytesLeft = size - (ptr - data);
-		size_t dataSize = 0;
-
-		if (i == 0) {
-			size_t extraData = 2;
-			if (numPackets > 1) {
-				extraData += 4; // 4 bytes for the full packet hash
-			}
-
-			dataSize = std::min(bytesLeft, sizeLimit - extraData);
-
-			m_tempBuffer.resize(dataSize + extraData);
-			m_tempBuffer[0] = m_sequenceId;
-			m_tempBuffer[1] = (uint8_t)numPackets - 1;
-			if (numPackets > 1) {
-				memcpy(m_tempBuffer.data() + 2, &hashData, 4);
-			}
-			memcpy(m_tempBuffer.data() + extraData, ptr, dataSize);
-
-			SendTo_Impl(member, m_tempBuffer.data(), m_tempBuffer.size(), PacketType::Reliable, channel);
-
-		} else {
-			size_t extraData = 1;
-
-			dataSize = std::min(bytesLeft, sizeLimit - extraData);
-
-			m_tempBuffer.resize(dataSize + extraData);
-			m_tempBuffer[0] = m_sequenceId;
-			memcpy(m_tempBuffer.data() + extraData, ptr, dataSize);
-
-			SendTo_Impl(member, m_tempBuffer.data(), m_tempBuffer.size(), PacketType::Reliable, channel);
-		}
-
-		ptr += dataSize;
-	}
+	m_reassembly.SplitMessage(data, size, type, sizeLimit, [this, &member, type, channel](uint8_t* data, size_t size) {
+		SendTo_Impl(member, data, size, type, channel);
+	});
 }
 
 void Unet::Context::SendToAll(uint8_t* data, size_t size, PacketType type, uint8_t channel)
@@ -1003,6 +867,10 @@ Unet::Service* Unet::Context::GetService(ServiceType type)
 		}
 	}
 	return nullptr;
+}
+
+void Unet::Context::InternalSendTo_Impl(LobbyMember &member, const json &js)
+{
 }
 
 void Unet::Context::InternalSendTo(LobbyMember &member, const json &js)
