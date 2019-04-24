@@ -137,6 +137,21 @@ void Unet::Context::RunCallbacks()
 
 			size_t packetSize;
 
+			// General purpose channels for fragmented messages
+			if (packetSizeLimit > 0) {
+				for (int channel = 0; channel < m_numChannels; channel++) {
+					while (service->IsPacketAvailable(&packetSize, 2 + channel)) {
+						msg.resize(packetSize);
+
+						ServiceID peer;
+						service->ReadPacket(msg.data(), packetSize, &peer, 2 + channel);
+						uint8_t * msgData = msg.data();
+
+						m_reassembly.HandleMessage(peer, channel, msgData, packetSize);
+					}
+				}
+			}
+
 			// Relay packet channel
 			while (service->IsPacketAvailable(&packetSize, 1)) {
 				msg.resize(packetSize);
@@ -210,247 +225,25 @@ void Unet::Context::RunCallbacks()
 				}
 			}
 
-			//TODO: Move channel 0 packet handling to Lobby class
-			while (service->IsPacketAvailable(&packetSize, 0)) {
-				m_callbacks->OnLogDebug(strPrintF("[P2P] [%s] %d bytes", GetServiceNameByType(service->GetType()), (int)packetSize));
-
-				std::vector<uint8_t> msg;
-				msg.assign(packetSize, 0);
-
-				ServiceID peer;
-				service->ReadPacket(msg.data(), packetSize, &peer, 0);
-
-				auto peerMember = m_currentLobby->GetMember(peer);
-
-				json js = JsonUnpack(msg);
-				if (!js.is_object() || !js.contains("t")) {
-					m_callbacks->OnLogError(strPrintF("[P2P] [%s] Message from 0x%016llX is not a valid bson object!", GetServiceNameByType(peer.Service), peer.ID));
-					continue;
-				}
-
-				auto jsDump = js.dump();
-				m_callbacks->OnLogDebug(strPrintF("[P2P] [%s] Message object: \"%s\"", GetServiceNameByType(peer.Service), jsDump.c_str()));
-
-				auto type = (LobbyPacketType)(uint8_t)js["t"];
-
-				if (type == LobbyPacketType::Handshake) {
-					if (!m_currentLobby->m_info.IsHosting) {
-						continue;
-					}
-
-					xg::Guid guid(js["guid"].get<std::string>());
-					auto &member = m_currentLobby->AddMemberService(guid, peer);
-
-					if (member.Valid) {
-						js = json::object();
-						js["t"] = (uint8_t)LobbyPacketType::MemberNewService;
-						js["guid"] = guid.str();
-						js["service"] = (int)peer.Service;
-						js["id"] = peer.ID;
-						InternalSendToAll(js);
-					}
-
-				} else if (type == LobbyPacketType::Hello) {
-					if (!m_currentLobby->m_info.IsHosting) {
-						continue;
-					}
-
-					auto member = m_currentLobby->GetMember(peer);
-					if (member == nullptr) {
-						m_callbacks->OnLogWarn(strPrintF("Received Hello packet from %s ID 0x%016llX before receiving any handshakes!",
-							GetServiceNameByType(peer.Service), peer.ID
-						));
-						continue;
-					}
-
-					// Update member
-					member->Name = js["name"].get<std::string>();
-					member->UnetPrimaryService = peer.Service;
-					member->Valid = true;
-
-					// Send LobbyInfo to new member
-					js = json::object();
-					js["t"] = (uint8_t)LobbyPacketType::LobbyInfo;
-					js["data"] = m_currentLobby->SerializeData();
-					js["members"] = json::array();
-					for (auto &member : m_currentLobby->m_members) {
-						if (member.Valid) {
-							js["members"].emplace_back(member.Serialize());
-						}
-					}
-					InternalSendTo(*member, js);
-
-					// Send MemberInfo to existing members
-					js = member->Serialize();
-					js["t"] = (uint8_t)LobbyPacketType::MemberInfo;
-					InternalSendToAllExcept(*member, js);
-
-					// Run callback
-					m_callbacks->OnLobbyPlayerJoined(*member);
-
-				} else if (type == LobbyPacketType::LobbyInfo) {
-					if (m_currentLobby->m_info.IsHosting) {
-						continue;
-					}
-
-					m_currentLobby->DeserializeData(js["data"]);
-					m_currentLobby->m_info.Name = m_currentLobby->GetData("unet-name");
-					m_currentLobby->m_info.UnetGuid = xg::Guid(m_currentLobby->GetData("unet-guid"));
-
-					for (auto &member : js["members"]) {
-						DeserializeMemberIntoLobby(CurrentLobby(), member);
-					}
-
-					for (auto &member : m_currentLobby->m_members) {
-						if (member.UnetGuid == m_localGuid) {
-							m_localPeer = member.UnetPeer;
-						}
-					}
-
-					m_status = ContextStatus::Connected;
-
-					LobbyJoinResult result;
-					result.Code = Result::OK;
-					result.JoinedLobby = m_currentLobby;
-					m_callbacks->OnLobbyJoined(result);
-
-				} else if (type == LobbyPacketType::MemberInfo) {
-					if (m_currentLobby->m_info.IsHosting) {
-						continue;
-					}
-
-					auto &member = DeserializeMemberIntoLobby(CurrentLobby(), js);
-					m_callbacks->OnLobbyPlayerJoined(member);
-
-				} else if (type == LobbyPacketType::MemberLeft) {
-					if (m_currentLobby->m_info.IsHosting) {
-						continue;
-					}
-
-					xg::Guid guid(js["guid"].get<std::string>());
-
-					auto member = m_currentLobby->GetMember(guid);
-					assert(member != nullptr);
-					if (member == nullptr) {
-						continue;
-					}
-
-					m_currentLobby->RemoveMember(*member);
-
-				} else if (type == LobbyPacketType::MemberKick) {
-					if (m_currentLobby->m_info.IsHosting) {
-						continue;
-					}
-
-					LeaveLobby(LeaveReason::Kicked);
-
-				} else if (type == LobbyPacketType::MemberNewService) {
-					if (m_currentLobby->m_info.IsHosting) {
-						continue;
-					}
-
-					xg::Guid guid(js["guid"].get<std::string>());
-
-					ServiceID id;
-					id.Service = (ServiceType)js["service"].get<int>();
-					id.ID = js["id"].get<uint64_t>();
-
-					m_currentLobby->AddMemberService(guid, id);
-
-				} else if (type == LobbyPacketType::LobbyData) {
-					if (m_currentLobby->m_info.IsHosting) {
-						continue;
-					}
-
-					auto name = js["name"].get<std::string>();
-					auto value = js["value"].get<std::string>();
-
-					m_currentLobby->InternalSetData(name, value);
-					m_callbacks->OnLobbyDataChanged(name);
-
-				} else if (type == LobbyPacketType::LobbyDataRemoved) {
-					if (m_currentLobby->m_info.IsHosting) {
-						continue;
-					}
-
-					auto name = js["name"].get<std::string>();
-
-					m_currentLobby->InternalRemoveData(name);
-					m_callbacks->OnLobbyDataChanged(name);
-
-				} else if (type == LobbyPacketType::LobbyMemberData) {
-					auto name = js["name"].get<std::string>();
-					auto value = js["value"].get<std::string>();
-
-					if (m_currentLobby->m_info.IsHosting) {
-						peerMember->InternalSetData(name, value);
-
-						js = json::object();
-						js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
-						js["guid"] = peerMember->UnetGuid.str();
-						js["name"] = name;
-						js["value"] = value;
-						InternalSendToAllExcept(*peerMember, js);
-
-						m_callbacks->OnLobbyMemberDataChanged(*peerMember, name);
-
-					} else {
-						xg::Guid guid(js["guid"].get<std::string>());
-
-						auto member = m_currentLobby->GetMember(guid);
-						assert(member != nullptr);
-						if (member == nullptr) {
-							continue;
-						}
-
-						member->InternalSetData(name, value);
-						m_callbacks->OnLobbyMemberDataChanged(*member, name);
-					}
-
-				} else if (type == LobbyPacketType::LobbyMemberDataRemoved) {
-					auto name = js["name"].get<std::string>();
-
-					if (m_currentLobby->m_info.IsHosting) {
-						peerMember->InternalRemoveData(name);
-
-						js = json::object();
-						js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
-						js["guid"] = peerMember->UnetGuid.str();
-						js["name"] = name;
-						InternalSendToAllExcept(*peerMember, js);
-
-						m_callbacks->OnLobbyMemberDataChanged(*peerMember, name);
-
-					} else {
-						xg::Guid guid(js["guid"].get<std::string>());
-
-						auto member = m_currentLobby->GetMember(guid);
-						assert(member != nullptr);
-						if (member == nullptr) {
-							continue;
-						}
-
-						member->InternalRemoveData(name);
-						m_callbacks->OnLobbyMemberDataChanged(*member, name);
-					}
-
-				} else {
-					m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
-				}
-			}
-
-			// General purpose channels for fragmented messages
 			if (packetSizeLimit > 0) {
-				for (int channel = 0; channel < m_numChannels; channel++) {
-					while (service->IsPacketAvailable(&packetSize, 2 + channel)) {
-						msg.resize(packetSize);
+				while (m_queuedInternalMessages.size() > 0) {
+					auto msg = m_queuedInternalMessages.front();
 
-						ServiceID peer;
-						service->ReadPacket(msg.data(), packetSize, &peer, 2 + channel);
-						uint8_t* msgData = msg.data();
+					HandleLobbyMessage(msg->m_peer, msg->m_data, msg->m_size);
 
-						m_reassembly.HandleMessage(peer, channel, msgData, packetSize);
-					}
+					delete msg;
+					m_queuedInternalMessages.pop();
+				}
+
+			} else {
+				while (service->IsPacketAvailable(&packetSize, 0)) {
+					std::vector<uint8_t> msg;
+					msg.assign(packetSize, 0);
+
+					ServiceID peer;
+					service->ReadPacket(msg.data(), packetSize, &peer, 0);
+
+					HandleLobbyMessage(peer, msg.data(), packetSize);
 				}
 			}
 		}
@@ -463,6 +256,229 @@ void Unet::Context::RunCallbacks()
 		} else {
 			m_queuedMessages[msg->m_channel].push(msg);
 		}
+	}
+}
+
+void Unet::Context::HandleLobbyMessage(ServiceID peer, uint8_t* data, size_t size)
+{
+	//TODO: Move channel 0 packet handling to Lobby class
+
+	auto peerMember = m_currentLobby->GetMember(peer);
+
+	json js = JsonUnpack(data, size);
+	if (!js.is_object() || !js.contains("t")) {
+		m_callbacks->OnLogError(strPrintF("[P2P] [%s] Message from 0x%016llX is not a valid data object!", GetServiceNameByType(peer.Service), peer.ID));
+		return;
+	}
+
+	auto jsDump = js.dump();
+	m_callbacks->OnLogDebug(strPrintF("[P2P] [%s] Message object: \"%s\"", GetServiceNameByType(peer.Service), jsDump.c_str()));
+
+	auto type = (LobbyPacketType)(uint8_t)js["t"];
+
+	if (type == LobbyPacketType::Handshake) {
+		if (!m_currentLobby->m_info.IsHosting) {
+			return;
+		}
+
+		xg::Guid guid(js["guid"].get<std::string>());
+		auto &member = m_currentLobby->AddMemberService(guid, peer);
+
+		if (member.Valid) {
+			js = json::object();
+			js["t"] = (uint8_t)LobbyPacketType::MemberNewService;
+			js["guid"] = guid.str();
+			js["service"] = (int)peer.Service;
+			js["id"] = peer.ID;
+			InternalSendToAll(js);
+		}
+
+	} else if (type == LobbyPacketType::Hello) {
+		if (!m_currentLobby->m_info.IsHosting) {
+			return;
+		}
+
+		auto member = m_currentLobby->GetMember(peer);
+		if (member == nullptr) {
+			m_callbacks->OnLogWarn(strPrintF("Received Hello packet from %s ID 0x%016llX before receiving any handshakes!",
+				GetServiceNameByType(peer.Service), peer.ID
+			));
+			return;
+		}
+
+		// Update member
+		member->Name = js["name"].get<std::string>();
+		member->UnetPrimaryService = peer.Service;
+		member->Valid = true;
+
+		// Send LobbyInfo to new member
+		js = json::object();
+		js["t"] = (uint8_t)LobbyPacketType::LobbyInfo;
+		js["data"] = m_currentLobby->SerializeData();
+		js["members"] = json::array();
+		for (auto &member : m_currentLobby->m_members) {
+			if (member.Valid) {
+				js["members"].emplace_back(member.Serialize());
+			}
+		}
+		InternalSendTo(*member, js);
+
+		// Send MemberInfo to existing members
+		js = member->Serialize();
+		js["t"] = (uint8_t)LobbyPacketType::MemberInfo;
+		InternalSendToAllExcept(*member, js);
+
+		// Run callback
+		m_callbacks->OnLobbyPlayerJoined(*member);
+
+	} else if (type == LobbyPacketType::LobbyInfo) {
+		if (m_currentLobby->m_info.IsHosting) {
+			return;
+		}
+
+		m_currentLobby->DeserializeData(js["data"]);
+		m_currentLobby->m_info.Name = m_currentLobby->GetData("unet-name");
+		m_currentLobby->m_info.UnetGuid = xg::Guid(m_currentLobby->GetData("unet-guid"));
+
+		for (auto &member : js["members"]) {
+			DeserializeMemberIntoLobby(CurrentLobby(), member);
+		}
+
+		for (auto &member : m_currentLobby->m_members) {
+			if (member.UnetGuid == m_localGuid) {
+				m_localPeer = member.UnetPeer;
+			}
+		}
+
+		m_status = ContextStatus::Connected;
+
+		LobbyJoinResult result;
+		result.Code = Result::OK;
+		result.JoinedLobby = m_currentLobby;
+		m_callbacks->OnLobbyJoined(result);
+
+	} else if (type == LobbyPacketType::MemberInfo) {
+		if (m_currentLobby->m_info.IsHosting) {
+			return;
+		}
+
+		auto &member = DeserializeMemberIntoLobby(CurrentLobby(), js);
+		m_callbacks->OnLobbyPlayerJoined(member);
+
+	} else if (type == LobbyPacketType::MemberLeft) {
+		if (m_currentLobby->m_info.IsHosting) {
+			return;
+		}
+
+		xg::Guid guid(js["guid"].get<std::string>());
+
+		auto member = m_currentLobby->GetMember(guid);
+		assert(member != nullptr);
+		if (member == nullptr) {
+			return;
+		}
+
+		m_currentLobby->RemoveMember(*member);
+
+	} else if (type == LobbyPacketType::MemberKick) {
+		if (m_currentLobby->m_info.IsHosting) {
+			return;
+		}
+
+		LeaveLobby(LeaveReason::Kicked);
+
+	} else if (type == LobbyPacketType::MemberNewService) {
+		if (m_currentLobby->m_info.IsHosting) {
+			return;
+		}
+
+		xg::Guid guid(js["guid"].get<std::string>());
+
+		ServiceID id;
+		id.Service = (ServiceType)js["service"].get<int>();
+		id.ID = js["id"].get<uint64_t>();
+
+		m_currentLobby->AddMemberService(guid, id);
+
+	} else if (type == LobbyPacketType::LobbyData) {
+		if (m_currentLobby->m_info.IsHosting) {
+			return;
+		}
+
+		auto name = js["name"].get<std::string>();
+		auto value = js["value"].get<std::string>();
+
+		m_currentLobby->InternalSetData(name, value);
+		m_callbacks->OnLobbyDataChanged(name);
+
+	} else if (type == LobbyPacketType::LobbyDataRemoved) {
+		if (m_currentLobby->m_info.IsHosting) {
+			return;
+		}
+
+		auto name = js["name"].get<std::string>();
+
+		m_currentLobby->InternalRemoveData(name);
+		m_callbacks->OnLobbyDataChanged(name);
+
+	} else if (type == LobbyPacketType::LobbyMemberData) {
+		auto name = js["name"].get<std::string>();
+		auto value = js["value"].get<std::string>();
+
+		if (m_currentLobby->m_info.IsHosting) {
+			peerMember->InternalSetData(name, value);
+
+			js = json::object();
+			js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
+			js["guid"] = peerMember->UnetGuid.str();
+			js["name"] = name;
+			js["value"] = value;
+			InternalSendToAllExcept(*peerMember, js);
+
+			m_callbacks->OnLobbyMemberDataChanged(*peerMember, name);
+
+		} else {
+			xg::Guid guid(js["guid"].get<std::string>());
+
+			auto member = m_currentLobby->GetMember(guid);
+			assert(member != nullptr);
+			if (member == nullptr) {
+				return;
+			}
+
+			member->InternalSetData(name, value);
+			m_callbacks->OnLobbyMemberDataChanged(*member, name);
+		}
+
+	} else if (type == LobbyPacketType::LobbyMemberDataRemoved) {
+		auto name = js["name"].get<std::string>();
+
+		if (m_currentLobby->m_info.IsHosting) {
+			peerMember->InternalRemoveData(name);
+
+			js = json::object();
+			js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
+			js["guid"] = peerMember->UnetGuid.str();
+			js["name"] = name;
+			InternalSendToAllExcept(*peerMember, js);
+
+			m_callbacks->OnLobbyMemberDataChanged(*peerMember, name);
+
+		} else {
+			xg::Guid guid(js["guid"].get<std::string>());
+
+			auto member = m_currentLobby->GetMember(guid);
+			assert(member != nullptr);
+			if (member == nullptr) {
+				return;
+			}
+
+			member->InternalRemoveData(name);
+			m_callbacks->OnLobbyMemberDataChanged(*member, name);
+		}
+
+	} else {
+		m_callbacks->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
 	}
 }
 
@@ -869,14 +885,8 @@ Unet::Service* Unet::Context::GetService(ServiceType type)
 	return nullptr;
 }
 
-void Unet::Context::InternalSendTo_Impl(LobbyMember &member, const json &js)
-{
-}
-
 void Unet::Context::InternalSendTo(LobbyMember &member, const json &js)
 {
-	auto msg = JsonPack(js);
-
 	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
 	//NOTE: The above is not important yet for internal messages, as all internal messages are sent between client & server, not client & client
 
@@ -895,7 +905,17 @@ void Unet::Context::InternalSendTo(LobbyMember &member, const json &js)
 		return;
 	}
 
-	service->SendPacket(id, msg.data(), msg.size(), PacketType::Reliable, 0);
+	auto msg = JsonPack(js);
+
+	size_t sizeLimit = service->ReliablePacketLimit();
+	if (sizeLimit == 0) {
+		service->SendPacket(id, msg.data(), msg.size(), PacketType::Reliable, 0);
+		return;
+	}
+
+	m_reassembly.SplitMessage(msg.data(), msg.size(), PacketType::Reliable, sizeLimit, [service, id](uint8_t* data, size_t size) {
+		service->SendPacket(id, data, size, PacketType::Reliable, 0);
+	});
 }
 
 void Unet::Context::InternalSendToAll(const json &js)

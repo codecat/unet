@@ -34,6 +34,7 @@ namespace Unet
 		void SetCallbacks(Callbacks* callbacks);
 		Callbacks* GetCallbacks();
 		void RunCallbacks();
+		void HandleLobbyMessage(ServiceID peer, uint8_t* data, size_t size);
 
 		void SetPrimaryService(ServiceType service);
 		void EnableService(ServiceType service);
@@ -67,7 +68,6 @@ namespace Unet
 		Service* PrimaryService();
 		Service* GetService(ServiceType type);
 
-		void InternalSendTo_Impl(LobbyMember &member, const json &js);
 		void InternalSendTo(LobbyMember &member, const json &js);
 		void InternalSendToAll(const json &js);
 		void InternalSendToAllExcept(LobbyMember &exceptMember, const json &js);
