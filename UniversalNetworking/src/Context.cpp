@@ -1073,6 +1073,10 @@ void Unet::Context::OnLobbyLeft(const LobbyLeftResult &result)
 
 void Unet::Context::OnLobbyPlayerLeft(const LobbyMember &member)
 {
+	if (!member.Valid) {
+		return;
+	}
+
 	if (m_currentLobby->m_info.IsHosting) {
 		json js;
 		js["t"] = (uint8_t)LobbyPacketType::MemberLeft;
