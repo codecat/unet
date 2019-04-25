@@ -329,13 +329,12 @@ void Unet::ServiceGalaxy::OnLobbyEntered(const galaxy::api::GalaxyID& lobbyID, g
 
 	m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Lobby joined");
 
+	auto lobbyOwner = galaxy::api::Matchmaking()->GetLobbyOwner(lobbyID);
+
 	json js;
 	js["t"] = (uint8_t)LobbyPacketType::Handshake;
 	js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
-	auto msg = JsonPack(js);
-
-	auto lobbyOwner = galaxy::api::Matchmaking()->GetLobbyOwner(lobbyID);
-	galaxy::api::Networking()->SendP2PPacket(lobbyOwner, msg.data(), (uint32_t)msg.size(), galaxy::api::P2P_SEND_RELIABLE);
+	m_ctx->InternalSendTo(ServiceID(ServiceType::Galaxy, lobbyOwner.ToUint64()), js);
 
 	m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] Handshake sent");
 }

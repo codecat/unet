@@ -68,7 +68,9 @@ namespace Unet
 		Service* PrimaryService();
 		Service* GetService(ServiceType type);
 
+	public:
 		void InternalSendTo(LobbyMember &member, const json &js);
+		void InternalSendTo(const ServiceID &id, const json &js);
 		void InternalSendToAll(const json &js);
 		void InternalSendToAllExcept(LobbyMember &exceptMember, const json &js);
 		void InternalSendToHost(const json &js);

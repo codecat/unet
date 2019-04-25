@@ -898,9 +898,6 @@ Unet::Service* Unet::Context::GetService(ServiceType type)
 
 void Unet::Context::InternalSendTo(LobbyMember &member, const json &js)
 {
-	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
-	//NOTE: The above is not important yet for internal messages, as all internal messages are sent between client & server, not client & client
-
 	// Sending a message to yourself isn't very useful.
 	assert(member.UnetPeer != m_localPeer);
 
@@ -909,6 +906,14 @@ void Unet::Context::InternalSendTo(LobbyMember &member, const json &js)
 	if (!id.IsValid()) {
 		return;
 	}
+
+	InternalSendTo(id, js);
+}
+
+void Unet::Context::InternalSendTo(const ServiceID &id, const json &js)
+{
+	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
+	//NOTE: The above is not important yet for internal messages, as all internal messages are sent between client & server, not client & client
 
 	auto service = GetService(id.Service);
 	assert(service != nullptr);
@@ -965,12 +970,19 @@ void Unet::Context::InternalSendToHost(const json &js)
 	}
 
 	auto hostMember = m_currentLobby->GetHostMember();
-	assert(hostMember != nullptr);
-	if (hostMember == nullptr) {
-		return;
-	}
+	if (hostMember != nullptr) {
+		InternalSendTo(*hostMember, js);
 
-	InternalSendTo(*hostMember, js);
+	} else {
+		auto primaryEntryPoint = m_currentLobby->GetPrimaryEntryPoint();
+		assert(primaryEntryPoint.IsValid());
+
+		auto service = GetService(primaryEntryPoint.Service);
+		assert(service != nullptr);
+
+		auto hostId = service->GetLobbyHost(primaryEntryPoint);
+		InternalSendTo(hostId, js);
+	}
 }
 
 void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
@@ -1032,21 +1044,10 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 		m_currentLobby = result.JoinedLobby;
 	}
 
-	auto lobbyId = m_currentLobby->GetPrimaryEntryPoint();
-	assert(lobbyId.IsValid());
-
-	auto service = GetService(lobbyId.Service);
-	assert(service != nullptr);
-
-	auto lobbyHost = service->GetLobbyHost(lobbyId);
-	assert(lobbyHost.IsValid());
-
 	json js;
 	js["t"] = (uint8_t)LobbyPacketType::Hello;
 	js["name"] = m_personaName;
-	auto msg = JsonPack(js);
-
-	service->SendPacket(lobbyHost, msg.data(), msg.size(), PacketType::Reliable, 0);
+	InternalSendToHost(js);
 
 	m_callbacks->OnLogDebug("Hello sent");
 }

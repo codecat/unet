@@ -286,13 +286,12 @@ void Unet::ServiceSteam::OnLobbyJoin(LobbyEnter_t* result, bool bIOFailure)
 
 	m_ctx->GetCallbacks()->OnLogDebug("[Steam] Lobby joined");
 
+	auto lobbyOwner = SteamMatchmaking()->GetLobbyOwner(result->m_ulSteamIDLobby);
+
 	json js;
 	js["t"] = (uint8_t)LobbyPacketType::Handshake;
 	js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
-	auto msg = JsonPack(js);
-
-	auto lobbyOwner = SteamMatchmaking()->GetLobbyOwner(result->m_ulSteamIDLobby);
-	SteamNetworking()->SendP2PPacket(lobbyOwner, msg.data(), (uint32)msg.size(), k_EP2PSendReliable);
+	m_ctx->InternalSendTo(ServiceID(ServiceType::Steam, lobbyOwner.ConvertToUint64()), js);
 
 	m_ctx->GetCallbacks()->OnLogDebug("[Steam] Handshake sent");
 }

@@ -92,12 +92,7 @@ void Unet::ServiceEnet::RunCallbacks()
 				json js;
 				js["t"] = (uint8_t)LobbyPacketType::Handshake;
 				js["guid"] = m_requestLobbyJoin->Data->JoinGuid.str();
-				auto msg = JsonPack(js);
-
-				m_requestLobbyJoin = nullptr;
-
-				ENetPacket* newPacket = enet_packet_create(msg.data(), msg.size(), ENET_PACKET_FLAG_RELIABLE);
-				enet_peer_send(m_peerHost, 0, newPacket);
+				m_ctx->InternalSendTo(AddressToID(m_peerHost->address), js);
 
 			} else {
 				m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Enet] Client connected: 0x%016llX", AddressToInt(ev.peer->address)));
