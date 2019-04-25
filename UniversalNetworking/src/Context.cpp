@@ -325,11 +325,13 @@ void Unet::Context::HandleLobbyMessage(ServiceID peer, uint8_t* data, size_t siz
 				js["members"].emplace_back(member.Serialize());
 			}
 		}
+
 		std::stringstream ssTest;
 		for (int i = 0; i < 1024 * 700; i++) {
 			ssTest << "..";
 		}
 		js["test"] = ssTest.str();
+
 		InternalSendTo(*member, js);
 
 		// Send MemberInfo to existing members
