@@ -114,8 +114,6 @@ void Unet::Reassembly::SplitMessage(uint8_t* data, size_t size, PacketType type,
 		hashData = XXH32(data, size, 0);
 	}
 
-	m_ctx->GetCallbacks()->OnLogDebug(strPrintF("Splitting packet of %d bytes into %d packets", (int)size, (int)numPackets));
-
 	for (size_t i = 0; i < numPackets; i++) {
 		size_t bytesLeft = size - (ptr - data);
 		size_t dataSize = 0;
