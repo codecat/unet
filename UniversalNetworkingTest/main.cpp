@@ -337,6 +337,8 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a reliable packet with a number of random bytes on channel 0");
 		LOG_INFO("  sendu <peer> <num>  - Sends the given peer an unreliable packet with a number of random bytes on channel 0");
 		LOG_INFO("");
+		LOG_INFO("  test-limit <peer>   - Sends the given peer some reliable packets around Steam's reliable packet size limit");
+		LOG_INFO("");
 		LOG_INFO("Or just hit Enter to run callbacks.");
 
 	} else if (parse[0] == "run" && parse.len() == 2) {
@@ -750,6 +752,37 @@ static void HandleCommand(const s2::string &line)
 		}
 
 		LOG_INFO("%d unreliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
+
+	} else if (parse[0] == "test-limit" && parse.len() == 2) {
+		int peer = atoi(parse[1]);
+
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		auto member = currentLobby->GetMember(peer);
+		if (member == nullptr) {
+			LOG_ERROR("Peer ID %d does not belong to a member!", peer);
+			return;
+		}
+
+		size_t sizeLimit = 1024 * 1024;
+
+		uint8_t* bytes = (uint8_t*)malloc(sizeLimit + 10);
+		if (bytes != nullptr) {
+			for (int i = 0; i < sizeLimit + 10; i++) {
+				bytes[i] = (uint8_t)(rand() % 255);
+			}
+
+			for (size_t size = sizeLimit - 10; size < sizeLimit + 10; size++) {
+				LOG_INFO("Sending packet of size 0x%08X", (uint32_t)size);
+				g_ctx->SendTo(*member, bytes, size);
+			}
+
+			free(bytes);
+		}
 
 	} else {
 		LOG_ERROR("Unknown command \"%s\"! Try \"help\".", parse[0].c_str());

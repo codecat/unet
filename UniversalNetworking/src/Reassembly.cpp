@@ -24,11 +24,12 @@ void Unet::Reassembly::HandleMessage(ServiceID peer, int channel, uint8_t* msgDa
 
 	if (existingMsg != m_staging.end()) {
 		auto msg = *existingMsg;
-		assert(msg->m_packetsLeft > 0);
+		assert(msg->m_sequenceSize > 0);
 
-		msg->m_packetsLeft--;
 		msg->Append(msgData, packetSize);
-		if (msg->m_packetsLeft == 0) {
+
+		assert(msg->m_size <= msg->m_sequenceSize);
+		if (msg->m_size == msg->m_sequenceSize) {
 			uint32_t finalHash = XXH32(msg->m_data, msg->m_size, 0);
 			if (finalHash != msg->m_sequenceHash) {
 				m_ctx->GetCallbacks()->OnLogError(strPrintF("Sequence hash for fragmented packet does not match! Packet size: %d", (int)msg->m_size));
@@ -40,28 +41,33 @@ void Unet::Reassembly::HandleMessage(ServiceID peer, int channel, uint8_t* msgDa
 		return;
 	}
 
-	uint8_t packetCount = *(msgData++);
-	packetSize--;
+	uint32_t sequenceSize = *(uint32_t*)msgData;
+	msgData += 4;
+	packetSize -= 4;
 
-	if (packetCount > 0) {
+	if (sequenceSize == packetSize) {
+		// We have the full packet size already, we're not expecting any more packets
+		auto newMessage = new NetworkMessage(msgData, packetSize);
+		newMessage->m_channel = channel;
+		newMessage->m_peer = peer;
+		m_ready.push(newMessage);
+
+	} else {
 		uint32_t packetHash = *(uint32_t*)msgData;
 		msgData += 4;
 		packetSize -= 4;
 
+		// We're expecting multiple packets, so at this point the sequence size must be bigger than the data we have left
+		assert(sequenceSize > packetSize);
+
 		auto newMessage = new NetworkMessage(msgData, packetSize);
 		newMessage->m_sequenceId = sequenceId;
-		newMessage->m_packetsLeft = packetCount;
+		newMessage->m_sequenceSize = sequenceSize;
 		newMessage->m_sequenceHash = packetHash;
 		newMessage->m_channel = channel;
 		newMessage->m_peer = peer;
 		m_staging.emplace_back(newMessage);
-		return;
 	}
-
-	auto newMessage = new NetworkMessage(msgData, packetSize);
-	newMessage->m_channel = channel;
-	newMessage->m_peer = peer;
-	m_ready.push(newMessage);
 }
 
 Unet::NetworkMessage* Unet::Reassembly::PopReady()
@@ -104,35 +110,44 @@ void Unet::Reassembly::SplitMessage(uint8_t* data, size_t size, PacketType type,
 	// Subtract 3 to ensure that, in the case of these being relay packets, we can still send them
 	sizeLimit -= 3; //TODO: Do this selectively, only if relay is actually required?
 
-	size_t numPackets = (size / sizeLimit) + 1;
-	uint8_t* ptr = data;
+	assert(size <= 0xFFFFFFFF); // Size is sent as a 32 bit unsigned integer, so you can't send packets bigger than 4GB
 
-	assert(numPackets <= 256); // It's currently not possible to send more than 256 partial packets at a time
+	bool shouldSplit = (size > sizeLimit - 5);
 
 	XXH32_hash_t hashData = 0;
-	if (numPackets > 1) {
+	if (shouldSplit) {
 		hashData = XXH32(data, size, 0);
 	}
 
-	for (size_t i = 0; i < numPackets; i++) {
+	bool firstPacket = true;
+
+	uint8_t* ptr = data;
+	while (ptr < data + size) {
 		size_t bytesLeft = size - (ptr - data);
 		size_t dataSize = 0;
 
-		if (i == 0) {
-			size_t extraData = 2;
-			if (numPackets > 1) {
-				extraData += 4; // 4 bytes for the full packet hash
+		if (firstPacket) {
+			firstPacket = false;
+
+			size_t extraData = 0;
+			extraData += 1; // Sequence ID
+			extraData += 4; // Full packet size
+			if (shouldSplit) {
+				extraData += 4; // Full packet hash
 			}
 
 			dataSize = std::min(bytesLeft, sizeLimit - extraData);
 
 			m_tempBuffer.resize(dataSize + extraData);
 			m_tempBuffer[0] = m_sequenceId;
-			//TODO: Don't send number of packets, but final packet size (we should be able to get rid of the numPackets variable then)
-			m_tempBuffer[1] = (uint8_t)numPackets - 1;
-			if (numPackets > 1) {
-				memcpy(m_tempBuffer.data() + 2, &hashData, 4);
+
+			uint32_t shortSize = (uint32_t)size;
+			memcpy(m_tempBuffer.data() + 1, &shortSize, 4);
+
+			if (shouldSplit) {
+				memcpy(m_tempBuffer.data() + 5, &hashData, 4);
 			}
+
 			memcpy(m_tempBuffer.data() + extraData, ptr, dataSize);
 
 			callback(m_tempBuffer.data(), m_tempBuffer.size());

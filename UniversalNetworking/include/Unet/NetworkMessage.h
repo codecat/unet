@@ -9,7 +9,7 @@ namespace Unet
 	{
 	public:
 		uint8_t m_sequenceId = 0;
-		uint8_t m_packetsLeft = 0;
+		uint32_t m_sequenceSize = 0;
 		uint32_t m_sequenceHash = 0;
 
 		ServiceID m_peer;
