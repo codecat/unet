@@ -98,7 +98,6 @@ namespace Unet
 		std::vector<Service*> m_services;
 
 		std::vector<std::queue<NetworkMessage*>> m_queuedMessages;
-		std::queue<NetworkMessage*> m_queuedInternalMessages;
 		Reassembly m_reassembly;
 
 	public:

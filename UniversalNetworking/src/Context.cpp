@@ -137,8 +137,19 @@ void Unet::Context::RunCallbacks()
 
 			size_t packetSize;
 
-			// General purpose channels for fragmented messages
 			if (packetSizeLimit > 0) {
+				// Re-assembly for internal lobby message channel
+				while (service->IsPacketAvailable(&packetSize, 0)) {
+					msg.resize(packetSize);
+
+					ServiceID peer;
+					service->ReadPacket(msg.data(), packetSize, &peer, 0);
+					uint8_t * msgData = msg.data();
+
+					m_reassembly.HandleMessage(peer, -1, msgData, packetSize);
+				}
+
+				// Re-assembly for general purpose channels
 				for (int channel = 0; channel < m_numChannels; channel++) {
 					while (service->IsPacketAvailable(&packetSize, 2 + channel)) {
 						msg.resize(packetSize);
@@ -225,17 +236,7 @@ void Unet::Context::RunCallbacks()
 				}
 			}
 
-			if (packetSizeLimit > 0) {
-				while (m_queuedInternalMessages.size() > 0) {
-					auto msg = m_queuedInternalMessages.front();
-
-					HandleLobbyMessage(msg->m_peer, msg->m_data, msg->m_size);
-
-					delete msg;
-					m_queuedInternalMessages.pop();
-				}
-
-			} else {
+			if (packetSizeLimit == 0) {
 				while (service->IsPacketAvailable(&packetSize, 0)) {
 					std::vector<uint8_t> msg;
 					msg.assign(packetSize, 0);
@@ -252,7 +253,8 @@ void Unet::Context::RunCallbacks()
 	// Pop any fragmented messages into the message queue
 	while (auto msg = m_reassembly.PopReady()) {
 		if (msg->m_channel == -1) {
-			m_queuedInternalMessages.push(msg);
+			HandleLobbyMessage(msg->m_peer, msg->m_data, msg->m_size);
+			delete msg;
 		} else {
 			m_queuedMessages[msg->m_channel].push(msg);
 		}
@@ -262,6 +264,8 @@ void Unet::Context::RunCallbacks()
 void Unet::Context::HandleLobbyMessage(ServiceID peer, uint8_t* data, size_t size)
 {
 	//TODO: Move channel 0 packet handling to Lobby class
+
+	m_callbacks->OnLogDebug(strPrintF("Handle lobby message of %d bytes", (int)size));
 
 	auto peerMember = m_currentLobby->GetMember(peer);
 
@@ -321,6 +325,11 @@ void Unet::Context::HandleLobbyMessage(ServiceID peer, uint8_t* data, size_t siz
 				js["members"].emplace_back(member.Serialize());
 			}
 		}
+		std::stringstream ssTest;
+		for (int i = 0; i < 1024 * 700; i++) {
+			ssTest << "..";
+		}
+		js["test"] = ssTest.str();
 		InternalSendTo(*member, js);
 
 		// Send MemberInfo to existing members
