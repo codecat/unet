@@ -171,7 +171,7 @@ static void RunCallbacks()
 		if (member == nullptr) {
 			LOG_ERROR("Received message from a %s ID 0x%016llX", Unet::GetServiceNameByType(msg->m_peer.Service), msg->m_peer.ID);
 		} else {
-			LOG_INFO("Received message on channel %d: %d bytes from %s ID 0x%016llX (%s)", msg->m_channel, (int)msg->m_size, Unet::GetServiceNameByType(msg->m_peer.Service), msg->m_peer.ID, member->Name.c_str());
+			LOG_INFO("Received message on channel %d: 0x%X bytes from %s ID 0x%016llX (%s)", msg->m_channel, (uint32_t)msg->m_size, Unet::GetServiceNameByType(msg->m_peer.Service), msg->m_peer.ID, member->Name.c_str());
 		}
 	}
 }
@@ -724,7 +724,7 @@ static void HandleCommand(const s2::string &line)
 			free(bytes);
 		}
 
-		LOG_INFO("%d reliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
+		LOG_INFO("0x%X reliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
 
 	} else if (parse[0] == "sendu" && parse.len() == 3) {
 		int peer = atoi(parse[1]);
@@ -751,7 +751,7 @@ static void HandleCommand(const s2::string &line)
 			free(bytes);
 		}
 
-		LOG_INFO("%d unreliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
+		LOG_INFO("0x%X unreliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
 
 	} else if (parse[0] == "test-limit" && parse.len() == 2) {
 		int peer = atoi(parse[1]);
@@ -772,12 +772,12 @@ static void HandleCommand(const s2::string &line)
 
 		uint8_t* bytes = (uint8_t*)malloc(sizeLimit + 10);
 		if (bytes != nullptr) {
-			for (int i = 0; i < sizeLimit + 10; i++) {
+			for (size_t i = 0; i < sizeLimit + 10; i++) {
 				bytes[i] = (uint8_t)(rand() % 255);
 			}
 
 			for (size_t size = sizeLimit - 10; size < sizeLimit + 10; size++) {
-				LOG_INFO("Sending packet of size 0x%08X", (uint32_t)size);
+				LOG_INFO("Sending packet of size 0x%X", (uint32_t)size);
 				g_ctx->SendTo(*member, bytes, size);
 			}
 
