@@ -2,7 +2,7 @@
 #include <Unet/Services/ServiceSteam.h>
 #include <Unet/LobbyPacket.h>
 
-Unet::ServiceSteam::ServiceSteam(Context* ctx) :
+Unet::ServiceSteam::ServiceSteam(Internal::Context* ctx) :
 	m_callLobbyDataUpdate(this, &ServiceSteam::OnLobbyDataUpdate),
 	m_callLobbyKicked(this, &ServiceSteam::OnLobbyKicked),
 	m_callLobbyChatUpdate(this, &ServiceSteam::OnLobbyChatUpdate),

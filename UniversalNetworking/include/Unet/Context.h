@@ -8,103 +8,100 @@
 #include <Unet/MultiCallback.h>
 #include <Unet/NetworkMessage.h>
 #include <Unet/Reassembly.h>
+#include <Unet/IContext.h>
 
 namespace Unet
 {
-	enum class ContextStatus
+	namespace Internal
 	{
-		Idle,
-		Connecting,
-		Connected,
-	};
+		class Context : public IContext
+		{
+			friend class Lobby;
+			friend class LobbyMember;
+			friend struct LobbyListResult;
 
-	class Context
-	{
-		friend class Lobby;
-		friend class LobbyMember;
-		friend struct LobbyListResult;
+		public:
+			Context(int numChannels = 1);
+			virtual ~Context();
 
-	public:
-		Context(int numChannels = 1);
-		virtual ~Context();
+			virtual ContextStatus GetStatus() override;
 
-		ContextStatus GetStatus();
+			virtual void SetCallbacks(Callbacks* callbacks) override;
+			virtual Callbacks* GetCallbacks() override;
 
-		/// Context takes ownership of the callbacks object
-		void SetCallbacks(Callbacks* callbacks);
-		Callbacks* GetCallbacks();
-		void RunCallbacks();
+			virtual void RunCallbacks() override;
 
-		void SetPrimaryService(ServiceType service);
-		void EnableService(ServiceType service);
-		int ServiceCount();
-		void SimulateServiceOutage(ServiceType service);
+			virtual void SetPrimaryService(ServiceType service) override;
+			virtual void EnableService(ServiceType service) override;
+			virtual int ServiceCount() override;
+			virtual void SimulateServiceOutage(ServiceType service) override;
 
-		void CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name = nullptr);
-		void GetLobbyList();
-		void JoinLobby(LobbyInfo &lobbyInfo);
-		void JoinLobby(const ServiceID &id);
-		void LeaveLobby(LeaveReason reason = LeaveReason::UserLeave);
+			virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name = nullptr) override;
+			virtual void GetLobbyList() override;
+			virtual void JoinLobby(LobbyInfo &lobbyInfo) override;
+			virtual void JoinLobby(const ServiceID &id) override;
+			virtual void LeaveLobby(LeaveReason reason = LeaveReason::UserLeave) override;
 
-		Lobby* CurrentLobby();
-		int GetLocalPeer();
+			virtual void KickMember(LobbyMember &member) override;
 
-		void SetPersonaName(const std::string &str);
-		const std::string &GetPersonaName();
+			virtual Lobby* CurrentLobby() override;
+			virtual int GetLocalPeer() override;
 
-		bool IsMessageAvailable(int channel);
-		std::unique_ptr<NetworkMessage> ReadMessage(int channel);
+			virtual void SetPersonaName(const char* str) override;
+			virtual const char* GetPersonaName() override;
 
-		void SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
-		void SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
-		void SendToAll(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
-		void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
-		void SendToHost(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
+			virtual bool IsMessageAvailable(int channel) override;
+			virtual NetworkMessageRef ReadMessage(int channel) override;
 
-		void Kick(LobbyMember &member);
+			void SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
+			virtual void SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
+			virtual void SendToAll(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
+			virtual void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
+			virtual void SendToHost(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
 
-	private:
-		Service* PrimaryService();
-		Service* GetService(ServiceType type);
+		private:
+			Service* PrimaryService();
+			Service* GetService(ServiceType type);
 
-	public:
-		void InternalSendTo(LobbyMember &member, const json &js);
-		void InternalSendTo(const ServiceID &id, const json &js);
-		void InternalSendToAll(const json &js);
-		void InternalSendToAllExcept(LobbyMember &exceptMember, const json &js);
-		void InternalSendToHost(const json &js);
+		public:
+			void InternalSendTo(LobbyMember &member, const json &js);
+			void InternalSendTo(const ServiceID &id, const json &js);
+			void InternalSendToAll(const json &js);
+			void InternalSendToAllExcept(LobbyMember &exceptMember, const json &js);
+			void InternalSendToHost(const json &js);
 
-	private:
-		void OnLobbyCreated(const CreateLobbyResult &result);
-		void OnLobbyList(const LobbyListResult &result);
-		void OnLobbyJoined(const LobbyJoinResult &result);
-		void OnLobbyLeft(const LobbyLeftResult &result);
+		private:
+			void OnLobbyCreated(const CreateLobbyResult &result);
+			void OnLobbyList(const LobbyListResult &result);
+			void OnLobbyJoined(const LobbyJoinResult &result);
+			void OnLobbyLeft(const LobbyLeftResult &result);
 
-		void OnLobbyPlayerLeft(const LobbyMember &member);
+			void OnLobbyPlayerLeft(const LobbyMember &member);
 
-	private:
-		std::string m_personaName;
+		private:
+			std::string m_personaName;
 
-		int m_numChannels;
+			int m_numChannels;
 
-		ContextStatus m_status;
-		ServiceType m_primaryService;
+			ContextStatus m_status;
+			ServiceType m_primaryService;
 
-		Callbacks* m_callbacks;
+			Callbacks* m_callbacks;
 
-		Lobby* m_currentLobby;
-		xg::Guid m_localGuid;
-		int m_localPeer;
+			Lobby* m_currentLobby;
+			xg::Guid m_localGuid;
+			int m_localPeer;
 
-		std::vector<Service*> m_services;
+			std::vector<Service*> m_services;
 
-		std::vector<std::queue<NetworkMessage*>> m_queuedMessages;
-		Reassembly m_reassembly;
+			std::vector<std::queue<NetworkMessage*>> m_queuedMessages;
+			Reassembly m_reassembly;
 
-	public:
-		MultiCallback<CreateLobbyResult> m_callbackCreateLobby;
-		MultiCallback<LobbyListResult> m_callbackLobbyList;
-		MultiCallback<LobbyJoinResult> m_callbackLobbyJoin;
-		MultiCallback<LobbyLeftResult> m_callbackLobbyLeft;
-	};
+		public:
+			MultiCallback<CreateLobbyResult> m_callbackCreateLobby;
+			MultiCallback<LobbyListResult> m_callbackLobbyList;
+			MultiCallback<LobbyJoinResult> m_callbackLobbyJoin;
+			MultiCallback<LobbyLeftResult> m_callbackLobbyLeft;
+		};
+	}
 }

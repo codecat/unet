@@ -32,7 +32,7 @@
 # define LOG_DEBUG(fmt, ...)
 #endif
 
-static Unet::Context* g_ctx = nullptr;
+static Unet::IContext* g_ctx = nullptr;
 static bool g_keepRunning = true;
 static Unet::LobbyListResult g_lastLobbyList;
 
@@ -697,7 +697,7 @@ static void HandleCommand(const s2::string &line)
 			return;
 		}
 
-		g_ctx->Kick(*member);
+		g_ctx->KickMember(*member);
 
 	} else if (parse[0] == "send" && parse.len() == 3) {
 		int peer = atoi(parse[1]);
@@ -850,7 +850,7 @@ static s2::string ReadLine()
 
 int main(int argc, const char* argv[])
 {
-	g_ctx = new Unet::Context;
+	g_ctx = Unet::CreateContext();
 	g_ctx->SetCallbacks(new TestCallbacks);
 
 	std::vector<s2::string> delayedCommands;
@@ -910,7 +910,7 @@ int main(int argc, const char* argv[])
 		printf("\n");
 	}
 
-	delete g_ctx;
+	Unet::DestroyContext(g_ctx);
 
 	SteamAPI_Shutdown();
 

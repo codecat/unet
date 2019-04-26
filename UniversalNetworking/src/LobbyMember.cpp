@@ -3,7 +3,7 @@
 #include <Unet/Context.h>
 #include <Unet/LobbyPacket.h>
 
-Unet::LobbyMember::LobbyMember(Context* ctx)
+Unet::LobbyMember::LobbyMember(Internal::Context* ctx)
 {
 	m_ctx = ctx;
 }

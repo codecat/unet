@@ -3,7 +3,7 @@
 #include <Unet/Context.h>
 #include <Unet/LobbyPacket.h>
 
-Unet::Lobby::Lobby(Context* ctx, const LobbyInfo &lobbyInfo)
+Unet::Lobby::Lobby(Internal::Context* ctx, const LobbyInfo &lobbyInfo)
 {
 	m_ctx = ctx;
 	m_info = lobbyInfo;

@@ -31,7 +31,7 @@ namespace Unet
 		CSteamID m_hostID;
 
 	public:
-		ServiceSteam(Context* ctx);
+		ServiceSteam(Internal::Context* ctx);
 		virtual ~ServiceSteam();
 
 		virtual void SimulateOutage() override;

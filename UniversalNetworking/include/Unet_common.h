@@ -19,8 +19,14 @@ using json = nlohmann::json;
 
 namespace Unet
 {
+	class IContext;
+
 	class Callbacks;
-	class Context;
 	class Lobby;
 	class Service;
+
+	namespace Internal
+	{
+		class Context;
+	}
 }

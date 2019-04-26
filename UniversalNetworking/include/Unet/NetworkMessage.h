@@ -5,6 +5,12 @@
 
 namespace Unet
 {
+	enum class PacketType
+	{
+		Unreliable,
+		Reliable,
+	};
+
 	class NetworkMessage
 	{
 	public:
@@ -25,4 +31,6 @@ namespace Unet
 
 		void Append(uint8_t* data, size_t size);
 	};
+
+	typedef std::unique_ptr<NetworkMessage> NetworkMessageRef;
 }

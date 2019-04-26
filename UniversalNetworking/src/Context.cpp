@@ -9,7 +9,7 @@
 #define XXH_INLINE_ALL
 #include <Unet/xxhash.h>
 
-Unet::Context::Context(int numChannels)
+Unet::Internal::Context::Context(int numChannels)
 	: m_reassembly(this)
 {
 	m_numChannels = numChannels;
@@ -24,7 +24,7 @@ Unet::Context::Context(int numChannels)
 	m_localPeer = -1;
 }
 
-Unet::Context::~Context()
+Unet::Internal::Context::~Context()
 {
 	if (m_currentLobby != nullptr) {
 		//TODO: Proper leave
@@ -47,23 +47,23 @@ Unet::Context::~Context()
 	}
 }
 
-Unet::ContextStatus Unet::Context::GetStatus()
+Unet::ContextStatus Unet::Internal::Context::GetStatus()
 {
 	return m_status;
 }
 
-void Unet::Context::SetCallbacks(Callbacks* callbacks)
+void Unet::Internal::Context::SetCallbacks(Callbacks* callbacks)
 {
 	m_callbacks = callbacks;
 }
 
-Unet::Callbacks* Unet::Context::GetCallbacks()
+Unet::Callbacks* Unet::Internal::Context::GetCallbacks()
 {
 	return m_callbacks;
 }
 
 template<typename TResult, typename TFunc>
-static void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &callback, TFunc func)
+static void CheckCallback(Unet::Internal::Context* ctx, Unet::MultiCallback<TResult> &callback, TFunc func)
 {
 	if (!callback.Ready()) {
 		return;
@@ -88,7 +88,7 @@ static void CheckCallback(Unet::Context* ctx, Unet::MultiCallback<TResult> &call
 	callback.Clear();
 }
 
-void Unet::Context::RunCallbacks()
+void Unet::Internal::Context::RunCallbacks()
 {
 	for (auto service : m_services) {
 		service->RunCallbacks();
@@ -242,7 +242,7 @@ void Unet::Context::RunCallbacks()
 	}
 }
 
-void Unet::Context::SetPrimaryService(ServiceType service)
+void Unet::Internal::Context::SetPrimaryService(ServiceType service)
 {
 	auto s = GetService(service);
 	if (s == nullptr) {
@@ -255,7 +255,7 @@ void Unet::Context::SetPrimaryService(ServiceType service)
 	m_personaName = s->GetUserName();
 }
 
-void Unet::Context::EnableService(ServiceType service)
+void Unet::Internal::Context::EnableService(ServiceType service)
 {
 	Service* newService = nullptr;
 	switch (service) {
@@ -277,12 +277,12 @@ void Unet::Context::EnableService(ServiceType service)
 	}
 }
 
-int Unet::Context::ServiceCount()
+int Unet::Internal::Context::ServiceCount()
 {
 	return (int)m_services.size();
 }
 
-void Unet::Context::SimulateServiceOutage(ServiceType type)
+void Unet::Internal::Context::SimulateServiceOutage(ServiceType type)
 {
 	if (m_currentLobby == nullptr) {
 		return;
@@ -295,7 +295,7 @@ void Unet::Context::SimulateServiceOutage(ServiceType type)
 	}
 }
 
-void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name)
+void Unet::Internal::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name)
 {
 	m_status = ContextStatus::Connecting;
 
@@ -327,7 +327,7 @@ void Unet::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char
 	}
 }
 
-void Unet::Context::GetLobbyList()
+void Unet::Internal::Context::GetLobbyList()
 {
 	m_callbackLobbyList.Begin();
 	m_callbackLobbyList.GetResult().Ctx = this;
@@ -337,7 +337,7 @@ void Unet::Context::GetLobbyList()
 	}
 }
 
-void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
+void Unet::Internal::Context::JoinLobby(LobbyInfo &lobbyInfo)
 {
 	if (m_status != ContextStatus::Idle) {
 		m_callbacks->OnLogWarn("Can't join new lobby while still in a lobby!");
@@ -370,7 +370,7 @@ void Unet::Context::JoinLobby(LobbyInfo &lobbyInfo)
 	}
 }
 
-void Unet::Context::JoinLobby(const ServiceID &id)
+void Unet::Internal::Context::JoinLobby(const ServiceID &id)
 {
 	if (m_status != ContextStatus::Idle) {
 		m_callbacks->OnLogError("Can't join new lobby while still in a lobby!");
@@ -400,7 +400,7 @@ void Unet::Context::JoinLobby(const ServiceID &id)
 	service->JoinLobby(id);
 }
 
-void Unet::Context::LeaveLobby(LeaveReason reason)
+void Unet::Internal::Context::LeaveLobby(LeaveReason reason)
 {
 	if (m_status == ContextStatus::Connected) {
 		m_callbackLobbyLeft.Begin();
@@ -423,27 +423,39 @@ void Unet::Context::LeaveLobby(LeaveReason reason)
 	}
 }
 
-Unet::Lobby* Unet::Context::CurrentLobby()
+void Unet::Internal::Context::KickMember(LobbyMember &member)
+{
+	if (!m_currentLobby->m_info.IsHosting) {
+		m_callbacks->OnLogError("Can't kick members when not hosting!");
+		return;
+	}
+
+	json js;
+	js["t"] = (uint8_t)LobbyPacketType::MemberKick;
+	InternalSendTo(member, js);
+}
+
+Unet::Lobby* Unet::Internal::Context::CurrentLobby()
 {
 	return m_currentLobby;
 }
 
-int Unet::Context::GetLocalPeer()
+int Unet::Internal::Context::GetLocalPeer()
 {
 	return m_localPeer;
 }
 
-void Unet::Context::SetPersonaName(const std::string &str)
+void Unet::Internal::Context::SetPersonaName(const char* str)
 {
 	m_personaName = str;
 }
 
-const std::string &Unet::Context::GetPersonaName()
+const char* Unet::Internal::Context::GetPersonaName()
 {
-	return m_personaName;
+	return m_personaName.c_str();
 }
 
-bool Unet::Context::IsMessageAvailable(int channel)
+bool Unet::Internal::Context::IsMessageAvailable(int channel)
 {
 	if (channel < 0) {
 		return false;
@@ -470,7 +482,7 @@ bool Unet::Context::IsMessageAvailable(int channel)
 	return false;
 }
 
-std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
+Unet::NetworkMessageRef Unet::Internal::Context::ReadMessage(int channel)
 {
 	if (channel < 0) {
 		return nullptr;
@@ -479,7 +491,7 @@ std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
 	if (channel < (int)m_queuedMessages.size()) {
 		auto &queuedChannel = m_queuedMessages[channel];
 		if (queuedChannel.size() > 0) {
-			std::unique_ptr<NetworkMessage> ret(queuedChannel.front());
+			NetworkMessageRef ret(queuedChannel.front());
 			queuedChannel.pop();
 			return ret;
 		}
@@ -493,7 +505,7 @@ std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
 
 		size_t packetSize;
 		if (service->IsPacketAvailable(&packetSize, 2 + channel)) {
-			std::unique_ptr<NetworkMessage> newMessage(new NetworkMessage(packetSize));
+			NetworkMessageRef newMessage(new NetworkMessage(packetSize));
 			newMessage->m_channel = channel;
 			newMessage->m_size = service->ReadPacket(newMessage->m_data, packetSize, &newMessage->m_peer, 2 + channel);
 			return newMessage;
@@ -503,7 +515,7 @@ std::unique_ptr<Unet::NetworkMessage> Unet::Context::ReadMessage(int channel)
 	return nullptr;
 }
 
-void Unet::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
+void Unet::Internal::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	// Sending a message to yourself isn't very useful.
 	assert(member.UnetPeer != m_localPeer);
@@ -540,7 +552,7 @@ void Unet::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size,
 	service->SendPacket(id, data, size, type, channel + 2);
 }
 
-void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
+void Unet::Internal::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	auto id = member.GetDataServiceID();
 	auto service = GetService(id.Service);
@@ -556,7 +568,7 @@ void Unet::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, Pack
 	});
 }
 
-void Unet::Context::SendToAll(uint8_t* data, size_t size, PacketType type, uint8_t channel)
+void Unet::Internal::Context::SendToAll(uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -576,7 +588,7 @@ void Unet::Context::SendToAll(uint8_t* data, size_t size, PacketType type, uint8
 	}
 }
 
-void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type, uint8_t channel)
+void Unet::Internal::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -600,7 +612,7 @@ void Unet::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, si
 	}
 }
 
-void Unet::Context::SendToHost(uint8_t* data, size_t size, PacketType type, uint8_t channel)
+void Unet::Internal::Context::SendToHost(uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -616,26 +628,14 @@ void Unet::Context::SendToHost(uint8_t* data, size_t size, PacketType type, uint
 	SendTo(*hostMember, data, size, type, channel);
 }
 
-void Unet::Context::Kick(LobbyMember &member)
-{
-	if (!m_currentLobby->m_info.IsHosting) {
-		m_callbacks->OnLogError("Can't kick members when not hosting!");
-		return;
-	}
-
-	json js;
-	js["t"] = (uint8_t)LobbyPacketType::MemberKick;
-	InternalSendTo(member, js);
-}
-
-Unet::Service* Unet::Context::PrimaryService()
+Unet::Service* Unet::Internal::Context::PrimaryService()
 {
 	auto ret = GetService(m_primaryService);
 	assert(ret != nullptr);
 	return ret;
 }
 
-Unet::Service* Unet::Context::GetService(ServiceType type)
+Unet::Service* Unet::Internal::Context::GetService(ServiceType type)
 {
 	for (auto service : m_services) {
 		if (service->GetType() == type) {
@@ -645,7 +645,7 @@ Unet::Service* Unet::Context::GetService(ServiceType type)
 	return nullptr;
 }
 
-void Unet::Context::InternalSendTo(LobbyMember &member, const json &js)
+void Unet::Internal::Context::InternalSendTo(LobbyMember &member, const json &js)
 {
 	// Sending a message to yourself isn't very useful.
 	assert(member.UnetPeer != m_localPeer);
@@ -659,7 +659,7 @@ void Unet::Context::InternalSendTo(LobbyMember &member, const json &js)
 	InternalSendTo(id, js);
 }
 
-void Unet::Context::InternalSendTo(const ServiceID &id, const json &js)
+void Unet::Internal::Context::InternalSendTo(const ServiceID &id, const json &js)
 {
 	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
 	//NOTE: The above is not important yet for internal messages, as all internal messages are sent between client & server, not client & client
@@ -683,7 +683,7 @@ void Unet::Context::InternalSendTo(const ServiceID &id, const json &js)
 	});
 }
 
-void Unet::Context::InternalSendToAll(const json &js)
+void Unet::Internal::Context::InternalSendToAll(const json &js)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -697,7 +697,7 @@ void Unet::Context::InternalSendToAll(const json &js)
 	}
 }
 
-void Unet::Context::InternalSendToAllExcept(LobbyMember &exceptMember, const json &js)
+void Unet::Internal::Context::InternalSendToAllExcept(LobbyMember &exceptMember, const json &js)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -711,7 +711,7 @@ void Unet::Context::InternalSendToAllExcept(LobbyMember &exceptMember, const jso
 	}
 }
 
-void Unet::Context::InternalSendToHost(const json &js)
+void Unet::Internal::Context::InternalSendToHost(const json &js)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -734,7 +734,7 @@ void Unet::Context::InternalSendToHost(const json &js)
 	}
 }
 
-void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
+void Unet::Internal::Context::OnLobbyCreated(const CreateLobbyResult &result)
 {
 	if (result.Code != Result::OK) {
 		m_status = ContextStatus::Idle;
@@ -766,7 +766,7 @@ void Unet::Context::OnLobbyCreated(const CreateLobbyResult &result)
 	}
 }
 
-void Unet::Context::OnLobbyList(const LobbyListResult &result)
+void Unet::Internal::Context::OnLobbyList(const LobbyListResult &result)
 {
 	LobbyListResult newResult(result);
 
@@ -780,7 +780,7 @@ void Unet::Context::OnLobbyList(const LobbyListResult &result)
 	}
 }
 
-void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
+void Unet::Internal::Context::OnLobbyJoined(const LobbyJoinResult &result)
 {
 	if (result.Code != Result::OK) {
 		m_status = ContextStatus::Idle;
@@ -801,7 +801,7 @@ void Unet::Context::OnLobbyJoined(const LobbyJoinResult &result)
 	m_callbacks->OnLogDebug("Hello sent");
 }
 
-void Unet::Context::OnLobbyLeft(const LobbyLeftResult &result)
+void Unet::Internal::Context::OnLobbyLeft(const LobbyLeftResult &result)
 {
 	m_status = ContextStatus::Idle;
 	m_localPeer = -1;
@@ -821,7 +821,7 @@ void Unet::Context::OnLobbyLeft(const LobbyLeftResult &result)
 	m_callbacks->OnLobbyLeft(result);
 }
 
-void Unet::Context::OnLobbyPlayerLeft(const LobbyMember &member)
+void Unet::Internal::Context::OnLobbyPlayerLeft(const LobbyMember &member)
 {
 	if (!member.Valid) {
 		return;

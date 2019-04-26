@@ -35,7 +35,7 @@ namespace Unet
 		bool m_waitingForPeers = false;
 
 	public:
-		ServiceEnet(Context* ctx);
+		ServiceEnet(Internal::Context* ctx);
 		virtual ~ServiceEnet();
 
 		virtual void SimulateOutage() override;

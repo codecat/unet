@@ -3,19 +3,14 @@
 #include <Unet_common.h>
 #include <Unet/Lobby.h>
 #include <Unet/ServiceType.h>
+#include <Unet/NetworkMessage.h>
 
 namespace Unet
 {
-	enum class PacketType
-	{
-		Unreliable,
-		Reliable,
-	};
-
 	class Service
 	{
 	public:
-		Context* m_ctx = nullptr;
+		Internal::Context* m_ctx = nullptr;
 
 	public:
 		virtual ~Service() {}

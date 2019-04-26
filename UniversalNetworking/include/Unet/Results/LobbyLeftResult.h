@@ -7,13 +7,13 @@ namespace Unet
 {
 	enum class LeaveReason
 	{
-		/// User intentially left the lobby (LeaveLobby was called)
+		// User intentially left the lobby (LeaveLobby was called)
 		UserLeave,
 
-		/// All service entry points have been disconnected
+		// All service entry points have been disconnected
 		Disconnected,
 
-		/// User was kicked from the lobby
+		// User was kicked from the lobby
 		Kicked,
 	};
 

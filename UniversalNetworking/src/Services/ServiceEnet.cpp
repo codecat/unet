@@ -25,7 +25,7 @@ static ENetAddress IDToAddress(const Unet::ServiceID &id)
 	return *(ENetAddress*)&id.ID;
 }
 
-Unet::ServiceEnet::ServiceEnet(Context* ctx)
+Unet::ServiceEnet::ServiceEnet(Internal::Context* ctx)
 {
 	m_ctx = ctx;
 }

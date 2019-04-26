@@ -9,18 +9,19 @@ namespace Unet
 {
 	class Lobby : public LobbyDataContainer
 	{
-		friend class Context;
+		friend class Internal::Context;
 
 	private:
-		Context* m_ctx;
+		Internal::Context* m_ctx;
 		LobbyInfo m_info;
 
 		std::vector<LobbyMember> m_members;
 
-	public:
-		Lobby(Context* ctx, const LobbyInfo &lobbyInfo);
+	private:
+		Lobby(Internal::Context* ctx, const LobbyInfo &lobbyInfo);
 		~Lobby();
 
+	public:
 		const LobbyInfo &GetInfo();
 		bool IsConnected();
 

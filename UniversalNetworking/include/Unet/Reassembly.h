@@ -9,7 +9,7 @@ namespace Unet
 	class Reassembly
 	{
 	private:
-		Context* m_ctx;
+		Internal::Context* m_ctx;
 
 		std::vector<NetworkMessage*> m_staging;
 		std::queue<NetworkMessage*> m_ready;
@@ -18,7 +18,7 @@ namespace Unet
 		uint8_t m_sequenceId = 0;
 
 	public:
-		Reassembly(Context* ctx);
+		Reassembly(Internal::Context* ctx);
 		~Reassembly();
 
 		void HandleMessage(ServiceID peer, int channel, uint8_t* msgData, size_t packetSize);

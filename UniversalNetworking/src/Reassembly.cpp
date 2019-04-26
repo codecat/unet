@@ -3,7 +3,7 @@
 #include <Unet/Context.h>
 #include <Unet/xxhash.h>
 
-Unet::Reassembly::Reassembly(Context* ctx)
+Unet::Reassembly::Reassembly(Internal::Context* ctx)
 {
 	m_ctx = ctx;
 }
