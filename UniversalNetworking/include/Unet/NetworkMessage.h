@@ -32,5 +32,6 @@ namespace Unet
 		void Append(uint8_t* data, size_t size);
 	};
 
+	// A refcounted pointer to a NetworkMessage object.
 	typedef std::unique_ptr<NetworkMessage> NetworkMessageRef;
 }

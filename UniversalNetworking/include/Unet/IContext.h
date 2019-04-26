@@ -89,8 +89,7 @@ namespace Unet
 		// Checks if a message is available on the given channel.
 		virtual bool IsMessageAvailable(int channel) = 0;
 
-		// Reads the next available message from the given channel. The unique_ptr should automatically
-		// properly destroy the NetworkMessage at the end of the scope.
+		// Reads the next available message from the given channel.
 		virtual NetworkMessageRef ReadMessage(int channel) = 0;
 
 		// Send a message to the given lobby member. The service to send the message on is automatically
