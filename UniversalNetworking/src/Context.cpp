@@ -52,12 +52,12 @@ Unet::ContextStatus Unet::Internal::Context::GetStatus()
 	return m_status;
 }
 
-void Unet::Internal::Context::SetCallbacks(Callbacks* callbacks)
+void Unet::Internal::Context::SetCallbacks(ICallbacks* callbacks)
 {
 	m_callbacks = callbacks;
 }
 
-Unet::Callbacks* Unet::Internal::Context::GetCallbacks()
+Unet::ICallbacks* Unet::Internal::Context::GetCallbacks()
 {
 	return m_callbacks;
 }

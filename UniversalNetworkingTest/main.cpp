@@ -40,7 +40,7 @@ static bool g_steamEnabled = false;
 static bool g_galaxyEnabled = false;
 static bool g_enetEnabled = false;
 
-class TestCallbacks : public Unet::Callbacks
+class TestCallbacks : public Unet::ICallbacks
 {
 public:
 	virtual void OnLogError(const std::string &str) override

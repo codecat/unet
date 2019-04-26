@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Unet_common.h>
-#include <Unet/Callbacks.h>
+#include <Unet/ICallbacks.h>
 #include <Unet/ServiceType.h>
 #include <Unet/Lobby.h>
 #include <Unet/Service.h>
@@ -26,8 +26,8 @@ namespace Unet
 
 			virtual ContextStatus GetStatus() override;
 
-			virtual void SetCallbacks(Callbacks* callbacks) override;
-			virtual Callbacks* GetCallbacks() override;
+			virtual void SetCallbacks(ICallbacks* callbacks) override;
+			virtual ICallbacks* GetCallbacks() override;
 
 			virtual void RunCallbacks() override;
 
@@ -86,7 +86,7 @@ namespace Unet
 			ContextStatus m_status;
 			ServiceType m_primaryService;
 
-			Callbacks* m_callbacks;
+			ICallbacks* m_callbacks;
 
 			Lobby* m_currentLobby;
 			xg::Guid m_localGuid;

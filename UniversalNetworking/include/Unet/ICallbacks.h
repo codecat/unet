@@ -8,7 +8,8 @@
 
 namespace Unet
 {
-	class Callbacks
+	// All callbacks will be called on this class
+	class ICallbacks
 	{
 	public:
 		// Generic logging functions

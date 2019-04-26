@@ -20,8 +20,8 @@ using json = nlohmann::json;
 namespace Unet
 {
 	class IContext;
+	class ICallbacks;
 
-	class Callbacks;
 	class Lobby;
 	class Service;
 

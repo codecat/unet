@@ -20,10 +20,10 @@ namespace Unet
 		virtual ContextStatus GetStatus() = 0;
 
 		// Set the callbacks object. (Context takes ownership of the callbacks object!)
-		virtual void SetCallbacks(Callbacks* callbacks) = 0;
+		virtual void SetCallbacks(ICallbacks* callbacks) = 0;
 
 		// Get the current callbacks object.
-		virtual Callbacks* GetCallbacks() = 0;
+		virtual ICallbacks* GetCallbacks() = 0;
 
 		// Call this every frame in order to run callbacks and handle all the networking logic.
 		virtual void RunCallbacks() = 0;
