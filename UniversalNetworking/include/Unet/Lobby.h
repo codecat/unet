@@ -32,6 +32,9 @@ namespace Unet
 		LobbyMember* GetMember(const ServiceID &serviceId);
 		LobbyMember* GetHostMember();
 
+		void HandleMessage(const ServiceID &peer, uint8_t* data, size_t size);
+		LobbyMember &DeserializeMember(const json &member);
+
 		void AddEntryPoint(const ServiceID &id);
 		void ServiceDisconnected(ServiceType service);
 

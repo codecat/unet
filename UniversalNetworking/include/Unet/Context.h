@@ -34,7 +34,6 @@ namespace Unet
 		void SetCallbacks(Callbacks* callbacks);
 		Callbacks* GetCallbacks();
 		void RunCallbacks();
-		void HandleLobbyMessage(ServiceID peer, uint8_t* data, size_t size);
 
 		void SetPrimaryService(ServiceType service);
 		void EnableService(ServiceType service);

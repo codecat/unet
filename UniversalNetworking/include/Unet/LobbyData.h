@@ -15,7 +15,7 @@ namespace Unet
 
 	class LobbyDataContainer
 	{
-		friend class Context;
+		friend class Lobby;
 
 	public:
 		std::vector<LobbyData> m_data;
