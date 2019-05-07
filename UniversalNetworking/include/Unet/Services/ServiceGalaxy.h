@@ -43,7 +43,7 @@ namespace Unet
 		MultiCallback<LobbyLeftResult>::ServiceRequest* m_requestLobbyLeft = nullptr;
 
 	public:
-		ServiceGalaxy(Internal::Context* ctx);
+		ServiceGalaxy(Internal::Context* ctx, int numChannels);
 		virtual ~ServiceGalaxy();
 
 		virtual void SimulateOutage() override;

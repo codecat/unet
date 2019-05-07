@@ -25,9 +25,9 @@ static ENetAddress IDToAddress(const Unet::ServiceID &id)
 	return *(ENetAddress*)&id.ID;
 }
 
-Unet::ServiceEnet::ServiceEnet(Internal::Context* ctx)
+Unet::ServiceEnet::ServiceEnet(Internal::Context* ctx, int numChannels) :
+	Service(ctx, numChannels)
 {
-	m_ctx = ctx;
 }
 
 Unet::ServiceEnet::~ServiceEnet()
@@ -181,7 +181,7 @@ void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	addr.host = ENET_HOST_ANY;
 	addr.port = UNET_PORT;
 
-	size_t maxChannels = 3; //TODO: Make this customizable (minimum is 3!)
+	size_t maxChannels = m_numChannels + 2;
 
 	Clear(maxChannels);
 

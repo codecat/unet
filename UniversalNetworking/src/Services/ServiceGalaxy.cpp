@@ -79,11 +79,10 @@ void Unet::LobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Gala
 	LobbyDataUpdated();
 }
 
-Unet::ServiceGalaxy::ServiceGalaxy(Internal::Context* ctx) :
+Unet::ServiceGalaxy::ServiceGalaxy(Internal::Context* ctx, int numChannels) :
+	Service(ctx, numChannels),
 	m_lobbyListListener(this)
 {
-	m_ctx = ctx;
-
 	galaxy::api::ListenerRegistrar()->Register(galaxy::api::LOBBY_LEFT, (galaxy::api::ILobbyLeftListener*)this);
 	galaxy::api::ListenerRegistrar()->Register(galaxy::api::LOBBY_MEMBER_STATE, (galaxy::api::ILobbyMemberStateListener*)this);
 }

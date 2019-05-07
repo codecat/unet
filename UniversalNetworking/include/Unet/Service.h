@@ -11,8 +11,10 @@ namespace Unet
 	{
 	public:
 		Internal::Context* m_ctx = nullptr;
+		int m_numChannels = 0;
 
 	public:
+		Service(Internal::Context* ctx, int numChannels);
 		virtual ~Service() {}
 
 		virtual void RunCallbacks() {}

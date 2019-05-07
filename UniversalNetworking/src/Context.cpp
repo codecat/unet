@@ -255,9 +255,9 @@ void Unet::Internal::Context::EnableService(ServiceType service)
 {
 	Service* newService = nullptr;
 	switch (service) {
-	case ServiceType::Steam: newService = new ServiceSteam(this); break;
-	case ServiceType::Galaxy: newService = new ServiceGalaxy(this); break;
-	case ServiceType::Enet: newService = new ServiceEnet(this); break;
+	case ServiceType::Steam: newService = new ServiceSteam(this, m_numChannels); break;
+	case ServiceType::Galaxy: newService = new ServiceGalaxy(this, m_numChannels); break;
+	case ServiceType::Enet: newService = new ServiceEnet(this, m_numChannels); break;
 	default: assert(false);
 	}
 

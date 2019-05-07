@@ -2,13 +2,13 @@
 #include <Unet/Services/ServiceSteam.h>
 #include <Unet/LobbyPacket.h>
 
-Unet::ServiceSteam::ServiceSteam(Internal::Context* ctx) :
+Unet::ServiceSteam::ServiceSteam(Internal::Context* ctx, int numChannels) :
+	Service(ctx, numChannels),
 	m_callLobbyDataUpdate(this, &ServiceSteam::OnLobbyDataUpdate),
 	m_callLobbyKicked(this, &ServiceSteam::OnLobbyKicked),
 	m_callLobbyChatUpdate(this, &ServiceSteam::OnLobbyChatUpdate),
 	m_callP2PSessionRequest(this, &ServiceSteam::OnP2PSessionRequest)
 {
-	m_ctx = ctx;
 }
 
 Unet::ServiceSteam::~ServiceSteam()
