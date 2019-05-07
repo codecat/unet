@@ -78,6 +78,9 @@ namespace Unet
 
 			void OnLobbyPlayerLeft(const LobbyMember &member);
 
+			void PrepareReceiveBuffer(size_t size);
+			void PrepareSendBuffer(size_t size);
+
 		private:
 			std::string m_personaName;
 
@@ -96,6 +99,9 @@ namespace Unet
 
 			std::vector<std::queue<NetworkMessage*>> m_queuedMessages;
 			Reassembly m_reassembly;
+
+			std::vector<uint8_t> m_receiveBuffer;
+			std::vector<uint8_t> m_sendBuffer;
 
 		public:
 			MultiCallback<CreateLobbyResult> m_callbackCreateLobby;

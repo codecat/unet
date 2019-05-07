@@ -111,8 +111,6 @@ void Unet::Internal::Context::RunCallbacks()
 	}
 
 	if (m_currentLobby != nullptr) {
-		std::vector<uint8_t> msg;
-
 		for (auto service : m_services) {
 			size_t packetSizeLimit = service->ReliablePacketLimit();
 
@@ -121,11 +119,11 @@ void Unet::Internal::Context::RunCallbacks()
 			if (packetSizeLimit > 0) {
 				// Re-assembly for internal lobby message channel
 				while (service->IsPacketAvailable(&packetSize, 0)) {
-					msg.resize(packetSize);
+					PrepareReceiveBuffer(packetSize);
 
 					ServiceID peer;
-					service->ReadPacket(msg.data(), packetSize, &peer, 0);
-					uint8_t * msgData = msg.data();
+					service->ReadPacket(m_receiveBuffer.data(), packetSize, &peer, 0);
+					uint8_t * msgData = m_receiveBuffer.data();
 
 					m_reassembly.HandleMessage(peer, -1, msgData, packetSize);
 				}
@@ -133,11 +131,11 @@ void Unet::Internal::Context::RunCallbacks()
 				// Re-assembly for general purpose channels
 				for (int channel = 0; channel < m_numChannels; channel++) {
 					while (service->IsPacketAvailable(&packetSize, 2 + channel)) {
-						msg.resize(packetSize);
+						PrepareReceiveBuffer(packetSize);
 
 						ServiceID peer;
-						service->ReadPacket(msg.data(), packetSize, &peer, 2 + channel);
-						uint8_t * msgData = msg.data();
+						service->ReadPacket(m_receiveBuffer.data(), packetSize, &peer, 2 + channel);
+						uint8_t * msgData = m_receiveBuffer.data();
 
 						m_reassembly.HandleMessage(peer, channel, msgData, packetSize);
 					}
@@ -146,11 +144,11 @@ void Unet::Internal::Context::RunCallbacks()
 
 			// Relay packet channel
 			while (service->IsPacketAvailable(&packetSize, 1)) {
-				msg.resize(packetSize);
+				PrepareReceiveBuffer(packetSize);
 
 				ServiceID peer;
-				service->ReadPacket(msg.data(), packetSize, &peer, 1);
-				uint8_t* msgData = msg.data();
+				service->ReadPacket(m_receiveBuffer.data(), packetSize, &peer, 1);
+				uint8_t* msgData = m_receiveBuffer.data();
 
 				auto peerMember = m_currentLobby->GetMember(peer);
 
@@ -167,12 +165,11 @@ void Unet::Internal::Context::RunCallbacks()
 						continue;
 					}
 
-					std::vector<uint8_t> relayMsg;
-					relayMsg.assign(packetSize + 2, 0);
-
+					PrepareSendBuffer(packetSize + 2);
+					uint8_t* relayMsg = m_sendBuffer.data();
 					relayMsg[0] = (uint8_t)peerMember->UnetPeer;
 					relayMsg[1] = channel;
-					memcpy(relayMsg.data() + 2, msgData, packetSize);
+					memcpy(relayMsg + 2, msgData, packetSize);
 
 					auto id = recipientMember->GetDataServiceID();
 					assert(id.IsValid());
@@ -186,7 +183,7 @@ void Unet::Internal::Context::RunCallbacks()
 						continue;
 					}
 
-					recipientService->SendPacket(id, relayMsg.data(), relayMsg.size(), type, 1);
+					recipientService->SendPacket(id, relayMsg, packetSize + 2, type, 1);
 
 				} else {
 					// We received a relayed packet from some client
@@ -219,13 +216,12 @@ void Unet::Internal::Context::RunCallbacks()
 
 			if (packetSizeLimit == 0) {
 				while (service->IsPacketAvailable(&packetSize, 0)) {
-					std::vector<uint8_t> msg;
-					msg.assign(packetSize, 0);
+					PrepareReceiveBuffer(packetSize);
 
 					ServiceID peer;
-					service->ReadPacket(msg.data(), packetSize, &peer, 0);
+					service->ReadPacket(m_receiveBuffer.data(), packetSize, &peer, 0);
 
-					m_currentLobby->HandleMessage(peer, msg.data(), packetSize);
+					m_currentLobby->HandleMessage(peer, m_receiveBuffer.data(), packetSize);
 				}
 			}
 		}
@@ -536,15 +532,15 @@ void Unet::Internal::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, si
 		auto serviceHost = GetService(idHost.Service);
 		assert(serviceHost != nullptr);
 
-		std::vector<uint8_t> msg;
-		msg.assign(size + 3, 0);
+		PrepareSendBuffer(size + 3);
 
+		uint8_t* msg = m_sendBuffer.data();
 		msg[0] = (uint8_t)member.UnetPeer;
 		msg[1] = channel;
 		msg[2] = (uint8_t)type;
-		memcpy(msg.data() + 3, data, size);
+		memcpy(msg + 3, data, size);
 
-		serviceHost->SendPacket(idHost, msg.data(), msg.size(), type, 1);
+		serviceHost->SendPacket(idHost, msg, size + 3, type, 1);
 		return;
 	}
 
@@ -839,4 +835,18 @@ void Unet::Internal::Context::OnLobbyPlayerLeft(const LobbyMember &member)
 	}
 
 	m_callbacks->OnLobbyPlayerLeft(member);
+}
+
+void Unet::Internal::Context::PrepareReceiveBuffer(size_t size)
+{
+	if (m_receiveBuffer.size() < size) {
+		m_receiveBuffer.resize((size_t)(size * 1.5));
+	}
+}
+
+void Unet::Internal::Context::PrepareSendBuffer(size_t size)
+{
+	if (m_sendBuffer.size() < size) {
+		m_sendBuffer.resize((size_t)(size * 1.5));
+	}
 }
