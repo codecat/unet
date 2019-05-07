@@ -16,9 +16,9 @@ namespace Unet
 	{
 		class Context : public IContext
 		{
-			friend class Lobby;
-			friend class LobbyMember;
-			friend struct LobbyListResult;
+			friend class ::Unet::Lobby;
+			friend class ::Unet::LobbyMember;
+			friend struct ::Unet::LobbyListResult;
 
 		public:
 			Context(int numChannels = 1);

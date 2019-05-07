@@ -16,6 +16,8 @@ namespace Unet
 	class IContext
 	{
 	public:
+		virtual ~IContext() = 0;
+
 		// Get the current connection status of the context.
 		virtual ContextStatus GetStatus() = 0;
 
