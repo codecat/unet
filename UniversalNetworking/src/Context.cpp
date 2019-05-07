@@ -556,15 +556,20 @@ void Unet::Internal::Context::SendTo(LobbyMember &member, uint8_t* data, size_t 
 	auto id = member.GetDataServiceID();
 	auto service = GetService(id.Service);
 
-	size_t sizeLimit = service->ReliablePacketLimit();
-	if (sizeLimit == 0) {
-		SendTo_Impl(member, data, size, PacketType::Reliable, channel);
-		return;
-	}
+	if (type == PacketType::Reliable) {
+		size_t sizeLimit = service->ReliablePacketLimit();
+		if (sizeLimit == 0) {
+			SendTo_Impl(member, data, size, PacketType::Reliable, channel);
+			return;
+		}
 
-	m_reassembly.SplitMessage(data, size, type, sizeLimit, [this, &member, type, channel](uint8_t* data, size_t size) {
+		m_reassembly.SplitMessage(data, size, type, sizeLimit, [this, &member, channel](uint8_t * data, size_t size) {
+			SendTo_Impl(member, data, size, PacketType::Reliable, channel);
+		});
+
+	} else {
 		SendTo_Impl(member, data, size, type, channel);
-	});
+	}
 }
 
 void Unet::Internal::Context::SendToAll(uint8_t* data, size_t size, PacketType type, uint8_t channel)
