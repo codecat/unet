@@ -544,8 +544,7 @@ void Unet::Internal::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, si
 		msg[2] = (uint8_t)type;
 		memcpy(msg.data() + 3, data, size);
 
-		//TODO: Send this with the actual type instead? (That would make it twice as unreliable if it's sent unreliably!)
-		serviceHost->SendPacket(idHost, msg.data(), msg.size(), PacketType::Reliable, 1);
+		serviceHost->SendPacket(idHost, msg.data(), msg.size(), type, 1);
 		return;
 	}
 
