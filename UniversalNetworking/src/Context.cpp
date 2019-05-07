@@ -135,7 +135,7 @@ void Unet::Internal::Context::RunCallbacks()
 
 						ServiceID peer;
 						service->ReadPacket(m_receiveBuffer.data(), packetSize, &peer, 2 + channel);
-						uint8_t * msgData = m_receiveBuffer.data();
+						uint8_t* msgData = m_receiveBuffer.data();
 
 						m_reassembly.HandleMessage(peer, channel, msgData, packetSize);
 					}
@@ -495,12 +495,17 @@ Unet::NetworkMessageRef Unet::Internal::Context::ReadMessage(int channel)
 
 	for (auto service : m_services) {
 		// For services that have a reliable packet limit, we only allow queued messages
+		//TODO: Optimization: Unreliable packets can still be read from here without issue! The first byte
+		//      will have the 0x80 bit set to 0 if the packet is unreliable. If we read this byte, we can
+		//      just return the message from there.
 		if (service->ReliablePacketLimit() > 0) {
 			continue;
 		}
 
 		size_t packetSize;
 		if (service->IsPacketAvailable(&packetSize, 2 + channel)) {
+			//TODO: Optimization: Don't allocate memory for every message! We could send a local value instead
+			//      and leave the message allocation to RunCallbacks() for packets that need re-assembly.
 			NetworkMessageRef newMessage(new NetworkMessage(packetSize));
 			newMessage->m_channel = channel;
 			newMessage->m_size = service->ReadPacket(newMessage->m_data, packetSize, &newMessage->m_peer, 2 + channel);

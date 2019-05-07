@@ -3,6 +3,9 @@
 #include <Unet/Context.h>
 #include <Unet/xxhash.h>
 
+#define RELIABLE_MASK (0x80)
+#define SEQUENCE_MASK (0x7F)
+
 Unet::Reassembly::Reassembly(Internal::Context* ctx)
 {
 	m_ctx = ctx;
@@ -17,6 +20,16 @@ void Unet::Reassembly::HandleMessage(ServiceID peer, int channel, uint8_t* msgDa
 {
 	uint8_t sequenceId = *(msgData++);
 	packetSize--;
+
+	if ((sequenceId & RELIABLE_MASK) == 0) {
+		// If this is actually an unreliable packet, just handle it as a single message
+		auto newMessage = new NetworkMessage(msgData, packetSize);
+		newMessage->m_channel = channel;
+		newMessage->m_peer = peer;
+		m_ready.push(newMessage);
+		return;
+	}
+	sequenceId &= SEQUENCE_MASK;
 
 	auto existingMsg = std::find_if(m_staging.begin(), m_staging.end(), [sequenceId](NetworkMessage * msg) {
 		return msg->m_sequenceId == sequenceId;
@@ -97,6 +110,7 @@ void Unet::Reassembly::Clear()
 void Unet::Reassembly::SplitMessage(uint8_t* data, size_t size, PacketType type, size_t sizeLimit, const std::function<void(uint8_t*, size_t)> &callback)
 {
 	m_sequenceId++;
+	m_sequenceId &= SEQUENCE_MASK;
 
 	if (type == PacketType::Unreliable) {
 		m_tempBuffer.resize(size + 1);
@@ -139,7 +153,7 @@ void Unet::Reassembly::SplitMessage(uint8_t* data, size_t size, PacketType type,
 			dataSize = std::min(bytesLeft, sizeLimit - extraData);
 
 			m_tempBuffer.resize(dataSize + extraData);
-			m_tempBuffer[0] = m_sequenceId;
+			m_tempBuffer[0] = m_sequenceId | RELIABLE_MASK;
 
 			uint32_t shortSize = (uint32_t)size;
 			memcpy(m_tempBuffer.data() + 1, &shortSize, 4);
@@ -158,7 +172,7 @@ void Unet::Reassembly::SplitMessage(uint8_t* data, size_t size, PacketType type,
 			dataSize = std::min(bytesLeft, sizeLimit - extraData);
 
 			m_tempBuffer.resize(dataSize + extraData);
-			m_tempBuffer[0] = m_sequenceId;
+			m_tempBuffer[0] = m_sequenceId | RELIABLE_MASK;
 			memcpy(m_tempBuffer.data() + extraData, ptr, dataSize);
 
 			callback(m_tempBuffer.data(), m_tempBuffer.size());

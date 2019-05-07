@@ -168,6 +168,8 @@ void Unet::ServiceSteam::RemoveLobbyData(const ServiceID &lobbyId, const char* n
 
 size_t Unet::ServiceSteam::ReliablePacketLimit()
 {
+	//TODO: Optimization: If we know we're not going to send more than this, we can safely return 0 here.
+	//      Perhaps this could be a service-specific option flag?
 	return 1024 * 1024;
 }
 

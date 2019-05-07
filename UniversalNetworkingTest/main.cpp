@@ -749,9 +749,9 @@ static void HandleCommand(const s2::string &line)
 			}
 			g_ctx->SendTo(*member, bytes, num, Unet::PacketType::Unreliable);
 			free(bytes);
-		}
 
-		LOG_INFO("0x%X unreliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
+			LOG_INFO("0x%X unreliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
+		}
 
 	} else if (parse[0] == "test-limit" && parse.len() == 2) {
 		int peer = atoi(parse[1]);
