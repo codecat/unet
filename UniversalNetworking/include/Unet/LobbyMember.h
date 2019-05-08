@@ -3,11 +3,14 @@
 #include <Unet_common.h>
 #include <Unet/ServiceID.h>
 #include <Unet/LobbyData.h>
+#include <Unet/LobbyFile.h>
 
 namespace Unet
 {
 	class LobbyMember : public LobbyDataContainer
 	{
+		friend class ::Unet::Internal::Context;
+
 	private:
 		Internal::Context* m_ctx;
 
@@ -23,9 +26,11 @@ namespace Unet
 
 		std::string Name;
 		std::vector<ServiceID> IDs;
+		std::vector<LobbyFile*> Files;
 
 	public:
 		LobbyMember(Internal::Context* ctx);
+		~LobbyMember();
 
 		ServiceID GetServiceID(ServiceType type) const;
 		ServiceID GetDataServiceID() const;
@@ -36,5 +41,11 @@ namespace Unet
 
 		virtual void SetData(const std::string &name, const std::string &value) override;
 		virtual void RemoveData(const std::string &name) override;
+
+	private:
+		void AddFile(const std::string &filename, const std::string &filenameOnDisk);
+		void AddFile(const std::string &filename, uint8_t* buffer, size_t size);
+		void AddFile(LobbyFile* file);
+		void RemoveFile(const std::string &filename);
 	};
 }

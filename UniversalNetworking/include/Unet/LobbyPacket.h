@@ -35,5 +35,12 @@ namespace Unet
 		// Sent by the client to announce they're removing their own member lobby data
 		// Sent by the server to announce removed member lobby data
 		LobbyMemberDataRemoved,
+
+		// Sent by the client to announce that they've added a file available for download
+		// Sent by the server to announce that a new file is available for download by a client
+		LobbyFileAdded,
+		// Sent by the client to announce that they've removed a file available for download
+		// Sent by the server to announce that a file has been removed for downloading by a client
+		LobbyFileRemoved,
 	};
 }

@@ -298,6 +298,38 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(*member, name);
 		}
 
+	} else if (type == LobbyPacketType::LobbyFileAdded) {
+		auto filename = js["filename"].get<std::string>();
+		auto size = js["size"].get<size_t>();
+		auto hash = js["hash"].get<uint64_t>();
+
+		auto newFile = new LobbyFile(filename);
+		newFile->Prepare(size, hash);
+
+		if (m_info.IsHosting) {
+			peerMember->Files.emplace_back(newFile);
+
+			js = json::object();
+			js["t"] = (uint8_t)LobbyPacketType::LobbyFileAdded;
+			js["guid"] = peerMember->UnetGuid.str();
+			js["filename"] = filename;
+			js["size"] = size;
+			js["hash"] = hash;
+			m_ctx->InternalSendToAllExcept(*peerMember, js);
+
+		} else {
+			xg::Guid guid(js["guid"].get<std::string>());
+
+			auto member = GetMember(guid);
+			assert(member != nullptr);
+			if (member == nullptr) {
+				delete newFile;
+				return;
+			}
+
+			member->Files.emplace_back(newFile);
+		}
+
 	} else {
 		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
 	}

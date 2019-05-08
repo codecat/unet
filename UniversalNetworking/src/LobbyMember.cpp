@@ -8,6 +8,13 @@ Unet::LobbyMember::LobbyMember(Internal::Context* ctx)
 	m_ctx = ctx;
 }
 
+Unet::LobbyMember::~LobbyMember()
+{
+	for (auto file : Files) {
+		delete file;
+	}
+}
+
 Unet::ServiceID Unet::LobbyMember::GetServiceID(ServiceType type) const
 {
 	for (auto &id : IDs) {
@@ -123,4 +130,43 @@ void Unet::LobbyMember::RemoveData(const std::string &name)
 		js["name"] = name;
 		m_ctx->InternalSendToHost(js);
 	}
+}
+
+void Unet::LobbyMember::AddFile(const std::string &filename, const std::string &filenameOnDisk)
+{
+	auto newFile = new LobbyFile(filename);
+	newFile->LoadFromFile(filenameOnDisk);
+	AddFile(newFile);
+}
+
+void Unet::LobbyMember::AddFile(const std::string &filename, uint8_t* buffer, size_t size)
+{
+	auto newFile = new LobbyFile(filename);
+	newFile->Load(buffer, size);
+	AddFile(newFile);
+}
+
+void Unet::LobbyMember::AddFile(LobbyFile* file)
+{
+	auto currentLobby = m_ctx->CurrentLobby();
+	assert(currentLobby != nullptr);
+
+	json js;
+	js["t"] = (uint8_t)LobbyPacketType::LobbyFileAdded;
+	js["filename"] = file->m_filename;
+	js["size"] = file->m_size;
+	js["hash"] = file->m_hash;
+
+	if (currentLobby != nullptr && currentLobby->GetInfo().IsHosting) {
+		js["guid"] = UnetGuid.str();
+		m_ctx->InternalSendToAll(js);
+
+	} else if (UnetPeer == m_ctx->m_localPeer) {
+		m_ctx->InternalSendToHost(js);
+	}
+}
+
+void Unet::LobbyMember::RemoveFile(const std::string &filename)
+{
+	//TODO
 }

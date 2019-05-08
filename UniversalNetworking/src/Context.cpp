@@ -451,6 +451,36 @@ const char* Unet::Internal::Context::GetPersonaName()
 	return m_personaName.c_str();
 }
 
+void Unet::Internal::Context::AddAvailableFile(const char* filename, const char* filenameOnDisk)
+{
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	auto localMember = m_currentLobby->GetMember(m_localPeer);
+	assert(localMember != nullptr);
+	if (localMember == nullptr) {
+		return;
+	}
+
+	localMember->AddFile(filename, filenameOnDisk);
+}
+
+void Unet::Internal::Context::AddAvailableFile(const char* filename, uint8_t* buffer, size_t size)
+{
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	auto localMember = m_currentLobby->GetMember(m_localPeer);
+	assert(localMember != nullptr);
+	if (localMember == nullptr) {
+		return;
+	}
+
+	localMember->AddFile(filename, buffer, size);
+}
+
 bool Unet::Internal::Context::IsMessageAvailable(int channel)
 {
 	if (channel < 0) {
