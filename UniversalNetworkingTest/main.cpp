@@ -675,6 +675,18 @@ static void HandleCommand(const s2::string &line)
 
 		g_ctx->RequestFile(member, file);
 
+		LOG_INFO("File requested. Waiting for completion..");
+
+		while (file->m_availableSize < file->m_size) {
+			RunCallbacks();
+		}
+
+		if (file->IsValid()) {
+			LOG_INFO("File received and valid!");
+		} else {
+			LOG_ERROR("File received, but it's not valid!");
+		}
+
 	} else if (parse[0] == "join" && parse.len() == 2) {
 		if (g_lastLobbyList.Code != Unet::Result::OK) {
 			LOG_ERROR("Previous lobby list request failed! Use the \"list\" command again.");
