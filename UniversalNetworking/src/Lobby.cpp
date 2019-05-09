@@ -362,6 +362,64 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			member->InternalRemoveFile(filename);
 		}
 
+	} else if (type == LobbyPacketType::LobbyFileRequested) {
+		auto filename = js["filename"].get<std::string>();
+
+		auto localMember = GetMember(m_ctx->m_localPeer);
+		auto file = localMember->GetFile(filename);
+		if (file == nullptr) {
+			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Peer %d tried requesting file \"%s\" which we don't have!", (int)peerMember->UnetPeer, filename.c_str()));
+			return;
+		}
+
+		if (!file->IsValid()) {
+			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Peer %d tried requesting file \"%s\" which is not valid for us! (This should never happen!)", (int)peerMember->UnetPeer, filename.c_str()));
+			return;
+		}
+
+		m_ctx->GetCallbacks()->OnLogInfo(strPrintF("Peer %d requested file \"%s\"", (int)peerMember->UnetPeer, filename.c_str()));
+
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyFileData;
+		js["filename"] = file->m_filename;
+
+		//TODO: Make this go over a slower period of time rather than all at once, so the client has some
+		//      breathing room to do other things, both CPU and RAM.
+
+		// We use a relatively small block size to avoid making the download progress indicator too slow,
+		// as well as making sure we're under the reliable packet size limit in most cases.
+		const size_t blockSize = 1024 * 64;
+		int numBlocks = 0;
+
+		uint8_t* p = file->m_buffer;
+		size_t bytesLeft = file->m_size;
+
+		while (bytesLeft > 0) {
+			size_t sendSize = std::min(blockSize, bytesLeft);
+
+			m_ctx->InternalSendTo(peerMember, js, p, sendSize);
+
+			p += sendSize;
+			bytesLeft -= sendSize;
+
+			numBlocks++;
+		}
+
+		m_ctx->GetCallbacks()->OnLogInfo(strPrintF("File sent completely in %d blocks", numBlocks));
+
+	} else if (type == LobbyPacketType::LobbyFileData) {
+		auto filename = js["filename"].get<std::string>();
+
+		auto file = peerMember->GetFile(filename);
+		if (file == nullptr) {
+			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Peer %d sent us data for file \"%s\" which they don't have!", (int)peerMember->UnetPeer, filename.c_str()));
+			return;
+		}
+
+		file->AppendData(binaryData, binarySize);
+
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("Received %d bytes from peer %d for file \"%s\", now at %.1f%%", (int)peerMember->UnetPeer, (int)binarySize, filename.c_str(), file->GetPercentage() * 100.0));
+
 	} else {
 		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
 	}

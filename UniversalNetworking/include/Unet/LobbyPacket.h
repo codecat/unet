@@ -42,5 +42,8 @@ namespace Unet
 		// Sent by the client to announce that they've removed a file available for download
 		// Sent by the server to announce that a file has been removed for downloading by a client
 		LobbyFileRemoved,
+
+		LobbyFileRequested,
+		LobbyFileData,
 	};
 }

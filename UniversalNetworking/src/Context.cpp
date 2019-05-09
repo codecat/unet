@@ -496,6 +496,28 @@ void Unet::Internal::Context::RemoveFile(const char* filename)
 	localMember->RemoveFile(filename);
 }
 
+void Unet::Internal::Context::RequestFile(LobbyMember* member, const char* filename)
+{
+	auto file = member->GetFile(filename);
+	if (file == nullptr) {
+		m_callbacks->OnLogError(strPrintF("Couldn't find file \"%s\" on member!", filename));
+		return;
+	}
+
+	RequestFile(member, file);
+}
+
+void Unet::Internal::Context::RequestFile(LobbyMember* member, LobbyFile* file)
+{
+	json js;
+	js["t"] = (uint8_t)LobbyPacketType::LobbyFileRequested;
+	js["filename"] = file->m_filename;
+	InternalSendTo(member, js);
+
+	//LobbyPacketType::LobbyFileRequested
+	//LobbyPacketType::LobbyFileData
+}
+
 bool Unet::Internal::Context::IsMessageAvailable(int channel)
 {
 	if (channel < 0) {

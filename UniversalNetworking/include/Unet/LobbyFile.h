@@ -23,6 +23,13 @@ namespace Unet
 		void LoadFromFile(const std::string &filenameOnDisk);
 		void Load(uint8_t* buffer, size_t size);
 
+		void AppendData(uint8_t* buffer, size_t size);
+
+		// Checks whether the data captured in this file is complete and valid. Note
+		// that this also computes and compares a hash for the entire buffer, so
+		// consider that while working in performance-critical code.
 		bool IsValid();
+
+		double GetPercentage();
 	};
 }

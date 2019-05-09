@@ -98,6 +98,9 @@ namespace Unet
 		// Removes a file from the list of available files from this peer.
 		virtual void RemoveFile(const char* filename) = 0;
 
+		virtual void RequestFile(LobbyMember* member, const char* filename) = 0;
+		virtual void RequestFile(LobbyMember* member, LobbyFile* file) = 0;
+
 		// Checks if a message is available on the given channel.
 		virtual bool IsMessageAvailable(int channel) = 0;
 

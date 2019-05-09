@@ -54,6 +54,9 @@ namespace Unet
 			virtual void AddFile(const char* filename, uint8_t* buffer, size_t size) override;
 			virtual void RemoveFile(const char* filename) override;
 
+			virtual void RequestFile(LobbyMember* member, const char* filename) override;
+			virtual void RequestFile(LobbyMember* member, LobbyFile* file) override;
+
 			virtual bool IsMessageAvailable(int channel) override;
 			virtual NetworkMessageRef ReadMessage(int channel) override;
 

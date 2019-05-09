@@ -69,6 +69,14 @@ void Unet::LobbyFile::Load(uint8_t* buffer, size_t size)
 	m_hash = XXH64(m_buffer, m_size, 0);
 }
 
+void Unet::LobbyFile::AppendData(uint8_t* buffer, size_t size)
+{
+	assert(m_availableSize + size <= m_size);
+
+	memcpy(m_buffer + m_availableSize, buffer, size);
+	m_availableSize += size;
+}
+
 bool Unet::LobbyFile::IsValid()
 {
 	if (m_buffer == nullptr) {
@@ -88,4 +96,9 @@ bool Unet::LobbyFile::IsValid()
 	}
 
 	return true;
+}
+
+double Unet::LobbyFile::GetPercentage()
+{
+	return m_availableSize / (double)m_size;
 }
