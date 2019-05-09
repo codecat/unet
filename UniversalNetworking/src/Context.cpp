@@ -513,9 +513,6 @@ void Unet::Internal::Context::RequestFile(LobbyMember* member, LobbyFile* file)
 	js["t"] = (uint8_t)LobbyPacketType::LobbyFileRequested;
 	js["filename"] = file->m_filename;
 	InternalSendTo(member, js);
-
-	//LobbyPacketType::LobbyFileRequested
-	//LobbyPacketType::LobbyFileData
 }
 
 bool Unet::Internal::Context::IsMessageAvailable(int channel)
@@ -760,7 +757,7 @@ void Unet::Internal::Context::InternalSendTo(const ServiceID &id, const json &js
 	memcpy(m_sendBuffer.data(), &msgSize, 4);
 	memcpy(m_sendBuffer.data() + 4, msg.data(), msg.size());
 	if (binaryData != nullptr && binarySize > 0) {
-		memcpy(m_sendBuffer.data() + msg.size(), binaryData, binarySize);
+		memcpy(m_sendBuffer.data() + 4 + msg.size(), binaryData, binarySize);
 	}
 
 	size_t sizeLimit = service->ReliablePacketLimit();
