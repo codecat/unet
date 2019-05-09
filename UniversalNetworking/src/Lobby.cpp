@@ -418,7 +418,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 
 		file->AppendData(binaryData, binarySize);
 
-		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("Received %d bytes from peer %d for file \"%s\", now at %.1f%%", (int)peerMember->UnetPeer, (int)binarySize, filename.c_str(), file->GetPercentage() * 100.0));
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("Received %d bytes from peer %d for file \"%s\", now at %.1f%%", (int)binarySize, (int)peerMember->UnetPeer, filename.c_str(), file->GetPercentage() * 100.0));
 
 	} else {
 		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
