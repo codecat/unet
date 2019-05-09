@@ -74,6 +74,14 @@ json Unet::LobbyMember::Serialize() const
 		js["ids"].emplace_back(json::array({ (int)id.Service, id.ID }));
 	}
 	js["data"] = SerializeData();
+	js["files"] = json::array();
+	for (auto file : Files) {
+		json jsFile = json::object();
+		jsFile["filename"] = file->m_filename;
+		jsFile["size"] = file->m_size;
+		jsFile["hash"] = file->m_hash;
+		js["files"].emplace_back(jsFile);
+	}
 	return js;
 }
 
@@ -86,6 +94,14 @@ void Unet::LobbyMember::Deserialize(const json &js)
 	Name = js["name"].get<std::string>();
 
 	DeserializeData(js["data"]);
+
+	for (auto &jsFile : js["files"]) {
+		auto newFile = new LobbyFile(jsFile["filename"].get<std::string>());
+		size_t size = jsFile["size"].get<size_t>();
+		uint64_t hash = jsFile["hash"].get<uint64_t>();
+		newFile->Prepare(size, hash);
+		Files.emplace_back(newFile);
+	}
 }
 
 void Unet::LobbyMember::SetData(const std::string &name, const std::string &value)
@@ -148,6 +164,8 @@ void Unet::LobbyMember::AddFile(const std::string &filename, uint8_t* buffer, si
 
 void Unet::LobbyMember::AddFile(LobbyFile* file)
 {
+	Files.emplace_back(file);
+
 	auto currentLobby = m_ctx->CurrentLobby();
 	assert(currentLobby != nullptr);
 

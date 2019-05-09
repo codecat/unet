@@ -10,8 +10,6 @@ namespace Unet
 		std::string m_filename;
 		uint64_t m_hash;
 
-		//TODO: Keep local file cache so we can load in the buffer on demand
-
 		uint8_t* m_buffer = nullptr;
 		size_t m_size = 0;
 		size_t m_availableSize = 0;

@@ -440,9 +440,18 @@ static void HandleCommand(const s2::string &line)
 			LOG_INFO("  Members: %d", (int)members.size());
 			for (auto &member : members) {
 				auto memberGuid = member.UnetGuid.str();
-				LOG_INFO("    %d: \"%s\" (%s) (%s) (%d datas)", member.UnetPeer, member.Name.c_str(), member.Valid ? "Valid" : "Invalid", memberGuid.c_str(), (int)member.m_data.size());
+				LOG_INFO("    %d: \"%s\" (%s) (%s)", member.UnetPeer, member.Name.c_str(), member.Valid ? "Valid" : "Invalid", memberGuid.c_str());
+
+				LOG_INFO("      %d datas", (int)member.m_data.size());
+
+				LOG_INFO("      %d IDs:", (int)member.IDs.size());
 				for (auto &id : member.IDs) {
-					LOG_INFO("      %s (0x%016llX)%s", Unet::GetServiceNameByType(id.Service), id.ID, member.UnetPrimaryService == id.Service ? " Primary" : "");
+					LOG_INFO("        %s (0x%016llX)%s", Unet::GetServiceNameByType(id.Service), id.ID, member.UnetPrimaryService == id.Service ? " Primary" : "");
+				}
+
+				LOG_INFO("      %d files:", (int)member.Files.size());
+				for (auto file : member.Files) {
+					LOG_INFO("        %s (%d / %d bytes)", file->m_filename.c_str(), (int)file->m_availableSize, (int)file->m_size);
 				}
 			}
 		}

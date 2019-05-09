@@ -25,6 +25,8 @@ void Unet::LobbyFile::Prepare(size_t size, uint64_t hash)
 	m_availableSize = 0;
 
 	m_hash = hash;
+
+	//TODO: Load from cache if we can find it
 }
 
 void Unet::LobbyFile::LoadFromFile(const std::string &filenameOnDisk)
