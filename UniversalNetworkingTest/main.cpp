@@ -647,7 +647,7 @@ static void HandleCommand(const s2::string &line)
 		s2::string filename = parse[1];
 		g_ctx->RemoveFile(filename);
 
-		LOG_INFO("Added file \"%s\"", filename.c_str());
+		LOG_INFO("Removed file \"%s\"", filename.c_str());
 
 	} else if (parse[0] == "join" && parse.len() == 2) {
 		if (g_lastLobbyList.Code != Unet::Result::OK) {
