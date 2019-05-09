@@ -12,6 +12,9 @@ Unet::Lobby::Lobby(Internal::Context* ctx, const LobbyInfo &lobbyInfo)
 
 Unet::Lobby::~Lobby()
 {
+	for (auto member : m_members) {
+		delete member;
+	}
 }
 
 const Unet::LobbyInfo &Unet::Lobby::GetInfo()
