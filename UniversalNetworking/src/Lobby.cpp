@@ -89,7 +89,12 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 
 	auto peerMember = GetMember(peer);
 
-	json js = JsonUnpack(data, size);
+	uint32_t sizeJson = *(uint32_t*)data;
+
+	uint8_t* binaryData = data + 4 + sizeJson;
+	size_t binarySize = size - 4 - sizeJson;
+
+	json js = JsonUnpack(data + 4, sizeJson);
 	if (!js.is_object() || !js.contains("t")) {
 		m_ctx->GetCallbacks()->OnLogError(strPrintF("[P2P] [%s] Message from 0x%016llX is not a valid data object!", GetServiceNameByType(peer.Service), peer.ID));
 		return;

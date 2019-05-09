@@ -67,11 +67,11 @@ namespace Unet
 			Service* GetService(ServiceType type);
 
 		public:
-			void InternalSendTo(LobbyMember* member, const json &js);
-			void InternalSendTo(const ServiceID &id, const json &js);
-			void InternalSendToAll(const json &js);
-			void InternalSendToAllExcept(LobbyMember* exceptMember, const json &js);
-			void InternalSendToHost(const json &js);
+			void InternalSendTo(LobbyMember* member, const json &js, uint8_t* binaryData = nullptr, size_t binarySize = 0);
+			void InternalSendTo(const ServiceID &id, const json &js, uint8_t* binaryData = nullptr, size_t binarySize = 0);
+			void InternalSendToAll(const json &js, uint8_t* binaryData = nullptr, size_t binarySize = 0);
+			void InternalSendToAllExcept(LobbyMember* exceptMember, const json &js, uint8_t* binaryData = nullptr, size_t binarySize = 0);
+			void InternalSendToHost(const json &js, uint8_t* binaryData = nullptr, size_t binarySize = 0);
 
 		private:
 			void OnLobbyCreated(const CreateLobbyResult &result);

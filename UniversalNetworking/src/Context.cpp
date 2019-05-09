@@ -689,7 +689,7 @@ Unet::Service* Unet::Internal::Context::GetService(ServiceType type)
 	return nullptr;
 }
 
-void Unet::Internal::Context::InternalSendTo(LobbyMember* member, const json &js)
+void Unet::Internal::Context::InternalSendTo(LobbyMember* member, const json &js, uint8_t* binaryData, size_t binarySize)
 {
 	// Sending a message to yourself isn't very useful.
 	assert(member->UnetPeer != m_localPeer);
@@ -700,10 +700,10 @@ void Unet::Internal::Context::InternalSendTo(LobbyMember* member, const json &js
 		return;
 	}
 
-	InternalSendTo(id, js);
+	InternalSendTo(id, js, binaryData, binarySize);
 }
 
-void Unet::Internal::Context::InternalSendTo(const ServiceID &id, const json &js)
+void Unet::Internal::Context::InternalSendTo(const ServiceID &id, const json &js, uint8_t* binaryData, size_t binarySize)
 {
 	//TODO: Implement relaying through host if this is a client-to-client message where there's no compatible connection (eg. Steam to Galaxy communication)
 	//NOTE: The above is not important yet for internal messages, as all internal messages are sent between client & server, not client & client
@@ -716,18 +716,28 @@ void Unet::Internal::Context::InternalSendTo(const ServiceID &id, const json &js
 
 	auto msg = JsonPack(js);
 
+	size_t finalMsgSize = msg.size() + binarySize + 4;
+	PrepareSendBuffer(finalMsgSize);
+
+	uint32_t msgSize = (uint32_t)msg.size();
+	memcpy(m_sendBuffer.data(), &msgSize, 4);
+	memcpy(m_sendBuffer.data() + 4, msg.data(), msg.size());
+	if (binaryData != nullptr && binarySize > 0) {
+		memcpy(m_sendBuffer.data() + msg.size(), binaryData, binarySize);
+	}
+
 	size_t sizeLimit = service->ReliablePacketLimit();
 	if (sizeLimit == 0) {
-		service->SendPacket(id, msg.data(), msg.size(), PacketType::Reliable, 0);
+		service->SendPacket(id, m_sendBuffer.data(), finalMsgSize, PacketType::Reliable, 0);
 		return;
 	}
 
-	m_reassembly.SplitMessage(msg.data(), msg.size(), PacketType::Reliable, sizeLimit, [service, id](uint8_t* data, size_t size) {
+	m_reassembly.SplitMessage(m_sendBuffer.data(), finalMsgSize, PacketType::Reliable, sizeLimit, [service, id](uint8_t* data, size_t size) {
 		service->SendPacket(id, data, size, PacketType::Reliable, 0);
 	});
 }
 
-void Unet::Internal::Context::InternalSendToAll(const json &js)
+void Unet::Internal::Context::InternalSendToAll(const json &js, uint8_t* binaryData, size_t binarySize)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -736,12 +746,12 @@ void Unet::Internal::Context::InternalSendToAll(const json &js)
 
 	for (auto member : m_currentLobby->m_members) {
 		if (member->UnetPeer != m_localPeer) {
-			InternalSendTo(member, js);
+			InternalSendTo(member, js, binaryData, binarySize);
 		}
 	}
 }
 
-void Unet::Internal::Context::InternalSendToAllExcept(LobbyMember* exceptMember, const json &js)
+void Unet::Internal::Context::InternalSendToAllExcept(LobbyMember* exceptMember, const json &js, uint8_t* binaryData, size_t binarySize)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -750,12 +760,12 @@ void Unet::Internal::Context::InternalSendToAllExcept(LobbyMember* exceptMember,
 
 	for (auto member : m_currentLobby->m_members) {
 		if (member->UnetPeer != m_localPeer && member->UnetPeer != exceptMember->UnetPeer) {
-			InternalSendTo(member, js);
+			InternalSendTo(member, js, binaryData, binarySize);
 		}
 	}
 }
 
-void Unet::Internal::Context::InternalSendToHost(const json &js)
+void Unet::Internal::Context::InternalSendToHost(const json &js, uint8_t* binaryData, size_t binarySize)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
@@ -764,7 +774,7 @@ void Unet::Internal::Context::InternalSendToHost(const json &js)
 
 	auto hostMember = m_currentLobby->GetHostMember();
 	if (hostMember != nullptr) {
-		InternalSendTo(hostMember, js);
+		InternalSendTo(hostMember, js, binaryData, binarySize);
 
 	} else {
 		auto primaryEntryPoint = m_currentLobby->GetPrimaryEntryPoint();
@@ -774,7 +784,7 @@ void Unet::Internal::Context::InternalSendToHost(const json &js)
 		assert(service != nullptr);
 
 		auto hostId = service->GetLobbyHost(primaryEntryPoint);
-		InternalSendTo(hostId, js);
+		InternalSendTo(hostId, js, binaryData, binarySize);
 	}
 }
 
