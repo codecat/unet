@@ -48,4 +48,6 @@ namespace Unet
 		void AddFile(LobbyFile* file);
 		void RemoveFile(const std::string &filename);
 	};
+
+	typedef std::unique_ptr<LobbyMember> LobbyMemberRef;
 }

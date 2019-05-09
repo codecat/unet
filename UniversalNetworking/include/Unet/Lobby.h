@@ -15,7 +15,7 @@ namespace Unet
 		Internal::Context* m_ctx;
 		LobbyInfo m_info;
 
-		std::vector<LobbyMember> m_members;
+		std::vector<LobbyMember*> m_members;
 
 	private:
 		Lobby(Internal::Context* ctx, const LobbyInfo &lobbyInfo);
@@ -27,21 +27,21 @@ namespace Unet
 
 		ServiceID GetPrimaryEntryPoint();
 
-		const std::vector<LobbyMember> &GetMembers();
+		const std::vector<LobbyMember*> &GetMembers();
 		LobbyMember* GetMember(const xg::Guid &guid);
 		LobbyMember* GetMember(int peer);
 		LobbyMember* GetMember(const ServiceID &serviceId);
 		LobbyMember* GetHostMember();
 
 		void HandleMessage(const ServiceID &peer, uint8_t* data, size_t size);
-		LobbyMember &DeserializeMember(const json &member);
+		LobbyMember* DeserializeMember(const json &member);
 
 		void AddEntryPoint(const ServiceID &id);
 		void ServiceDisconnected(ServiceType service);
 
-		LobbyMember &AddMemberService(const xg::Guid &guid, const ServiceID &id);
+		LobbyMember* AddMemberService(const xg::Guid &guid, const ServiceID &id);
 		void RemoveMemberService(const ServiceID &id);
-		void RemoveMember(const LobbyMember &member);
+		void RemoveMember(const LobbyMember* member);
 
 		virtual void SetData(const std::string &name, const std::string &value) override;
 		virtual std::string GetData(const std::string &name) const override;

@@ -72,7 +72,7 @@ namespace Unet
 		virtual void LeaveLobby(LeaveReason reason = LeaveReason::UserLeave) = 0;
 
 		// Kick a member from the lobby. We must be the host in order to kick someone.
-		virtual void KickMember(LobbyMember &member) = 0;
+		virtual void KickMember(LobbyMember* member) = 0;
 
 		// Get the lobby that the we're currently in.
 		virtual Lobby* CurrentLobby() = 0;
@@ -120,13 +120,13 @@ namespace Unet
 		//
 		// The channel you send data on is an index starting at 0. You must have created the context with
 		// a sufficient number of channels if you wish to use multiple channels.
-		virtual void SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) = 0;
+		virtual void SendTo(LobbyMember* member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) = 0;
 
 		// Send a message to all clients in the lobby. See SendTo for more details.
 		virtual void SendToAll(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) = 0;
 
 		// Send a message to all clients in the lobby, except the given one. See SendTo for more details.
-		virtual void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) = 0;
+		virtual void SendToAllExcept(LobbyMember* exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) = 0;
 
 		// Send a message to the host of the lobby. See SendTo for more details.
 		virtual void SendToHost(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) = 0;

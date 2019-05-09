@@ -38,16 +38,16 @@ Unet::ServiceID Unet::Lobby::GetPrimaryEntryPoint()
 	return m_info.EntryPoints[0];
 }
 
-const std::vector<Unet::LobbyMember> &Unet::Lobby::GetMembers()
+const std::vector<Unet::LobbyMember*> &Unet::Lobby::GetMembers()
 {
 	return m_members;
 }
 
 Unet::LobbyMember* Unet::Lobby::GetMember(const xg::Guid &guid)
 {
-	for (auto &member : m_members) {
-		if (member.UnetGuid == guid) {
-			return &member;
+	for (auto member : m_members) {
+		if (member->UnetGuid == guid) {
+			return member;
 		}
 	}
 	return nullptr;
@@ -55,9 +55,9 @@ Unet::LobbyMember* Unet::Lobby::GetMember(const xg::Guid &guid)
 
 Unet::LobbyMember* Unet::Lobby::GetMember(int peer)
 {
-	for (auto &member : m_members) {
-		if (member.UnetPeer == peer) {
-			return &member;
+	for (auto member : m_members) {
+		if (member->UnetPeer == peer) {
+			return member;
 		}
 	}
 	return nullptr;
@@ -65,10 +65,10 @@ Unet::LobbyMember* Unet::Lobby::GetMember(int peer)
 
 Unet::LobbyMember* Unet::Lobby::GetMember(const ServiceID &serviceId)
 {
-	for (auto &member : m_members) {
-		for (auto &id : member.IDs) {
+	for (auto member : m_members) {
+		for (auto &id : member->IDs) {
 			if (id == serviceId) {
-				return &member;
+				return member;
 			}
 		}
 	}
@@ -103,9 +103,9 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 		}
 
 		xg::Guid guid(js["guid"].get<std::string>());
-		auto &member = AddMemberService(guid, peer);
+		auto member = AddMemberService(guid, peer);
 
-		if (member.Valid) {
+		if (member->Valid) {
 			js = json::object();
 			js["t"] = (uint8_t)LobbyPacketType::MemberNewService;
 			js["guid"] = guid.str();
@@ -137,20 +137,20 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 		js["t"] = (uint8_t)LobbyPacketType::LobbyInfo;
 		js["data"] = SerializeData();
 		js["members"] = json::array();
-		for (auto &member : m_members) {
-			if (member.Valid) {
-				js["members"].emplace_back(member.Serialize());
+		for (auto member : m_members) {
+			if (member->Valid) {
+				js["members"].emplace_back(member->Serialize());
 			}
 		}
-		m_ctx->InternalSendTo(*member, js);
+		m_ctx->InternalSendTo(member, js);
 
 		// Send MemberInfo to existing members
 		js = member->Serialize();
 		js["t"] = (uint8_t)LobbyPacketType::MemberInfo;
-		m_ctx->InternalSendToAllExcept(*member, js);
+		m_ctx->InternalSendToAllExcept(member, js);
 
 		// Run callback
-		m_ctx->GetCallbacks()->OnLobbyPlayerJoined(*member);
+		m_ctx->GetCallbacks()->OnLobbyPlayerJoined(member);
 
 	} else if (type == LobbyPacketType::LobbyInfo) {
 		if (m_info.IsHosting) {
@@ -165,9 +165,9 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			DeserializeMember(member);
 		}
 
-		for (auto &member : m_members) {
-			if (member.UnetGuid == m_ctx->m_localGuid) {
-				m_ctx->m_localPeer = member.UnetPeer;
+		for (auto member : m_members) {
+			if (member->UnetGuid == m_ctx->m_localGuid) {
+				m_ctx->m_localPeer = member->UnetPeer;
 			}
 		}
 
@@ -183,7 +183,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			return;
 		}
 
-		auto &member = DeserializeMember(js);
+		auto member = DeserializeMember(js);
 		m_ctx->GetCallbacks()->OnLobbyPlayerJoined(member);
 
 	} else if (type == LobbyPacketType::MemberLeft) {
@@ -199,7 +199,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			return;
 		}
 
-		RemoveMember(*member);
+		RemoveMember(member);
 
 	} else if (type == LobbyPacketType::MemberKick) {
 		if (m_info.IsHosting) {
@@ -254,9 +254,9 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			js["guid"] = peerMember->UnetGuid.str();
 			js["name"] = name;
 			js["value"] = value;
-			m_ctx->InternalSendToAllExcept(*peerMember, js);
+			m_ctx->InternalSendToAllExcept(peerMember, js);
 
-			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(*peerMember, name);
+			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(peerMember, name);
 
 		} else {
 			xg::Guid guid(js["guid"].get<std::string>());
@@ -268,7 +268,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			}
 
 			member->InternalSetData(name, value);
-			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(*member, name);
+			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(member, name);
 		}
 
 	} else if (type == LobbyPacketType::LobbyMemberDataRemoved) {
@@ -281,9 +281,9 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
 			js["guid"] = peerMember->UnetGuid.str();
 			js["name"] = name;
-			m_ctx->InternalSendToAllExcept(*peerMember, js);
+			m_ctx->InternalSendToAllExcept(peerMember, js);
 
-			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(*peerMember, name);
+			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(peerMember, name);
 
 		} else {
 			xg::Guid guid(js["guid"].get<std::string>());
@@ -295,7 +295,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			}
 
 			member->InternalRemoveData(name);
-			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(*member, name);
+			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(member, name);
 		}
 
 	} else if (type == LobbyPacketType::LobbyFileAdded) {
@@ -315,7 +315,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			js["filename"] = filename;
 			js["size"] = size;
 			js["hash"] = hash;
-			m_ctx->InternalSendToAllExcept(*peerMember, js);
+			m_ctx->InternalSendToAllExcept(peerMember, js);
 
 		} else {
 			xg::Guid guid(js["guid"].get<std::string>());
@@ -335,7 +335,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 	}
 }
 
-Unet::LobbyMember &Unet::Lobby::DeserializeMember(const json &member)
+Unet::LobbyMember* Unet::Lobby::DeserializeMember(const json &member)
 {
 	xg::Guid guid(member["guid"].get<std::string>());
 
@@ -351,7 +351,7 @@ Unet::LobbyMember &Unet::Lobby::DeserializeMember(const json &member)
 
 	lobbyMember->Deserialize(member);
 
-	return *lobbyMember;
+	return lobbyMember;
 }
 
 void Unet::Lobby::AddEntryPoint(const ServiceID &entryPoint)
@@ -381,10 +381,10 @@ void Unet::Lobby::ServiceDisconnected(ServiceType service)
 
 	m_info.EntryPoints.erase(it);
 
-	for (auto &member : m_members) {
-		for (int i = (int)member.IDs.size() - 1; i >= 0; i--) {
-			if (member.IDs[i].Service == service) {
-				RemoveMemberService(member.IDs[i]);
+	for (auto member : m_members) {
+		for (int i = (int)member->IDs.size() - 1; i >= 0; i--) {
+			if (member->IDs[i].Service == service) {
+				RemoveMemberService(member->IDs[i]);
 			}
 		}
 	}
@@ -401,23 +401,23 @@ void Unet::Lobby::ServiceDisconnected(ServiceType service)
 	}
 }
 
-Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const ServiceID &id)
+Unet::LobbyMember* Unet::Lobby::AddMemberService(const xg::Guid &guid, const ServiceID &id)
 {
 	for (size_t i = 0; i < m_members.size(); i++) {
 		bool foundMember = false;
-		auto &member = m_members[i];
+		auto member = m_members[i];
 
-		if (member.UnetGuid == guid) {
+		if (member->UnetGuid == guid) {
 			continue;
 		}
 
-		for (auto &memberId : member.IDs) {
+		for (auto &memberId : member->IDs) {
 			if (memberId != id) {
 				continue;
 			}
 
 			auto strGuid = guid.str();
-			auto strExistingGuid = member.UnetGuid.str();
+			auto strExistingGuid = member->UnetGuid.str();
 
 			m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Tried adding %s ID 0x%016llX to member with guid %s, but another member with guid %s already has this ID! Assuming existing member is no longer connected, removing from member list.",
 				GetServiceNameByType(id.Service), id.ID,
@@ -434,29 +434,29 @@ Unet::LobbyMember &Unet::Lobby::AddMemberService(const xg::Guid &guid, const Ser
 		}
 	}
 
-	for (auto &member : m_members) {
-		if (member.UnetGuid == guid) {
-			auto existingId = member.GetServiceID(id.Service);
+	for (auto member : m_members) {
+		if (member->UnetGuid == guid) {
+			auto existingId = member->GetServiceID(id.Service);
 			if (existingId.IsValid()) {
 				auto strGuid = guid.str();
 				m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Tried adding player service %s for guid %s, but it already exists!",
 					GetServiceNameByType(id.Service), strGuid.c_str()
 				));
 			} else {
-				member.IDs.emplace_back(id);
+				member->IDs.emplace_back(id);
 			}
 			return member;
 		}
 	}
 
-	LobbyMember newMember(m_ctx);
-	newMember.Valid = false;
-	newMember.UnetGuid = guid;
-	newMember.UnetPeer = GetNextAvailablePeer();
-	newMember.IDs.emplace_back(id);
+	auto newMember = new LobbyMember(m_ctx);
+	newMember->Valid = false;
+	newMember->UnetGuid = guid;
+	newMember->UnetPeer = GetNextAvailablePeer();
+	newMember->IDs.emplace_back(id);
 	m_members.emplace_back(newMember);
 
-	return m_members[m_members.size() - 1];
+	return newMember;
 }
 
 void Unet::Lobby::RemoveMemberService(const ServiceID &id)
@@ -474,23 +474,25 @@ void Unet::Lobby::RemoveMemberService(const ServiceID &id)
 
 	member->IDs.erase(it);
 	if (member->IDs.size() == 0) {
-		LobbyMember callbackCopy = *member;
+		auto itMember = std::find(m_members.begin(), m_members.end(), member);
+		if (itMember != m_members.end()) {
+			m_members.erase(itMember);
+		}
 
-		size_t i = member - m_members.data();
-		m_members.erase(m_members.begin() + i);
-
-		m_ctx->OnLobbyPlayerLeft(callbackCopy);
+		m_ctx->OnLobbyPlayerLeft(member);
+		delete member;
 	}
 }
 
-void Unet::Lobby::RemoveMember(const LobbyMember &member)
+void Unet::Lobby::RemoveMember(const LobbyMember* member)
 {
-	LobbyMember callbackCopy = member;
+	auto it = std::find(m_members.begin(), m_members.end(), member);
+	assert(it != m_members.end());
 
-	size_t i = &member - m_members.data();
-	m_members.erase(m_members.begin() + i);
+	m_members.erase(it);
 
-	m_ctx->OnLobbyPlayerLeft(callbackCopy);
+	m_ctx->OnLobbyPlayerLeft(member);
+	delete member;
 }
 
 void Unet::Lobby::SetData(const std::string &name, const std::string &value)

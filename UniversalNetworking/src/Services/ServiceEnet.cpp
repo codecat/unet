@@ -56,12 +56,12 @@ void Unet::ServiceEnet::RunCallbacks()
 			m_waitingForPeers = false;
 
 			auto &members = m_ctx->CurrentLobby()->GetMembers();
-			for (auto &member : members) {
-				if (member.UnetPeer == m_ctx->GetLocalPeer()) {
+			for (auto member : members) {
+				if (member->UnetPeer == m_ctx->GetLocalPeer()) {
 					continue;
 				}
 
-				auto id = member.GetServiceID(ServiceType::Enet);
+				auto id = member->GetServiceID(ServiceType::Enet);
 				if (!id.IsValid()) {
 					continue;
 				}

@@ -30,8 +30,8 @@ void Unet::ServiceSteam::SimulateOutage()
 
 	SteamMatchmaking()->LeaveLobby((uint64)entryPoint->ID);
 
-	for (auto &member : lobby->GetMembers()) {
-		auto id = member.GetServiceID(ServiceType::Steam);
+	for (auto member : lobby->GetMembers()) {
+		auto id = member->GetServiceID(ServiceType::Steam);
 		if (id.IsValid()) {
 			SteamNetworking()->CloseP2PSessionWithUser((uint64)id.ID);
 		}
@@ -97,8 +97,8 @@ void Unet::ServiceSteam::LeaveLobby()
 
 	SteamMatchmaking()->LeaveLobby((uint64)entryPoint->ID);
 
-	for (auto &member : lobby->GetMembers()) {
-		auto id = member.GetServiceID(ServiceType::Steam);
+	for (auto member : lobby->GetMembers()) {
+		auto id = member->GetServiceID(ServiceType::Steam);
 		if (id.IsValid()) {
 			SteamNetworking()->CloseP2PSessionWithUser((uint64)id.ID);
 		}

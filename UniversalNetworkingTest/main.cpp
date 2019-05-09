@@ -117,14 +117,14 @@ public:
 		LOG_FROM_CALLBACK("Left lobby: %s", reasonStr);
 	}
 
-	virtual void OnLobbyPlayerJoined(const Unet::LobbyMember &member) override
+	virtual void OnLobbyPlayerJoined(const Unet::LobbyMember* member) override
 	{
-		LOG_FROM_CALLBACK("Player joined: %s", member.Name.c_str());
+		LOG_FROM_CALLBACK("Player joined: %s", member->Name.c_str());
 	}
 
-	virtual void OnLobbyPlayerLeft(const Unet::LobbyMember &member) override
+	virtual void OnLobbyPlayerLeft(const Unet::LobbyMember* member) override
 	{
-		LOG_FROM_CALLBACK("Player left: %s", member.Name.c_str());
+		LOG_FROM_CALLBACK("Player left: %s", member->Name.c_str());
 	}
 
 	virtual void OnLobbyDataChanged(const std::string &name) override
@@ -138,9 +138,9 @@ public:
 		}
 	}
 
-	virtual void OnLobbyMemberDataChanged(Unet::LobbyMember &member, const std::string &name) override
+	virtual void OnLobbyMemberDataChanged(Unet::LobbyMember* member, const std::string &name) override
 	{
-		auto value = member.GetData(name);
+		auto value = member->GetData(name);
 		if (value == "") {
 			LOG_FROM_CALLBACK("Lobby member data removed: \"%s\"", name.c_str());
 		} else {
@@ -438,19 +438,19 @@ static void HandleCommand(const s2::string &line)
 
 			auto &members = currentLobby->GetMembers();
 			LOG_INFO("  Members: %d", (int)members.size());
-			for (auto &member : members) {
-				auto memberGuid = member.UnetGuid.str();
-				LOG_INFO("    %d: \"%s\" (%s) (%s)", member.UnetPeer, member.Name.c_str(), member.Valid ? "Valid" : "Invalid", memberGuid.c_str());
+			for (auto member : members) {
+				auto memberGuid = member->UnetGuid.str();
+				LOG_INFO("    %d: \"%s\" (%s) (%s)", member->UnetPeer, member->Name.c_str(), member->Valid ? "Valid" : "Invalid", memberGuid.c_str());
 
-				LOG_INFO("      %d datas", (int)member.m_data.size());
+				LOG_INFO("      %d datas", (int)member->m_data.size());
 
-				LOG_INFO("      %d IDs:", (int)member.IDs.size());
-				for (auto &id : member.IDs) {
-					LOG_INFO("        %s (0x%016llX)%s", Unet::GetServiceNameByType(id.Service), id.ID, member.UnetPrimaryService == id.Service ? " Primary" : "");
+				LOG_INFO("      %d IDs:", (int)member->IDs.size());
+				for (auto &id : member->IDs) {
+					LOG_INFO("        %s (0x%016llX)%s", Unet::GetServiceNameByType(id.Service), id.ID, member->UnetPrimaryService == id.Service ? " Primary" : "");
 				}
 
-				LOG_INFO("      %d files:", (int)member.Files.size());
-				for (auto file : member.Files) {
+				LOG_INFO("      %d files:", (int)member->Files.size());
+				for (auto file : member->Files) {
 					LOG_INFO("        %s (%d / %d bytes)", file->m_filename.c_str(), (int)file->m_availableSize, (int)file->m_size);
 				}
 			}
@@ -719,7 +719,7 @@ static void HandleCommand(const s2::string &line)
 			return;
 		}
 
-		g_ctx->KickMember(*member);
+		g_ctx->KickMember(member);
 
 	} else if (parse[0] == "send" && parse.len() == 3) {
 		int peer = atoi(parse[1]);
@@ -742,7 +742,7 @@ static void HandleCommand(const s2::string &line)
 			for (int i = 0; i < num; i++) {
 				bytes[i] = (uint8_t)(rand() % 255);
 			}
-			g_ctx->SendTo(*member, bytes, num, Unet::PacketType::Reliable);
+			g_ctx->SendTo(member, bytes, num, Unet::PacketType::Reliable);
 			free(bytes);
 		}
 
@@ -769,7 +769,7 @@ static void HandleCommand(const s2::string &line)
 			for (int i = 0; i < num; i++) {
 				bytes[i] = (uint8_t)(rand() % 255);
 			}
-			g_ctx->SendTo(*member, bytes, num, Unet::PacketType::Unreliable);
+			g_ctx->SendTo(member, bytes, num, Unet::PacketType::Unreliable);
 			free(bytes);
 
 			LOG_INFO("0x%X unreliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
@@ -800,7 +800,7 @@ static void HandleCommand(const s2::string &line)
 
 			for (size_t size = sizeLimit - 10; size < sizeLimit + 10; size++) {
 				LOG_INFO("Sending packet of size 0x%X", (uint32_t)size);
-				g_ctx->SendTo(*member, bytes, size);
+				g_ctx->SendTo(member, bytes, size);
 			}
 
 			free(bytes);

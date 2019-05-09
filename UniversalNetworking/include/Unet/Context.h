@@ -42,7 +42,7 @@ namespace Unet
 			virtual void JoinLobby(const ServiceID &id) override;
 			virtual void LeaveLobby(LeaveReason reason = LeaveReason::UserLeave) override;
 
-			virtual void KickMember(LobbyMember &member) override;
+			virtual void KickMember(LobbyMember* member) override;
 
 			virtual Lobby* CurrentLobby() override;
 			virtual int GetLocalPeer() override;
@@ -56,10 +56,10 @@ namespace Unet
 			virtual bool IsMessageAvailable(int channel) override;
 			virtual NetworkMessageRef ReadMessage(int channel) override;
 
-			void SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
-			virtual void SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
+			void SendTo_Impl(LobbyMember* member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0);
+			virtual void SendTo(LobbyMember* member, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
 			virtual void SendToAll(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
-			virtual void SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
+			virtual void SendToAllExcept(LobbyMember* exceptMember, uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
 			virtual void SendToHost(uint8_t* data, size_t size, PacketType type = PacketType::Reliable, uint8_t channel = 0) override;
 
 		private:
@@ -67,10 +67,10 @@ namespace Unet
 			Service* GetService(ServiceType type);
 
 		public:
-			void InternalSendTo(LobbyMember &member, const json &js);
+			void InternalSendTo(LobbyMember* member, const json &js);
 			void InternalSendTo(const ServiceID &id, const json &js);
 			void InternalSendToAll(const json &js);
-			void InternalSendToAllExcept(LobbyMember &exceptMember, const json &js);
+			void InternalSendToAllExcept(LobbyMember* exceptMember, const json &js);
 			void InternalSendToHost(const json &js);
 
 		private:
@@ -79,7 +79,7 @@ namespace Unet
 			void OnLobbyJoined(const LobbyJoinResult &result);
 			void OnLobbyLeft(const LobbyLeftResult &result);
 
-			void OnLobbyPlayerLeft(const LobbyMember &member);
+			void OnLobbyPlayerLeft(const LobbyMember* member);
 
 			void PrepareReceiveBuffer(size_t size);
 			void PrepareSendBuffer(size_t size);

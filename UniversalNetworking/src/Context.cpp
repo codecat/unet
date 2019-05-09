@@ -419,7 +419,7 @@ void Unet::Internal::Context::LeaveLobby(LeaveReason reason)
 	}
 }
 
-void Unet::Internal::Context::KickMember(LobbyMember &member)
+void Unet::Internal::Context::KickMember(LobbyMember* member)
 {
 	if (!m_currentLobby->m_info.IsHosting) {
 		m_callbacks->OnLogError("Can't kick members when not hosting!");
@@ -546,15 +546,15 @@ Unet::NetworkMessageRef Unet::Internal::Context::ReadMessage(int channel)
 	return nullptr;
 }
 
-void Unet::Internal::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
+void Unet::Internal::Context::SendTo_Impl(LobbyMember* member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	// Sending a message to yourself isn't very useful.
-	assert(member.UnetPeer != m_localPeer);
-	if (member.UnetPeer == m_localPeer) {
+	assert(member->UnetPeer != m_localPeer);
+	if (member->UnetPeer == m_localPeer) {
 		return;
 	}
 
-	auto id = member.GetDataServiceID();
+	auto id = member->GetDataServiceID();
 	auto service = GetService(id.Service);
 
 	if (!id.IsValid() || service == nullptr) {
@@ -570,7 +570,7 @@ void Unet::Internal::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, si
 		PrepareSendBuffer(size + 3);
 
 		uint8_t* msg = m_sendBuffer.data();
-		msg[0] = (uint8_t)member.UnetPeer;
+		msg[0] = (uint8_t)member->UnetPeer;
 		msg[1] = channel;
 		msg[2] = (uint8_t)type;
 		memcpy(msg + 3, data, size);
@@ -582,9 +582,9 @@ void Unet::Internal::Context::SendTo_Impl(LobbyMember &member, uint8_t* data, si
 	service->SendPacket(id, data, size, type, channel + 2);
 }
 
-void Unet::Internal::Context::SendTo(LobbyMember &member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
+void Unet::Internal::Context::SendTo(LobbyMember* member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
-	auto id = member.GetDataServiceID();
+	auto id = member->GetDataServiceID();
 	auto service = GetService(id.Service);
 
 	size_t sizeLimit = service->ReliablePacketLimit();
@@ -595,7 +595,7 @@ void Unet::Internal::Context::SendTo(LobbyMember &member, uint8_t* data, size_t 
 			return;
 		}
 
-		m_reassembly.SplitMessage(data, size, type, sizeLimit, [this, &member, channel](uint8_t * data, size_t size) {
+		m_reassembly.SplitMessage(data, size, type, sizeLimit, [this, member, channel](uint8_t * data, size_t size) {
 			SendTo_Impl(member, data, size, PacketType::Reliable, channel);
 		});
 
@@ -619,12 +619,12 @@ void Unet::Internal::Context::SendToAll(uint8_t* data, size_t size, PacketType t
 		return;
 	}
 
-	for (auto &member : m_currentLobby->m_members) {
-		if (!member.Valid) {
+	for (auto member : m_currentLobby->m_members) {
+		if (!member->Valid) {
 			continue;
 		}
 
-		if (member.UnetPeer == m_localPeer) {
+		if (member->UnetPeer == m_localPeer) {
 			continue;
 		}
 
@@ -632,23 +632,23 @@ void Unet::Internal::Context::SendToAll(uint8_t* data, size_t size, PacketType t
 	}
 }
 
-void Unet::Internal::Context::SendToAllExcept(LobbyMember &exceptMember, uint8_t* data, size_t size, PacketType type, uint8_t channel)
+void Unet::Internal::Context::SendToAllExcept(LobbyMember* exceptMember, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
 		return;
 	}
 
-	for (auto &member : m_currentLobby->m_members) {
-		if (!member.Valid) {
+	for (auto member : m_currentLobby->m_members) {
+		if (!member->Valid) {
 			continue;
 		}
 
-		if (member.UnetPeer == m_localPeer) {
+		if (member->UnetPeer == m_localPeer) {
 			continue;
 		}
 
-		if (member.UnetPeer == exceptMember.UnetPeer) {
+		if (member->UnetPeer == exceptMember->UnetPeer) {
 			continue;
 		}
 
@@ -669,7 +669,7 @@ void Unet::Internal::Context::SendToHost(uint8_t* data, size_t size, PacketType 
 		return;
 	}
 
-	SendTo(*hostMember, data, size, type, channel);
+	SendTo(hostMember, data, size, type, channel);
 }
 
 Unet::Service* Unet::Internal::Context::PrimaryService()
@@ -689,12 +689,12 @@ Unet::Service* Unet::Internal::Context::GetService(ServiceType type)
 	return nullptr;
 }
 
-void Unet::Internal::Context::InternalSendTo(LobbyMember &member, const json &js)
+void Unet::Internal::Context::InternalSendTo(LobbyMember* member, const json &js)
 {
 	// Sending a message to yourself isn't very useful.
-	assert(member.UnetPeer != m_localPeer);
+	assert(member->UnetPeer != m_localPeer);
 
-	auto id = member.GetDataServiceID();
+	auto id = member->GetDataServiceID();
 	assert(id.IsValid());
 	if (!id.IsValid()) {
 		return;
@@ -734,22 +734,22 @@ void Unet::Internal::Context::InternalSendToAll(const json &js)
 		return;
 	}
 
-	for (auto &member : m_currentLobby->m_members) {
-		if (member.UnetPeer != m_localPeer) {
+	for (auto member : m_currentLobby->m_members) {
+		if (member->UnetPeer != m_localPeer) {
 			InternalSendTo(member, js);
 		}
 	}
 }
 
-void Unet::Internal::Context::InternalSendToAllExcept(LobbyMember &exceptMember, const json &js)
+void Unet::Internal::Context::InternalSendToAllExcept(LobbyMember* exceptMember, const json &js)
 {
 	assert(m_currentLobby != nullptr);
 	if (m_currentLobby == nullptr) {
 		return;
 	}
 
-	for (auto &member : m_currentLobby->m_members) {
-		if (member.UnetPeer != m_localPeer && member.UnetPeer != exceptMember.UnetPeer) {
+	for (auto member : m_currentLobby->m_members) {
+		if (member->UnetPeer != m_localPeer && member->UnetPeer != exceptMember->UnetPeer) {
 			InternalSendTo(member, js);
 		}
 	}
@@ -764,7 +764,7 @@ void Unet::Internal::Context::InternalSendToHost(const json &js)
 
 	auto hostMember = m_currentLobby->GetHostMember();
 	if (hostMember != nullptr) {
-		InternalSendTo(*hostMember, js);
+		InternalSendTo(hostMember, js);
 
 	} else {
 		auto primaryEntryPoint = m_currentLobby->GetPrimaryEntryPoint();
@@ -794,13 +794,13 @@ void Unet::Internal::Context::OnLobbyCreated(const CreateLobbyResult &result)
 		m_currentLobby->SetData("unet-guid", unetGuid.c_str());
 		m_currentLobby->SetData("unet-name", lobbyInfo.Name.c_str());
 
-		LobbyMember newMember(this);
-		newMember.UnetGuid = xg::newGuid();
-		newMember.UnetPeer = 0;
-		newMember.UnetPrimaryService = m_primaryService;
-		newMember.Name = m_personaName;
+		auto newMember = new LobbyMember(this);
+		newMember->UnetGuid = xg::newGuid();
+		newMember->UnetPeer = 0;
+		newMember->UnetPrimaryService = m_primaryService;
+		newMember->Name = m_personaName;
 		for (auto service : m_services) {
-			newMember.IDs.emplace_back(service->GetUserID());
+			newMember->IDs.emplace_back(service->GetUserID());
 		}
 		m_currentLobby->m_members.emplace_back(newMember);
 	}
@@ -865,16 +865,16 @@ void Unet::Internal::Context::OnLobbyLeft(const LobbyLeftResult &result)
 	m_callbacks->OnLobbyLeft(result);
 }
 
-void Unet::Internal::Context::OnLobbyPlayerLeft(const LobbyMember &member)
+void Unet::Internal::Context::OnLobbyPlayerLeft(const LobbyMember* member)
 {
-	if (!member.Valid) {
+	if (!member->Valid) {
 		return;
 	}
 
 	if (m_currentLobby->m_info.IsHosting) {
 		json js;
 		js["t"] = (uint8_t)LobbyPacketType::MemberLeft;
-		js["guid"] = member.UnetGuid.str();
+		js["guid"] = member->UnetGuid.str();
 		InternalSendToAll(js);
 	}
 

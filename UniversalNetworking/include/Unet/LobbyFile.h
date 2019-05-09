@@ -8,7 +8,7 @@ namespace Unet
 	{
 	public:
 		std::string m_filename;
-		uint64_t m_hash;
+		uint64_t m_hash = 0;
 
 		uint8_t* m_buffer = nullptr;
 		size_t m_size = 0;

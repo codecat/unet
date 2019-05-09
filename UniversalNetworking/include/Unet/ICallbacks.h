@@ -25,11 +25,11 @@ namespace Unet
 		virtual void OnLobbyLeft(const LobbyLeftResult &result) {}
 
 		// Lobby member events
-		virtual void OnLobbyPlayerJoined(const LobbyMember &member) {}
-		virtual void OnLobbyPlayerLeft(const LobbyMember &member) {}
+		virtual void OnLobbyPlayerJoined(const LobbyMember* member) {}
+		virtual void OnLobbyPlayerLeft(const LobbyMember* member) {}
 
 		// Lobby data events
 		virtual void OnLobbyDataChanged(const std::string &name) {}
-		virtual void OnLobbyMemberDataChanged(LobbyMember &member, const std::string &name) {}
+		virtual void OnLobbyMemberDataChanged(LobbyMember* member, const std::string &name) {}
 	};
 }
