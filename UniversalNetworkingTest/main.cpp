@@ -333,9 +333,11 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  remdata <name>      - Removes lobby data (only available on the host)");
 		LOG_INFO("  setmemberdata <peer> <name> <value> - Sets member lobby data (only available on the host and the local peer)");
 		LOG_INFO("  remmemberdata <peer> <name> - Removes member lobby data (only available on the host and the local peer)");
-		LOG_INFO("  addfile [filename]  - Adds a file to the available lobby files for the local member");
-		LOG_INFO("  delfile [filename]  - Removes a file from the available lobby files for the local member");
 		LOG_INFO("  kick <peer>         - Kicks the given peer with an optional reason");
+		LOG_INFO("");
+		LOG_INFO("  addfile <filename>  - Adds a file to the available lobby files for the local member");
+		LOG_INFO("  delfile <filename>  - Removes a file from the available lobby files for the local member");
+		LOG_INFO("  download <peer> <filename> - Requests a file from the given peer and waits for its completion");
 		LOG_INFO("");
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a reliable packet with a number of random bytes on channel 0");
 		LOG_INFO("  sendu <peer> <num>  - Sends the given peer an unreliable packet with a number of random bytes on channel 0");
@@ -648,6 +650,30 @@ static void HandleCommand(const s2::string &line)
 		g_ctx->RemoveFile(filename);
 
 		LOG_INFO("Removed file \"%s\"", filename.c_str());
+
+	} else if (parse[0] == "download" && parse.len() == 3) {
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		int peer = atoi(parse[1]);
+		s2::string filename = parse[2];
+
+		auto member = currentLobby->GetMember(peer);
+		if (member == nullptr) {
+			LOG_ERROR("Peer ID %d does not belong to a member!", peer);
+			return;
+		}
+
+		auto file = member->GetFile(filename.c_str());
+		if (file == nullptr) {
+			LOG_ERROR("Couldn't find file with name \"%s\" on this member!", filename.c_str());
+			return;
+		}
+
+		g_ctx->RequestFile(member, file);
 
 	} else if (parse[0] == "join" && parse.len() == 2) {
 		if (g_lastLobbyList.Code != Unet::Result::OK) {
