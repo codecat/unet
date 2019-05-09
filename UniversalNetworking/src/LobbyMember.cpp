@@ -148,6 +148,16 @@ void Unet::LobbyMember::RemoveData(const std::string &name)
 	}
 }
 
+Unet::LobbyFile* Unet::LobbyMember::GetFile(const std::string &filename)
+{
+	for (auto file : Files) {
+		if (file->m_filename == filename) {
+			return file;
+		}
+	}
+	return nullptr;
+}
+
 void Unet::LobbyMember::AddFile(const std::string &filename, const std::string &filenameOnDisk)
 {
 	auto newFile = new LobbyFile(filename);
@@ -169,22 +179,53 @@ void Unet::LobbyMember::AddFile(LobbyFile* file)
 	auto currentLobby = m_ctx->CurrentLobby();
 	assert(currentLobby != nullptr);
 
-	json js;
-	js["t"] = (uint8_t)LobbyPacketType::LobbyFileAdded;
-	js["filename"] = file->m_filename;
-	js["size"] = file->m_size;
-	js["hash"] = file->m_hash;
+	if (currentLobby != nullptr) {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyFileAdded;
+		js["filename"] = file->m_filename;
+		js["size"] = file->m_size;
+		js["hash"] = file->m_hash;
 
-	if (currentLobby != nullptr && currentLobby->GetInfo().IsHosting) {
-		js["guid"] = UnetGuid.str();
-		m_ctx->InternalSendToAll(js);
-
-	} else if (UnetPeer == m_ctx->m_localPeer) {
-		m_ctx->InternalSendToHost(js);
+		if (currentLobby->GetInfo().IsHosting) {
+			js["guid"] = UnetGuid.str();
+			m_ctx->InternalSendToAll(js);
+		} else if (UnetPeer == m_ctx->m_localPeer) {
+			m_ctx->InternalSendToHost(js);
+		}
 	}
 }
 
 void Unet::LobbyMember::RemoveFile(const std::string &filename)
 {
-	//TODO
+	InternalRemoveFile(filename);
+
+	auto currentLobby = m_ctx->CurrentLobby();
+	assert(currentLobby != nullptr);
+
+	if (currentLobby != nullptr) {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyFileRemoved;
+		js["filename"] = filename;
+
+		if (currentLobby->GetInfo().IsHosting) {
+			js["guid"] = UnetGuid.str();
+			m_ctx->InternalSendToAll(js);
+		} else if (UnetPeer == m_ctx->m_localPeer) {
+			m_ctx->InternalSendToHost(js);
+		}
+	}
+}
+
+void Unet::LobbyMember::InternalRemoveFile(const std::string &filename)
+{
+	auto it = std::find_if(Files.begin(), Files.end(), [filename](LobbyFile * file) {
+		return file->m_filename == filename;
+	});
+
+	if (it == Files.end()) {
+		m_ctx->GetCallbacks()->OnLogError(strPrintF("No such file \"%s\"!", filename.c_str()));
+		return;
+	}
+
+	Files.erase(it);
 }

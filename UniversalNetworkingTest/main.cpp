@@ -334,6 +334,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  setmemberdata <peer> <name> <value> - Sets member lobby data (only available on the host and the local peer)");
 		LOG_INFO("  remmemberdata <peer> <name> - Removes member lobby data (only available on the host and the local peer)");
 		LOG_INFO("  addfile [filename]  - Adds a file to the available lobby files for the local member");
+		LOG_INFO("  delfile [filename]  - Removes a file from the available lobby files for the local member");
 		LOG_INFO("  kick <peer>         - Kicks the given peer with an optional reason");
 		LOG_INFO("");
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a reliable packet with a number of random bytes on channel 0");
@@ -633,7 +634,18 @@ static void HandleCommand(const s2::string &line)
 		}
 
 		s2::string filename = parse[1];
-		g_ctx->AddAvailableFile(filename, filename);
+		g_ctx->AddFile(filename, filename);
+
+		LOG_INFO("Added file \"%s\"", filename.c_str());
+
+	} else if (parse[0] == "delfile" && parse.len() == 2) {
+		if (g_ctx->CurrentLobby() == nullptr) {
+			LOG_ERROR("Not in a lobby.");
+			return;
+		}
+
+		s2::string filename = parse[1];
+		g_ctx->RemoveFile(filename);
 
 		LOG_INFO("Added file \"%s\"", filename.c_str());
 

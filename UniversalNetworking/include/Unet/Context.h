@@ -50,8 +50,9 @@ namespace Unet
 			virtual void SetPersonaName(const char* str) override;
 			virtual const char* GetPersonaName() override;
 
-			virtual void AddAvailableFile(const char* filename, const char* filenameOnDisk) override;
-			virtual void AddAvailableFile(const char* filename, uint8_t* buffer, size_t size) override;
+			virtual void AddFile(const char* filename, const char* filenameOnDisk) override;
+			virtual void AddFile(const char* filename, uint8_t* buffer, size_t size) override;
+			virtual void RemoveFile(const char* filename) override;
 
 			virtual bool IsMessageAvailable(int channel) override;
 			virtual NetworkMessageRef ReadMessage(int channel) override;

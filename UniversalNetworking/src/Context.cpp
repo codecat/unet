@@ -451,7 +451,7 @@ const char* Unet::Internal::Context::GetPersonaName()
 	return m_personaName.c_str();
 }
 
-void Unet::Internal::Context::AddAvailableFile(const char* filename, const char* filenameOnDisk)
+void Unet::Internal::Context::AddFile(const char* filename, const char* filenameOnDisk)
 {
 	if (m_currentLobby == nullptr) {
 		return;
@@ -466,7 +466,7 @@ void Unet::Internal::Context::AddAvailableFile(const char* filename, const char*
 	localMember->AddFile(filename, filenameOnDisk);
 }
 
-void Unet::Internal::Context::AddAvailableFile(const char* filename, uint8_t* buffer, size_t size)
+void Unet::Internal::Context::AddFile(const char* filename, uint8_t* buffer, size_t size)
 {
 	if (m_currentLobby == nullptr) {
 		return;
@@ -479,6 +479,21 @@ void Unet::Internal::Context::AddAvailableFile(const char* filename, uint8_t* bu
 	}
 
 	localMember->AddFile(filename, buffer, size);
+}
+
+void Unet::Internal::Context::RemoveFile(const char* filename)
+{
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	auto localMember = m_currentLobby->GetMember(m_localPeer);
+	assert(localMember != nullptr);
+	if (localMember == nullptr) {
+		return;
+	}
+
+	localMember->RemoveFile(filename);
 }
 
 bool Unet::Internal::Context::IsMessageAvailable(int channel)

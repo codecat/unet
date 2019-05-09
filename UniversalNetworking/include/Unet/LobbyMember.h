@@ -42,11 +42,13 @@ namespace Unet
 		virtual void SetData(const std::string &name, const std::string &value) override;
 		virtual void RemoveData(const std::string &name) override;
 
-	private:
+		LobbyFile* GetFile(const std::string &filename);
+
 		void AddFile(const std::string &filename, const std::string &filenameOnDisk);
 		void AddFile(const std::string &filename, uint8_t* buffer, size_t size);
 		void AddFile(LobbyFile* file);
 		void RemoveFile(const std::string &filename);
+		void InternalRemoveFile(const std::string &filename);
 	};
 
 	typedef std::unique_ptr<LobbyMember> LobbyMemberRef;

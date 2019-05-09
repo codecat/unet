@@ -89,11 +89,14 @@ namespace Unet
 		virtual const char* GetPersonaName() = 0;
 
 		// Adds a file available for all clients to download from this peer, using a local file on disk.
-		virtual void AddAvailableFile(const char* filename, const char* filenameOnDisk) = 0;
+		virtual void AddFile(const char* filename, const char* filenameOnDisk) = 0;
 
 		// Adds a file available for all clients to download from this peer, using a buffer. Context will
 		// copy the buffer, so there is no need to keep the memory around.
-		virtual void AddAvailableFile(const char* filename, uint8_t* buffer, size_t size) = 0;
+		virtual void AddFile(const char* filename, uint8_t* buffer, size_t size) = 0;
+
+		// Removes a file from the list of available files from this peer.
+		virtual void RemoveFile(const char* filename) = 0;
 
 		// Checks if a message is available on the given channel.
 		virtual bool IsMessageAvailable(int channel) = 0;
