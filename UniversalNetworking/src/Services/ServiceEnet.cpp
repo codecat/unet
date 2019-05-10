@@ -212,7 +212,7 @@ void Unet::ServiceEnet::JoinLobby(const ServiceID &id)
 
 	auto addr = IDToAddress(id);
 	size_t maxPeers = 128; //TODO: Make this customizable
-	size_t maxChannels = 3; //TODO: Make this customizable (minimum is 3!)
+	size_t maxChannels = m_numChannels + 2;
 
 	Clear(maxChannels);
 
