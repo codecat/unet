@@ -325,6 +325,8 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			js["hash"] = hash;
 			m_ctx->InternalSendToAllExcept(peerMember, js);
 
+			m_ctx->GetCallbacks()->OnLobbyFileAdded(peerMember, newFile);
+
 		} else {
 			xg::Guid guid(js["guid"].get<std::string>());
 
@@ -336,6 +338,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			}
 
 			member->Files.emplace_back(newFile);
+			m_ctx->GetCallbacks()->OnLobbyFileAdded(member, newFile);
 		}
 
 	} else if (type == LobbyPacketType::LobbyFileRemoved) {
@@ -350,6 +353,8 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			js["filename"] = filename;
 			m_ctx->InternalSendToAllExcept(peerMember, js);
 
+			m_ctx->GetCallbacks()->OnLobbyFileRemoved(peerMember, filename);
+
 		} else {
 			xg::Guid guid(js["guid"].get<std::string>());
 
@@ -360,6 +365,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			}
 
 			member->InternalRemoveFile(filename);
+			m_ctx->GetCallbacks()->OnLobbyFileRemoved(member, filename);
 		}
 
 	} else if (type == LobbyPacketType::LobbyFileRequested) {
@@ -379,6 +385,8 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 
 		m_ctx->GetCallbacks()->OnLogInfo(strPrintF("Peer %d requested file \"%s\"", (int)peerMember->UnetPeer, filename.c_str()));
 
+		m_ctx->GetCallbacks()->OnLobbyFileRequested(peerMember, file);
+
 		OutgoingFileTransfer newTransfer;
 		newTransfer.m_file = file;
 		newTransfer.m_member = peerMember;
@@ -393,9 +401,14 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			return;
 		}
 
+		//TODO: Verify that we actually requested this file
+
 		file->AppendData(binaryData, binarySize);
 
-		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("Received %d bytes from peer %d for file \"%s\", now at %.1f%%", (int)binarySize, (int)peerMember->UnetPeer, filename.c_str(), file->GetPercentage() * 100.0));
+		m_ctx->GetCallbacks()->OnLobbyFileDataReceiveProgress(peerMember, file);
+		if (file->m_availableSize == file->m_size) {
+			m_ctx->GetCallbacks()->OnLobbyFileDataReceiveFinished(peerMember, file);
+		}
 
 	} else {
 		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
@@ -680,10 +693,10 @@ void Unet::Lobby::HandleOutgoingFileTransfers()
 			bytesLeft -= sendSize;
 		}
 
-		m_ctx->GetCallbacks()->OnLogInfo(strPrintF("Sent %d blocks for file \"%s\"", numBlocks, file->m_filename.c_str()));
+		m_ctx->GetCallbacks()->OnLobbyFileDataSendProgress(transfer);
 
 		if (transfer.m_currentPos == file->m_availableSize) {
-			m_ctx->GetCallbacks()->OnLogInfo(strPrintF("File \"%s\" was sent completely!", file->m_filename.c_str()));
+			m_ctx->GetCallbacks()->OnLobbyFileDataSendFinished(transfer);
 
 			m_outgoingFileTransfers.erase(m_outgoingFileTransfers.begin() + i);
 		}

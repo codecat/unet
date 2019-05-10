@@ -79,7 +79,7 @@ void Unet::LobbyFile::AppendData(uint8_t* buffer, size_t size)
 	m_availableSize += size;
 }
 
-bool Unet::LobbyFile::IsValid()
+bool Unet::LobbyFile::IsValid() const
 {
 	if (m_buffer == nullptr) {
 		return false;
@@ -100,7 +100,12 @@ bool Unet::LobbyFile::IsValid()
 	return true;
 }
 
-double Unet::LobbyFile::GetPercentage()
+double Unet::LobbyFile::GetPercentage() const
 {
 	return m_availableSize / (double)m_size;
+}
+
+double Unet::LobbyFile::GetPercentage(const struct OutgoingFileTransfer &transfer) const
+{
+	return transfer.m_currentPos / (double)m_size;
 }

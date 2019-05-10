@@ -147,6 +147,47 @@ public:
 			LOG_FROM_CALLBACK("Lobby member data changed: \"%s\" => \"%s\"", name.c_str(), value.c_str());
 		}
 	}
+
+	virtual void OnLobbyFileAdded(const Unet::LobbyMember* member, const Unet::LobbyFile* file) override
+	{
+		LOG_FROM_CALLBACK("%s added file \"%s\"", member->Name.c_str(), file->m_filename.c_str());
+	}
+
+	virtual void OnLobbyFileRemoved(const Unet::LobbyMember* member, const std::string &filename) override
+	{
+		LOG_FROM_CALLBACK("%s removed file \"%s\"", member->Name.c_str(), filename.c_str());
+	}
+
+	virtual void OnLobbyFileRequested(const Unet::LobbyMember* receiver, const Unet::LobbyFile* file) override
+	{
+		LOG_FROM_CALLBACK("%s requested our file \"%s\" for download", receiver->Name.c_str(), file->m_filename.c_str());
+	}
+
+	virtual void OnLobbyFileDataSendProgress(const Unet::OutgoingFileTransfer& transfer) override
+	{
+		auto file = transfer.m_file;
+		auto receiver = transfer.m_member;
+
+		LOG_FROM_CALLBACK("Sending file \"%s\" to %s: %.1f%%", file->m_filename.c_str(), receiver->Name.c_str(), file->GetPercentage(transfer) * 100.0);
+	}
+
+	virtual void OnLobbyFileDataSendFinished(const Unet::OutgoingFileTransfer& transfer) override
+	{
+		auto file = transfer.m_file;
+		auto receiver = transfer.m_member;
+
+		LOG_FROM_CALLBACK("Completed sending file \"%s\" to %s!", file->m_filename.c_str(), receiver->Name.c_str());
+	}
+
+	virtual void OnLobbyFileDataReceiveProgress(const Unet::LobbyMember* sender, const Unet::LobbyFile* file) override
+	{
+		LOG_FROM_CALLBACK("Receiving file \"%s\" from %s: %.1f%%", file->m_filename.c_str(), sender->Name.c_str(), file->GetPercentage() * 100.0);
+	}
+
+	virtual void OnLobbyFileDataReceiveFinished(const Unet::LobbyMember* sender, const Unet::LobbyFile* file) override
+	{
+		LOG_FROM_CALLBACK("Completed receiving file \"%s\" from %s!", file->m_filename.c_str(), sender->Name.c_str());
+	}
 };
 
 static void RunCallbacks()

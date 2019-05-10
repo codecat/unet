@@ -29,13 +29,16 @@ namespace Unet
 		// Checks whether the data captured in this file is complete and valid. Note
 		// that this also computes and compares a hash for the entire buffer, so
 		// consider that while working in performance-critical code.
-		bool IsValid();
+		bool IsValid() const;
 
-		double GetPercentage();
+		double GetPercentage() const;
+		double GetPercentage(const struct OutgoingFileTransfer &transfer) const;
 	};
 
 	struct OutgoingFileTransfer
 	{
+		//TODO: Change these to File, Member (or Receiver?), and CurrentPos
+
 		//TODO: Don't put LobbyFile*, but use some ID (or even the hash) of the file
 		LobbyFile* m_file = nullptr;
 		//TODO: Don't use LobbyMember*, but use the UnetPeer of the member

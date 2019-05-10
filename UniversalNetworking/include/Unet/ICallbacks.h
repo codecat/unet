@@ -31,5 +31,18 @@ namespace Unet
 		// Lobby data events
 		virtual void OnLobbyDataChanged(const std::string &name) {}
 		virtual void OnLobbyMemberDataChanged(LobbyMember* member, const std::string &name) {}
+
+		// Lobby file events
+		virtual void OnLobbyFileAdded(const LobbyMember* member, const LobbyFile* file) {}
+		virtual void OnLobbyFileRemoved(const LobbyMember* member, const std::string &filename) {}
+		virtual void OnLobbyFileRequested(const LobbyMember* receiver, const LobbyFile* file) {}
+
+		// Lobby file data sending
+		virtual void OnLobbyFileDataSendProgress(const OutgoingFileTransfer& transfer) {}
+		virtual void OnLobbyFileDataSendFinished(const OutgoingFileTransfer& transfer) {}
+
+		// Lobby file data receiving
+		virtual void OnLobbyFileDataReceiveProgress(const LobbyMember* sender, const LobbyFile* file) {}
+		virtual void OnLobbyFileDataReceiveFinished(const LobbyMember* sender, const LobbyFile* file) {}
 	};
 }

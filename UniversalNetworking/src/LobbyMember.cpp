@@ -227,5 +227,6 @@ void Unet::LobbyMember::InternalRemoveFile(const std::string &filename)
 		return;
 	}
 
+	delete *it;
 	Files.erase(it);
 }
