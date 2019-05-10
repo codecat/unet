@@ -98,7 +98,14 @@ namespace Unet
 		// Removes a file from the list of available files from this peer.
 		virtual void RemoveFile(const char* filename) = 0;
 
+		// Requests a file from the given lobby member. The filename must exist on the client's list of
+		// shared files. Currently, a direct connection must exist between the two clients transferring the
+		// file. This should always be the case when transferring files between server and client.
 		virtual void RequestFile(LobbyMember* member, const char* filename) = 0;
+
+		// Requests a file from the given lobby member. Currently, a direct connection must exist between
+		// the two clients transferring the file. This should always be the case when transferring files
+		// between server and client.
 		virtual void RequestFile(LobbyMember* member, LobbyFile* file) = 0;
 
 		// Checks if a message is available on the given channel.

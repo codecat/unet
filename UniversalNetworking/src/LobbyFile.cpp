@@ -31,6 +31,8 @@ void Unet::LobbyFile::Prepare(size_t size, uint64_t hash)
 
 void Unet::LobbyFile::LoadFromFile(const std::string &filenameOnDisk)
 {
+	//TODO: Don't keep buffer in memory and just read from file when needed
+
 	if (m_buffer != nullptr) {
 		free(m_buffer);
 		m_buffer = nullptr;
