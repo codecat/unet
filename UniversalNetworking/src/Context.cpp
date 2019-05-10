@@ -94,6 +94,10 @@ void Unet::Internal::Context::RunCallbacks()
 		service->RunCallbacks();
 	}
 
+	if (m_currentLobby != nullptr) {
+		m_currentLobby->HandleOutgoingFileTransfers();
+	}
+
 	CheckCallback(this, m_callbackCreateLobby, &Context::OnLobbyCreated);
 	CheckCallback(this, m_callbackLobbyList, &Context::OnLobbyList);
 	CheckCallback(this, m_callbackLobbyJoin, &Context::OnLobbyJoined);

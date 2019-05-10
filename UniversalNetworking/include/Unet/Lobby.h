@@ -16,6 +16,7 @@ namespace Unet
 		LobbyInfo m_info;
 
 		std::vector<LobbyMember*> m_members;
+		std::vector<OutgoingFileTransfer> m_outgoingFileTransfers;
 
 	private:
 		Lobby(Internal::Context* ctx, const LobbyInfo &lobbyInfo);
@@ -49,5 +50,7 @@ namespace Unet
 
 	private:
 		int GetNextAvailablePeer();
+
+		void HandleOutgoingFileTransfers();
 	};
 }

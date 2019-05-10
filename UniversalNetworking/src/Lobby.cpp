@@ -379,33 +379,10 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 
 		m_ctx->GetCallbacks()->OnLogInfo(strPrintF("Peer %d requested file \"%s\"", (int)peerMember->UnetPeer, filename.c_str()));
 
-		json js;
-		js["t"] = (uint8_t)LobbyPacketType::LobbyFileData;
-		js["filename"] = file->m_filename;
-
-		//TODO: Make this go over a slower period of time rather than all at once, so the client has some
-		//      breathing room to do other things, both CPU and RAM.
-
-		// We use a relatively small block size to avoid making the download progress indicator too slow,
-		// as well as making sure we're under the reliable packet size limit in most cases.
-		const size_t blockSize = 1024 * 64;
-		int numBlocks = 0;
-
-		uint8_t* p = file->m_buffer;
-		size_t bytesLeft = file->m_size;
-
-		while (bytesLeft > 0) {
-			size_t sendSize = std::min(blockSize, bytesLeft);
-
-			m_ctx->InternalSendTo(peerMember, js, p, sendSize);
-
-			p += sendSize;
-			bytesLeft -= sendSize;
-
-			numBlocks++;
-		}
-
-		m_ctx->GetCallbacks()->OnLogInfo(strPrintF("File sent completely in %d blocks", numBlocks));
+		OutgoingFileTransfer newTransfer;
+		newTransfer.m_file = file;
+		newTransfer.m_member = peerMember;
+		m_outgoingFileTransfers.emplace_back(newTransfer);
 
 	} else if (type == LobbyPacketType::LobbyFileData) {
 		auto filename = js["filename"].get<std::string>();
@@ -668,4 +645,47 @@ int Unet::Lobby::GetNextAvailablePeer()
 		i++;
 	}
 	return i;
+}
+
+void Unet::Lobby::HandleOutgoingFileTransfers()
+{
+	for (int i = (int)m_outgoingFileTransfers.size() - 1; i >= 0; i--) {
+		auto &transfer = m_outgoingFileTransfers[i];
+
+		auto file = transfer.m_file;
+		auto member = transfer.m_member;
+
+		// We use a relatively small block size to avoid making the download progress indicator too slow,
+		// as well as making sure we're under the reliable packet size limit in most cases.
+		const size_t blockSize = 1024 * 64;
+		const int maxBlocks = 3;
+
+		uint8_t* p = file->m_buffer + transfer.m_currentPos;
+		size_t bytesLeft = file->m_size - transfer.m_currentPos;
+		int numBlocks = 0;
+
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyFileData;
+		js["filename"] = file->m_filename;
+
+		for (int i = 0; i < maxBlocks && bytesLeft > 0; i++) {
+			size_t sendSize = std::min(blockSize, bytesLeft);
+
+			m_ctx->InternalSendTo(member, js, p, sendSize);
+
+			p += sendSize;
+			transfer.m_currentPos += sendSize;
+			numBlocks++;
+
+			bytesLeft -= sendSize;
+		}
+
+		m_ctx->GetCallbacks()->OnLogInfo(strPrintF("Sent %d blocks for file \"%s\"", numBlocks, file->m_filename.c_str()));
+
+		if (transfer.m_currentPos == file->m_availableSize) {
+			m_ctx->GetCallbacks()->OnLogInfo(strPrintF("File \"%s\" was sent completely!", file->m_filename.c_str()));
+
+			m_outgoingFileTransfers.erase(m_outgoingFileTransfers.begin() + i);
+		}
+	}
 }

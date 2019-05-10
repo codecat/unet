@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Unet_common.h>
+#include <Unet/ServiceID.h>
 
 namespace Unet
 {
@@ -31,5 +32,14 @@ namespace Unet
 		bool IsValid();
 
 		double GetPercentage();
+	};
+
+	struct OutgoingFileTransfer
+	{
+		//TODO: Don't put LobbyFile*, but use some ID (or even the hash) of the file
+		LobbyFile* m_file = nullptr;
+		//TODO: Don't use LobbyMember*, but use the UnetPeer of the member
+		class LobbyMember* m_member = nullptr;
+		size_t m_currentPos = 0;
 	};
 }
