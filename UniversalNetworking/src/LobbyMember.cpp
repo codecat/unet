@@ -158,6 +158,16 @@ Unet::LobbyFile* Unet::LobbyMember::GetFile(const std::string &filename)
 	return nullptr;
 }
 
+Unet::LobbyFile* Unet::LobbyMember::GetFile(uint64_t hash)
+{
+	for (auto file : Files) {
+		if (file->m_hash == hash) {
+			return file;
+		}
+	}
+	return nullptr;
+}
+
 void Unet::LobbyMember::AddFile(const std::string &filename, const std::string &filenameOnDisk)
 {
 	auto newFile = new LobbyFile(filename);

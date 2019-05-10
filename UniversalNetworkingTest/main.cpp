@@ -165,16 +165,22 @@ public:
 
 	virtual void OnLobbyFileDataSendProgress(const Unet::OutgoingFileTransfer& transfer) override
 	{
-		auto file = transfer.m_file;
-		auto receiver = transfer.m_member;
+		auto currentLobby = g_ctx->CurrentLobby();
+		auto localMember = currentLobby->GetMember(g_ctx->GetLocalPeer());
+
+		auto file = localMember->GetFile(transfer.FileHash);
+		auto receiver = currentLobby->GetMember(transfer.MemberPeer);
 
 		LOG_FROM_CALLBACK("Sending file \"%s\" to %s: %.1f%%", file->m_filename.c_str(), receiver->Name.c_str(), file->GetPercentage(transfer) * 100.0);
 	}
 
 	virtual void OnLobbyFileDataSendFinished(const Unet::OutgoingFileTransfer& transfer) override
 	{
-		auto file = transfer.m_file;
-		auto receiver = transfer.m_member;
+		auto currentLobby = g_ctx->CurrentLobby();
+		auto localMember = currentLobby->GetMember(g_ctx->GetLocalPeer());
+
+		auto file = localMember->GetFile(transfer.FileHash);
+		auto receiver = currentLobby->GetMember(transfer.MemberPeer);
 
 		LOG_FROM_CALLBACK("Completed sending file \"%s\" to %s!", file->m_filename.c_str(), receiver->Name.c_str());
 	}

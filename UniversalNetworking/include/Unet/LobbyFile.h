@@ -37,12 +37,8 @@ namespace Unet
 
 	struct OutgoingFileTransfer
 	{
-		//TODO: Change these to File, Member (or Receiver?), and CurrentPos
-
-		//TODO: Don't put LobbyFile*, but use some ID (or even the hash) of the file
-		LobbyFile* m_file = nullptr;
-		//TODO: Don't use LobbyMember*, but use the UnetPeer of the member
-		class LobbyMember* m_member = nullptr;
-		size_t m_currentPos = 0;
+		uint64_t FileHash = 0;
+		int MemberPeer = 0;
+		size_t CurrentPos = 0;
 	};
 }

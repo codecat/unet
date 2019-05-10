@@ -43,6 +43,7 @@ namespace Unet
 		virtual void RemoveData(const std::string &name) override;
 
 		LobbyFile* GetFile(const std::string &filename);
+		LobbyFile* GetFile(uint64_t hash);
 
 		void AddFile(const std::string &filename, const std::string &filenameOnDisk);
 		void AddFile(const std::string &filename, uint8_t* buffer, size_t size);

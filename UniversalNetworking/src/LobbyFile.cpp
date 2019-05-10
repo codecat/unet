@@ -107,5 +107,5 @@ double Unet::LobbyFile::GetPercentage() const
 
 double Unet::LobbyFile::GetPercentage(const struct OutgoingFileTransfer &transfer) const
 {
-	return transfer.m_currentPos / (double)m_size;
+	return transfer.CurrentPos / (double)m_size;
 }

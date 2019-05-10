@@ -383,13 +383,11 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			return;
 		}
 
-		m_ctx->GetCallbacks()->OnLogInfo(strPrintF("Peer %d requested file \"%s\"", (int)peerMember->UnetPeer, filename.c_str()));
-
 		m_ctx->GetCallbacks()->OnLobbyFileRequested(peerMember, file);
 
 		OutgoingFileTransfer newTransfer;
-		newTransfer.m_file = file;
-		newTransfer.m_member = peerMember;
+		newTransfer.FileHash = file->m_hash;
+		newTransfer.MemberPeer = peerMember->UnetPeer;
 		m_outgoingFileTransfers.emplace_back(newTransfer);
 
 	} else if (type == LobbyPacketType::LobbyFileData) {
@@ -662,19 +660,27 @@ int Unet::Lobby::GetNextAvailablePeer()
 
 void Unet::Lobby::HandleOutgoingFileTransfers()
 {
+	auto localMember = GetMember(m_ctx->m_localPeer);
+
 	for (int i = (int)m_outgoingFileTransfers.size() - 1; i >= 0; i--) {
 		auto &transfer = m_outgoingFileTransfers[i];
 
-		auto file = transfer.m_file;
-		auto member = transfer.m_member;
+		auto file = localMember->GetFile(transfer.FileHash);
+		auto member = GetMember(transfer.MemberPeer);
+
+		if (file == nullptr || member == nullptr) {
+			//TODO: Run callback about canceled outgoing file transfer
+			m_outgoingFileTransfers.erase(m_outgoingFileTransfers.begin() + i);
+			continue;
+		}
 
 		// We use a relatively small block size to avoid making the download progress indicator too slow,
 		// as well as making sure we're under the reliable packet size limit in most cases.
 		const size_t blockSize = 1024 * 64;
 		const int maxBlocks = 3;
 
-		uint8_t* p = file->m_buffer + transfer.m_currentPos;
-		size_t bytesLeft = file->m_size - transfer.m_currentPos;
+		uint8_t* p = file->m_buffer + transfer.CurrentPos;
+		size_t bytesLeft = file->m_size - transfer.CurrentPos;
 		int numBlocks = 0;
 
 		json js;
@@ -687,7 +693,7 @@ void Unet::Lobby::HandleOutgoingFileTransfers()
 			m_ctx->InternalSendTo(member, js, p, sendSize);
 
 			p += sendSize;
-			transfer.m_currentPos += sendSize;
+			transfer.CurrentPos += sendSize;
 			numBlocks++;
 
 			bytesLeft -= sendSize;
@@ -695,7 +701,7 @@ void Unet::Lobby::HandleOutgoingFileTransfers()
 
 		m_ctx->GetCallbacks()->OnLobbyFileDataSendProgress(transfer);
 
-		if (transfer.m_currentPos == file->m_availableSize) {
+		if (transfer.CurrentPos == file->m_availableSize) {
 			m_ctx->GetCallbacks()->OnLobbyFileDataSendFinished(transfer);
 
 			m_outgoingFileTransfers.erase(m_outgoingFileTransfers.begin() + i);
