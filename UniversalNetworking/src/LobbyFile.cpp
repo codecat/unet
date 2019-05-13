@@ -91,9 +91,6 @@ bool Unet::LobbyFile::IsValid() const
 
 	uint64_t hash = XXH64(m_buffer, m_size, 0);
 	if (hash != m_hash) {
-		// If the hash doesn't match, something went wrong!
-		//TODO: How do we handle this gracefully? Some file transfer failure callback?
-		assert(false);
 		return false;
 	}
 

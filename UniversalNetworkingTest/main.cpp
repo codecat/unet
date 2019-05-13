@@ -190,9 +190,9 @@ public:
 		LOG_FROM_CALLBACK("Receiving file \"%s\" from %s: %.1f%%", file->m_filename.c_str(), sender->Name.c_str(), file->GetPercentage() * 100.0);
 	}
 
-	virtual void OnLobbyFileDataReceiveFinished(const Unet::LobbyMember* sender, const Unet::LobbyFile* file) override
+	virtual void OnLobbyFileDataReceiveFinished(const Unet::LobbyMember* sender, const Unet::LobbyFile* file, bool isValid) override
 	{
-		LOG_FROM_CALLBACK("Completed receiving file \"%s\" from %s!", file->m_filename.c_str(), sender->Name.c_str());
+		LOG_FROM_CALLBACK("Completed receiving file \"%s\" from %s! Valid: %s", file->m_filename.c_str(), sender->Name.c_str(), isValid ? "yes" : "no");
 	}
 };
 
