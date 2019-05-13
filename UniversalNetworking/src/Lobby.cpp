@@ -313,6 +313,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 
 		auto newFile = new LobbyFile(filename);
 		newFile->Prepare(size, hash);
+		newFile->LoadFromCache();
 
 		if (m_info.IsHosting) {
 			peerMember->Files.emplace_back(newFile);
@@ -406,6 +407,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 		m_ctx->GetCallbacks()->OnLobbyFileDataReceiveProgress(peerMember, file);
 		if (file->m_availableSize == file->m_size) {
 			m_ctx->GetCallbacks()->OnLobbyFileDataReceiveFinished(peerMember, file, file->IsValid());
+			file->SaveToCache();
 		}
 
 	} else {

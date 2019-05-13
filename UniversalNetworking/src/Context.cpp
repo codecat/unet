@@ -513,6 +513,11 @@ void Unet::Internal::Context::RequestFile(LobbyMember* member, const char* filen
 
 void Unet::Internal::Context::RequestFile(LobbyMember* member, LobbyFile* file)
 {
+	if (file->IsValid()) {
+		m_callbacks->OnLogError(strPrintF("Attempted requesting file \"%s\" from member, but the file is already valid!"));
+		return;
+	}
+
 	json js;
 	js["t"] = (uint8_t)LobbyPacketType::LobbyFileRequested;
 	js["filename"] = file->m_filename;

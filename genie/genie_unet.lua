@@ -32,3 +32,16 @@ project 'unet'
 		DIR_UNET .. 'include/**.hpp',
 		DIR_UNET .. 'include/**.h',
 	}
+
+	-- ObjC++ Files on Mac
+	if os.get() == 'macosx' then
+		files { DIR_UNET .. 'src/**.mm' }
+	end
+
+	-- System sources
+	if os.get() == 'windows' then
+		removefiles {
+			DIR_UNET .. 'src/System/SystemLinux.cpp',
+			DIR_UNET .. 'src/System/SystemMacOS.mm',
+		}
+	end

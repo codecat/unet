@@ -100,6 +100,7 @@ void Unet::LobbyMember::Deserialize(const json &js)
 		size_t size = jsFile["size"].get<size_t>();
 		uint64_t hash = jsFile["hash"].get<uint64_t>();
 		newFile->Prepare(size, hash);
+		newFile->LoadFromCache();
 		Files.emplace_back(newFile);
 	}
 }

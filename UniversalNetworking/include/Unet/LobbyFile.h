@@ -21,10 +21,14 @@ namespace Unet
 
 		void Prepare(size_t size, uint64_t hash);
 
+		std::string GetCachePath() const;
+
+		void LoadFromCache();
 		void LoadFromFile(const std::string &filenameOnDisk);
 		void Load(uint8_t* buffer, size_t size);
 
 		void AppendData(uint8_t* buffer, size_t size);
+		void SaveToCache() const;
 
 		// Checks whether the data captured in this file is complete and valid. Note
 		// that this also computes and compares a hash for the entire buffer, so

@@ -25,8 +25,28 @@ void Unet::LobbyFile::Prepare(size_t size, uint64_t hash)
 	m_availableSize = 0;
 
 	m_hash = hash;
+}
 
-	//TODO: Load from cache if we can find it
+std::string Unet::LobbyFile::GetCachePath() const
+{
+	return strPrintF("UnetCache/%016X", m_hash);
+}
+
+void Unet::LobbyFile::LoadFromCache()
+{
+	if (!System::FolderExists("UnetCache")) {
+		return;
+	}
+
+	std::string path = GetCachePath();
+
+	FILE* fh = fopen(path.c_str(), "rb");
+	if (fh == nullptr) {
+		return;
+	}
+	fclose(fh);
+
+	LoadFromFile(path);
 }
 
 void Unet::LobbyFile::LoadFromFile(const std::string &filenameOnDisk)
@@ -77,6 +97,24 @@ void Unet::LobbyFile::AppendData(uint8_t* buffer, size_t size)
 
 	memcpy(m_buffer + m_availableSize, buffer, size);
 	m_availableSize += size;
+}
+
+void Unet::LobbyFile::SaveToCache() const
+{
+	assert(IsValid());
+
+	if (!System::FolderExists("UnetCache")) {
+		System::FolderCreate("UnetCache");
+	}
+
+	std::string path = GetCachePath();
+
+	FILE* fh = fopen(path.c_str(), "wb");
+	if (fh == nullptr) {
+		return;
+	}
+	fwrite(m_buffer, 1, m_size, fh);
+	fclose(fh);
 }
 
 bool Unet::LobbyFile::IsValid() const
