@@ -66,9 +66,14 @@ end
 
 -- Link to enet
 if os.get() == 'windows' then
-	configuration 'x64'
+	configuration { 'Debug', 'x64' }
+		links { 'enet64d' }
+	configuration { 'Release', 'x64' }
 		links { 'enet64' }
-	configuration 'x32'
+
+	configuration { 'Debug', 'x32' }
+		links { 'enetd' }
+	configuration { 'Release', 'x32' }
 		links { 'enet' }
 else
 	configuration {}

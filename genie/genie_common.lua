@@ -13,4 +13,9 @@ end
 
 configuration 'Debug'
 	defines { 'DEBUG' }
+configuration 'Release'
+	defines {
+		'NDEBUG',
+		'RELEASE',
+	}
 configuration {}
