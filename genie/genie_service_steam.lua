@@ -3,21 +3,12 @@ local DIR_LIB = (path.getabsolute('..') .. '/') .. 'lib/'
 
 configuration {}
 
--- Include dirs
+-- Include dir
 includedirs {
-	DIR_UNET .. 'include/',
 	DIR_LIB .. 'steamworks/public/',
-	DIR_LIB .. 'galaxy/Include/',
-	DIR_LIB .. 'enet/include/',
 }
 
--- Library dirs
-libdirs {
-	DIR_LIB .. 'galaxy/Libraries/',
-	DIR_LIB .. 'enet/lib/',
-}
-
--- Steam dir
+-- Lib dir
 if os.get() == 'windows' then
 	configuration 'x64'
 		libdirs {
@@ -42,7 +33,7 @@ elseif os.get() == 'macosx' then
 	}
 end
 
--- Link to Steam
+-- Link
 if os.get() == 'windows' then
 	configuration 'x64'
 		links { 'steam_api64' }
@@ -52,40 +43,3 @@ else
 	configuration {}
 		links { 'steam_api' }
 end
-
--- Link to Galaxy
-if os.get() == 'linux' then
-	configuration 'x64'
-		links { 'Galaxy64' }
-	configuration 'x32'
-		links { 'Galaxy' }
-else
-	configuration {}
-		links { 'Galaxy' }
-end
-
--- Link to enet
-if os.get() == 'windows' then
-	configuration { 'Debug', 'x64' }
-		links { 'enet64d' }
-	configuration { 'Release', 'x64' }
-		links { 'enet64' }
-
-	configuration { 'Debug', 'x32' }
-		links { 'enetd' }
-	configuration { 'Release', 'x32' }
-		links { 'enet' }
-else
-	configuration {}
-		links { 'enet' }
-end
-
-if os.get() == 'windows' then
-	configuration {}
-		links {
-			'Ws2_32',
-			'Winmm',
-		}
-end
-
-configuration {}

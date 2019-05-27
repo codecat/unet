@@ -1,5 +1,8 @@
 DIR_ROOT = (path.getabsolute('..') .. '/')
 
+dofile('genie_unet.lua')
+dofile('genie_unet_test.lua')
+
 solution 'UniversalNetworking'
 	language 'C++'
 	location('Projects/' .. _ACTION)
@@ -37,5 +40,12 @@ solution 'UniversalNetworking'
 		flags { 'OptimizeSpeed' }
 
 	-- Projects
-	dofile('genie_unet.lua')
-	dofile('genie_unet_test.lua')
+	options = {
+		modules = {
+			'steam',
+			'galaxy',
+			'enet'
+		}
+	}
+	unet_project(options)
+	unet_test_project(options)
