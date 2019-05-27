@@ -30,8 +30,31 @@ function unet_defines()
 end
 
 -- Include all modules from the given list
-function unet_services(modules)
-	for _, v in pairs(modules) do
-		dofile('genie_service_' .. v .. '.lua')
+function unet_modules(modules, core)
+	for k, v in pairs(modules) do
+		local f = dofile('genie_service_' .. k .. '.lua')
+		if f then
+			f(v, core)
+			defines { 'UNET_MODULE_' .. k:upper() }
+		end
+	end
+end
+
+-- Sets the project up for building with the guid code
+function unet_guid()
+	-- Guid defines
+	if os.get() == 'windows' then
+		defines { 'GUID_WINDOWS' }
+	elseif os.get() == 'linux' then
+		defines { 'GUID_LIBUUID' }
+	elseif os.get() == 'macosx' then
+		defines { 'GUID_CFUUID' }
+	end
+
+	-- Guid links
+	if os.get() == 'linux' then
+		links { 'uuid' }
+	elseif os.get() == 'macosx' then
+		links { 'CoreFoundation.framework' }
 	end
 end

@@ -19,7 +19,8 @@ function unet_test_project(options)
 		configuration {}
 
 		unet_defines()
-		unet_services(options.modules)
+		unet_modules(options.modules)
+		unet_guid()
 
 		-- Files
 		files {
@@ -40,14 +41,7 @@ function unet_test_project(options)
 			'unet',
 		}
 
-		-- Guid links
-		if os.get() == 'linux' then
-			links { 'uuid' }
-		elseif os.get() == 'macosx' then
-			links { 'CoreFoundation.framework' }
-		end
-
-		-- MacOS rpath
+		-- Specify rpath
 		if os.get() == 'linux' then
 			linkoptions { '-Wl,-rpath,.' }
 		elseif os.get() == 'macosx' then

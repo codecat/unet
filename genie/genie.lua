@@ -42,9 +42,9 @@ solution 'UniversalNetworking'
 	-- Projects
 	options = {
 		modules = {
-			'steam',
-			'galaxy',
-			'enet'
+			steam = { link = true },
+			galaxy = { link = true },
+			enet = { link = true },
 		}
 	}
 	unet_project(options)

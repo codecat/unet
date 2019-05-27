@@ -9,9 +9,17 @@
 #define S2_IMPL
 #include "s2string.h"
 
-#include <steam/steam_api.h>
-#include <galaxy/GalaxyApi.h>
-#include <enet/enet.h>
+#if defined(UNET_MODULE_STEAM)
+#	include <steam/steam_api.h>
+#endif
+
+#if defined(UNET_MODULE_GALAXY)
+#	include <galaxy/GalaxyApi.h>
+#endif
+
+#if defined(UNET_MODULE_ENET)
+#	include <enet/enet.h>
+#endif
 
 #if defined(PLATFORM_WINDOWS)
 #include <Windows.h>
@@ -198,10 +206,13 @@ public:
 
 static void RunCallbacks()
 {
+#if defined(UNET_MODULE_STEAM)
 	if (g_steamEnabled) {
 		SteamAPI_RunCallbacks();
 	}
+#endif
 
+#if defined(UNET_MODULE_GALAXY)
 	if (g_galaxyEnabled) {
 		try {
 			galaxy::api::ProcessData();
@@ -209,6 +220,7 @@ static void RunCallbacks()
 			LOG_ERROR("Failed to run Galaxy callbacks: %s", error.GetMsg());
 		}
 	}
+#endif
 
 	g_ctx->RunCallbacks();
 
@@ -223,6 +235,7 @@ static void RunCallbacks()
 	}
 }
 
+#if defined(UNET_MODULE_STEAM)
 static void InitializeSteam(const char* appId)
 {
 	LOG_INFO("Enabling Steam service (App ID %s)", appId);
@@ -238,7 +251,9 @@ static void InitializeSteam(const char* appId)
 		LOG_ERROR("Failed to initialize Steam API!");
 	}
 }
+#endif
 
+#if defined(UNET_MODULE_GALAXY)
 class GalaxyAuthListener : public galaxy::api::GlobalAuthListener
 {
 public:
@@ -260,7 +275,9 @@ public:
 	}
 };
 static GalaxyAuthListener* g_authListener = nullptr;
+#endif
 
+#if defined(UNET_MODULE_GALAXY) && defined(UNET_MODULE_STEAM)
 class SteamTicketCallback
 {
 public:
@@ -289,7 +306,9 @@ public:
 	}
 };
 static SteamTicketCallback g_steamTicketCallback;
+#endif
 
+#if defined(UNET_MODULE_GALAXY)
 static void InitializeGalaxy(const char* clientId, const char* clientSecret)
 {
 	LOG_INFO("Enabling Galaxy service (client ID %s)", clientId);
@@ -321,7 +340,9 @@ static void InitializeGalaxy(const char* clientId, const char* clientSecret)
 		RunCallbacks();
 	}
 }
+#endif
 
+#if defined(UNET_MODULE_ENET)
 static void InitializeEnet()
 {
 	LOG_INFO("Initializing Enet");
@@ -329,6 +350,7 @@ static void InitializeEnet()
 	g_enetEnabled = true;
 	enet_initialize();
 }
+#endif
 
 static bool IsKeyPressed()
 {
@@ -421,28 +443,39 @@ static void HandleCommand(const s2::string &line)
 	} else if (parse[0] == "enable" && parse.len() >= 2) {
 		auto serviceName = parse[1];
 		auto serviceType = Unet::GetServiceTypeByName(serviceName);
+
+#if defined(UNET_MODULE_STEAM)
 		if (!g_steamEnabled && serviceType == Unet::ServiceType::Steam && parse.len() == 3) {
 			InitializeSteam(parse[2]);
 
 			if (g_steamEnabled) {
 				g_ctx->EnableService(Unet::ServiceType::Steam);
 			}
+		} else
+#endif
 
-		} else if (!g_galaxyEnabled && serviceType == Unet::ServiceType::Galaxy && parse.len() == 4) {
+#if defined(UNET_MODULE_GALAXY)
+		if (!g_galaxyEnabled && serviceType == Unet::ServiceType::Galaxy && parse.len() == 4) {
 			InitializeGalaxy(parse[2], parse[3]);
 
 			if (g_galaxyEnabled) {
 				g_ctx->EnableService(Unet::ServiceType::Galaxy);
 			}
+		} else
+#endif
 
-		} else if (!g_enetEnabled) {
+#if defined(UNET_MODULE_ENET)
+		if (!g_enetEnabled && serviceType == Unet::ServiceType::Enet) {
 			InitializeEnet();
 
 			if (g_enetEnabled) {
 				g_ctx->EnableService(Unet::ServiceType::Enet);
 			}
+		} else
+#endif
 
-		} else {
+		// Note: We need this condition so that the above else clauses make sense, even if there are no modules at all!
+		if (true) {
 			LOG_ERROR("Unable to find service by the name of '%s' that takes %d parameters", serviceName.c_str(), (int)parse.len() - 2);
 		}
 
@@ -977,6 +1010,7 @@ int main(int argc, const char* argv[])
 	for (int i = 1; i < argc; i++) {
 		s2::string arg = argv[i];
 
+#if defined(UNET_MODULE_STEAM)
 		if (arg == "--steam" && i + 1 < argc) {
 			const char* appIdStr = argv[++i];
 			InitializeSteam(appIdStr);
@@ -986,7 +1020,9 @@ int main(int argc, const char* argv[])
 			}
 			continue;
 		}
+#endif
 
+#if defined(UNET_MODULE_GALAXY)
 		if (arg == "--galaxy" && i + 2 < argc) {
 			const char* clientId = argv[++i];
 			const char* clientSecret = argv[++i];
@@ -997,7 +1033,9 @@ int main(int argc, const char* argv[])
 			}
 			continue;
 		}
+#endif
 
+#if defined(UNET_MODULE_ENET)
 		if (arg == "--enet") {
 			InitializeEnet();
 
@@ -1006,6 +1044,7 @@ int main(int argc, const char* argv[])
 			}
 			continue;
 		}
+#endif
 
 		if (arg == "--primary" && i + 1 < argc) {
 			g_ctx->SetPrimaryService(Unet::GetServiceTypeByName(argv[++i]));
@@ -1031,12 +1070,16 @@ int main(int argc, const char* argv[])
 
 	Unet::DestroyContext(g_ctx);
 
+#if defined(UNET_MODULE_STEAM)
 	SteamAPI_Shutdown();
+#endif
 
+#if defined(UNET_MODULE_GALAXY)
 	if (g_authListener != nullptr) {
 		delete g_authListener;
 	}
 	galaxy::api::Shutdown();
+#endif
 
 	enet_deinitialize();
 

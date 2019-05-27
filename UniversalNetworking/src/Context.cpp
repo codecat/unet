@@ -1,9 +1,19 @@
 #include <Unet_common.h>
 #include <Unet/Context.h>
 #include <Unet/Service.h>
-#include <Unet/Services/ServiceSteam.h>
-#include <Unet/Services/ServiceGalaxy.h>
-#include <Unet/Services/ServiceEnet.h>
+
+#if defined(UNET_MODULE_STEAM)
+#	include <Unet/Services/ServiceSteam.h>
+#endif
+
+#if defined(UNET_MODULE_GALAXY)
+#	include <Unet/Services/ServiceGalaxy.h>
+#endif
+
+#if defined(UNET_MODULE_ENET)
+#	include <Unet/Services/ServiceEnet.h>
+#endif
+
 #include <Unet/LobbyPacket.h>
 
 #define XXH_INLINE_ALL
@@ -259,9 +269,18 @@ void Unet::Internal::Context::EnableService(ServiceType service)
 {
 	Service* newService = nullptr;
 	switch (service) {
+#if defined(UNET_MODULE_STEAM)
 	case ServiceType::Steam: newService = new ServiceSteam(this, m_numChannels); break;
+#endif
+
+#if defined(UNET_MODULE_GALAXY)
 	case ServiceType::Galaxy: newService = new ServiceGalaxy(this, m_numChannels); break;
+#endif
+
+#if defined(UNET_MODULE_ENET)
 	case ServiceType::Enet: newService = new ServiceEnet(this, m_numChannels); break;
+#endif
+
 	default: assert(false);
 	}
 
