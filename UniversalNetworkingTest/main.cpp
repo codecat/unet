@@ -352,13 +352,20 @@ static void InitializeEnet()
 }
 #endif
 
+static void UnetSleep(int ms)
+{
+#if defined(PLATFORM_WINDOWS)
+	Sleep(ms);
+#else
+	usleep(ms * 1000);
+#endif
+}
+
 static bool IsKeyPressed()
 {
 #if defined(PLATFORM_WINDOWS)
-	Sleep(1);
 	return WaitForSingleObject(GetStdHandle(STD_INPUT_HANDLE), 0) == WAIT_OBJECT_0;
 #else
-	usleep(1000);
 	struct pollfd pls[1];
 	pls[0].fd = STDIN_FILENO;
 	pls[0].events = POLLIN | POLLPRI;
@@ -411,7 +418,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  send <peer> <num>   - Sends the given peer a reliable packet with a number of random bytes on channel 0");
 		LOG_INFO("  sendu <peer> <num>  - Sends the given peer an unreliable packet with a number of random bytes on channel 0");
 		LOG_INFO("");
-		LOG_INFO("  test-limit <peer>   - Sends the given peer some reliable packets around Steam's reliable packet size limit");
+		LOG_INFO("  stress <peer> <sec> - Stress test the given peer for the given amount of seconds.");
 		LOG_INFO("");
 		LOG_INFO("Or just hit Enter to run callbacks.");
 
@@ -544,6 +551,8 @@ static void HandleCommand(const s2::string &line)
 
 		while (true) {
 			RunCallbacks();
+
+			UnetSleep(1);
 
 			if (IsKeyPressed()) {
 				break;
@@ -905,8 +914,9 @@ static void HandleCommand(const s2::string &line)
 			LOG_INFO("0x%X unreliable bytes sent to peer %d: \"%s\"!", num, member->UnetPeer, member->Name.c_str());
 		}
 
-	} else if (parse[0] == "test-limit" && parse.len() == 2) {
+	} else if (parse[0] == "stress" && parse.len() == 3) {
 		int peer = atoi(parse[1]);
+		int sec = atoi(parse[2]);
 
 		auto currentLobby = g_ctx->CurrentLobby();
 		if (currentLobby == nullptr) {
@@ -920,21 +930,55 @@ static void HandleCommand(const s2::string &line)
 			return;
 		}
 
-		size_t sizeLimit = 1024 * 1024;
+		const size_t maxSmallSize = 200;
+		const size_t maxMediumSize = 2000;
+		const size_t maxBigSize = 1024 * 1024 * 3;
 
-		uint8_t* bytes = (uint8_t*)malloc(sizeLimit + 10);
-		if (bytes != nullptr) {
-			for (size_t i = 0; i < sizeLimit + 10; i++) {
-				bytes[i] = (uint8_t)(rand() % 255);
+		uint8_t* randomBuffer = (uint8_t*)malloc(maxBigSize);
+
+		time_t startTime = time(nullptr);
+		while (true) {
+			RunCallbacks();
+
+			UnetSleep(100);
+
+			time_t nowTime = time(nullptr);
+			time_t timeSpent = nowTime - startTime;
+			if (timeSpent > sec) {
+				break;
 			}
 
-			for (size_t size = sizeLimit - 10; size < sizeLimit + 10; size++) {
-				LOG_INFO("Sending packet of size 0x%X", (uint32_t)size);
-				g_ctx->SendTo(member, bytes, size);
+			Unet::PacketType type = Unet::PacketType::Unreliable;
+			if ((rand() % 2) == 1) {
+				// 50% chance to be a reliable packet
+				type = Unet::PacketType::Reliable;
 			}
 
-			free(bytes);
+			size_t maxSize = maxSmallSize;
+			if (rand() % 100 > 70) {
+				// 30% chance to be a medium packet
+				maxSize = maxMediumSize;
+			} else if (rand() % 100 > 90) {
+				// 10% chance to be a big packet
+				maxSize = maxBigSize;
+			}
+
+			size_t size;
+			do {
+				size = rand() % maxSize;
+			} while (size == 0);
+
+			for (size_t i = 0; i < size; i++) {
+				randomBuffer[i] = (uint8_t)(rand() % 255);
+			}
+
+			g_ctx->SendTo(member, randomBuffer, size, type);
+			LOG_DEBUG("Sent 0x%X bytes %sreliably", (int)size, type == Unet::PacketType::Unreliable ? "un" : "");
 		}
+
+		LOG_INFO("Done!");
+
+		free(randomBuffer);
 
 	} else {
 		LOG_ERROR("Unknown command \"%s\"! Try \"help\".", parse[0].c_str());
@@ -1002,6 +1046,8 @@ static s2::string ReadLine()
 
 int main(int argc, const char* argv[])
 {
+	srand((unsigned int)time(nullptr));
+
 	g_ctx = Unet::CreateContext();
 	g_ctx->SetCallbacks(new TestCallbacks);
 
