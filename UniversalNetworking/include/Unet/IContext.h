@@ -3,6 +3,7 @@
 #include <Unet_common.h>
 #include <Unet/NetworkMessage.h>
 #include <Unet/LobbyMember.h>
+#include <Unet/LobbyListFilter.h>
 
 namespace Unet
 {
@@ -52,7 +53,7 @@ namespace Unet
 		// Note that only valid Unet lobbies will be listed, non-Unet lobbies are ignored.
 		//
 		// The callback OnLobbyList will be called with a LobbyListResult object.
-		virtual void GetLobbyList() = 0;
+		virtual void GetLobbyList(const LobbyListFilter &filter) = 0;
 
 		// Joins a lobby by the lobby info. This will connect to all entry points that are contained
 		// within the lobby info.

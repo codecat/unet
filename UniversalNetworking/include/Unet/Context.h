@@ -37,7 +37,7 @@ namespace Unet
 			virtual void SimulateServiceOutage(ServiceType service) override;
 
 			virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name = nullptr) override;
-			virtual void GetLobbyList() override;
+			virtual void GetLobbyList(const LobbyListFilter &filter) override;
 			virtual void JoinLobby(LobbyInfo &lobbyInfo) override;
 			virtual void JoinLobby(const ServiceID &id) override;
 			virtual void LeaveLobby(LeaveReason reason = LeaveReason::UserLeave) override;

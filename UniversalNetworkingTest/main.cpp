@@ -93,7 +93,7 @@ public:
 
 		g_lastLobbyList = result;
 
-		LOG_FROM_CALLBACK("%d lobbies:", (int)result.Lobbies.size());
+		LOG_FROM_CALLBACK("%d lobbies: (%d filtered)", (int)result.Lobbies.size(), result.NumFiltered);
 		for (size_t i = 0; i < result.Lobbies.size(); i++) {
 			auto &lobbyInfo = result.Lobbies[i];
 			LOG_FROM_CALLBACK("  [%d] \"%s\" (max %d)", (int)i, lobbyInfo.Name.c_str(), lobbyInfo.MaxPlayers);
@@ -577,7 +577,8 @@ static void HandleCommand(const s2::string &line)
 		}
 
 	} else if (parse[0] == "list") {
-		g_ctx->GetLobbyList();
+		Unet::LobbyListFilter filter;
+		g_ctx->GetLobbyList(filter);
 
 	} else if (parse[0] == "data") {
 		std::vector<Unet::LobbyData> lobbyData;

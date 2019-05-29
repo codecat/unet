@@ -346,10 +346,13 @@ void Unet::Internal::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, 
 	}
 }
 
-void Unet::Internal::Context::GetLobbyList()
+void Unet::Internal::Context::GetLobbyList(const LobbyListFilter &filter)
 {
 	m_callbackLobbyList.Begin();
-	m_callbackLobbyList.GetResult().Ctx = this;
+
+	auto &result = m_callbackLobbyList.GetResult();
+	result.Ctx = this;
+	result.Filter = filter;
 
 	for (auto service : m_services) {
 		service->GetLobbyList();
@@ -886,7 +889,31 @@ void Unet::Internal::Context::OnLobbyList(const LobbyListResult &result)
 {
 	LobbyListResult newResult(result);
 
-	for (auto &lobbyInfo : newResult.Lobbies) {
+	for (int i = (int)newResult.Lobbies.size() - 1; i >= 0; i--) {
+		auto &lobbyInfo = newResult.Lobbies[i];
+
+		bool passesFilter = true;
+		for (auto &stringFilter : newResult.Filter.m_stringFilters) {
+			std::string value = result.GetLobbyData(lobbyInfo, stringFilter.m_key.c_str());
+			if (stringFilter.m_type == LobbyListFilter::StringFilter::Matches) {
+				if (value != stringFilter.m_value) {
+					passesFilter = false;
+					break;
+				}
+			} else if (stringFilter.m_type == LobbyListFilter::StringFilter::Contains) {
+				if (value.find(stringFilter.m_value) == std::string::npos) {
+					passesFilter = false;
+					break;
+				}
+			}
+		}
+
+		if (!passesFilter) {
+			newResult.Lobbies.erase(newResult.Lobbies.begin() + i);
+			newResult.NumFiltered++;
+			continue;
+		}
+
 		lobbyInfo.MaxPlayers = result.GetLobbyMaxPlayers(lobbyInfo);
 		lobbyInfo.Name = result.GetLobbyData(lobbyInfo, "unet-name");
 	}
