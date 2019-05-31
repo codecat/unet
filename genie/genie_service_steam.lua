@@ -17,7 +17,7 @@ return function(options, core)
 
 	-- Include dir
 	includedirs {
-		options.dir .. '/public/',
+		options.dir .. 'public/',
 	}
 
 	if options.link then
@@ -25,24 +25,24 @@ return function(options, core)
 		if os.get() == 'windows' then
 			configuration 'x64'
 				libdirs {
-					options.dir .. '/redistributable_bin/win64/',
+					options.dir .. 'redistributable_bin/win64/',
 				}
 			configuration 'x32'
 				libdirs {
-					options.dir .. '/redistributable_bin/',
+					options.dir .. 'redistributable_bin/',
 				}
 		elseif os.get() == 'linux' then
 			configuration 'x64'
 				libdirs {
-					options.dir .. '/redistributable_bin/linux64/',
+					options.dir .. 'redistributable_bin/linux64/',
 				}
 			configuration 'x32'
 				libdirs {
-					options.dir .. '/redistributable_bin/linux32/',
+					options.dir .. 'redistributable_bin/linux32/',
 				}
 		elseif os.get() == 'macosx' then
 			libdirs {
-				options.dir .. '/redistributable_bin/osx32/',
+				options.dir .. 'redistributable_bin/osx32/',
 			}
 		end
 

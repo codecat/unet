@@ -1,7 +1,7 @@
 -- Verifies and returns a valid options object
 function unet_verify_options(options)
 	if not options then options = {} end
-	if not options.modules then options.modules = { 'enet' } end
+	if not options.modules then options.modules = { enet = { link = true } } end
 	return options
 end
 
