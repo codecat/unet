@@ -1,3 +1,5 @@
+local DIR_GENIE = (path.getabsolute('.') .. '/')
+
 -- Verifies and returns a valid options object
 function unet_verify_options(options)
 	if not options then options = {} end
@@ -32,7 +34,7 @@ end
 -- Include all modules from the given list
 function unet_modules(modules, core)
 	for k, v in pairs(modules) do
-		local f = dofile('genie_service_' .. k .. '.lua')
+		local f = dofile(DIR_GENIE .. 'genie_service_' .. k .. '.lua')
 		if f then
 			f(v, core)
 			defines { 'UNET_MODULE_' .. k:upper() }
