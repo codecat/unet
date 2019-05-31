@@ -1,5 +1,5 @@
 # Unet
-Universal Networking for lobbies.
+Unified Networking for lobbies.
 
 ## Technical info
 Internally, each service sends packets on 3 or more separate channels.
