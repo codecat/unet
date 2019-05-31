@@ -1,12 +1,12 @@
 DIR_ROOT = (path.getabsolute('..') .. '/')
 
 dofile('genie_unet.lua')
-dofile('genie_unet_test.lua')
+dofile('genie_unet_cli.lua')
 
-solution 'UniversalNetworking'
+solution 'Unet'
 	language 'C++'
 	location('Projects/' .. _ACTION)
-	startproject 'unet_test'
+	startproject 'unet_cli'
 
 	-- Configurations
 	configurations {
@@ -48,4 +48,4 @@ solution 'UniversalNetworking'
 		}
 	}
 	unet_project(options)
-	unet_test_project(options)
+	unet_cli_project(options)

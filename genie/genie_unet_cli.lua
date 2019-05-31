@@ -1,13 +1,12 @@
 local DIR_ROOT = (path.getabsolute('..') .. '/')
-local DIR_UNET = DIR_ROOT .. 'UniversalNetworking/'
-local DIR_UNET_TEST = DIR_ROOT .. 'UniversalNetworkingTest/'
+local DIR_CLI = DIR_ROOT .. 'cli/'
 
 dofile('genie_common.lua')
 
-function unet_test_project(options)
+function unet_cli_project(options)
 	options = unet_verify_options(options)
 
-	project 'unet_test'
+	project 'unet_cli'
 		kind('ConsoleApp')
 
 		configuration 'Debug'
@@ -24,16 +23,16 @@ function unet_test_project(options)
 
 		-- Files
 		files {
-			DIR_UNET_TEST .. '**.cpp',
-			DIR_UNET_TEST .. '**.c',
-			DIR_UNET_TEST .. '**.hpp',
-			DIR_UNET_TEST .. '**.h',
+			DIR_CLI .. '**.cpp',
+			DIR_CLI .. '**.c',
+			DIR_CLI .. '**.hpp',
+			DIR_CLI .. '**.h',
 		}
 
 		-- Includes
 		includedirs {
-			DIR_UNET_TEST,
-			DIR_UNET .. 'include/',
+			DIR_CLI,
+			DIR_ROOT .. 'include/',
 		}
 
 		-- Links

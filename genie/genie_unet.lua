@@ -1,4 +1,4 @@
-local DIR_UNET = (path.getabsolute('..') .. '/') .. 'UniversalNetworking/'
+local DIR_ROOT = (path.getabsolute('..') .. '/')
 
 dofile('genie_common.lua')
 
@@ -9,11 +9,11 @@ function unet_project(options)
 		kind 'StaticLib'
 
 		includedirs {
-			DIR_UNET .. 'include/',
+			DIR_ROOT .. 'include/',
 		}
 
 		pchheader 'Unet_common.h'
-		pchsource(DIR_UNET .. 'src/Unet_common.cpp')
+		pchsource(DIR_ROOT .. 'src/Unet_common.cpp')
 
 		unet_defines()
 		unet_modules(options.modules, true)
@@ -21,25 +21,25 @@ function unet_project(options)
 
 		-- Files
 		files {
-			DIR_UNET .. 'src/*.cpp',
-			DIR_UNET .. 'src/*.c',
-			DIR_UNET .. 'src/Results/*.cpp',
-			DIR_UNET .. 'include/**.hpp',
-			DIR_UNET .. 'include/**.h',
+			DIR_ROOT .. 'src/*.cpp',
+			DIR_ROOT .. 'src/*.c',
+			DIR_ROOT .. 'src/Results/*.cpp',
+			DIR_ROOT .. 'include/**.hpp',
+			DIR_ROOT .. 'include/**.h',
 		}
 
 		-- System sources
 		if os.get() == 'windows' then
 			files {
-				DIR_UNET .. 'src/System/SystemWindows.cpp',
+				DIR_ROOT .. 'src/System/SystemWindows.cpp',
 			}
 		elseif os.get() == 'linux' then
 			files {
-				DIR_UNET .. 'src/System/SystemLinux.cpp',
+				DIR_ROOT .. 'src/System/SystemLinux.cpp',
 			}
 		elseif os.get() == 'macosx' then
 			files {
-				DIR_UNET .. 'src/System/SystemMacOS.mm',
+				DIR_ROOT .. 'src/System/SystemMacOS.mm',
 			}
 		end
 end

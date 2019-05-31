@@ -1,5 +1,5 @@
-local DIR_UNET = (path.getabsolute('..') .. '/') .. 'UniversalNetworking/'
-local DIR_LIB = (path.getabsolute('..') .. '/') .. 'lib/'
+local DIR_ROOT = (path.getabsolute('..') .. '/')
+local DIR_LIB = DIR_ROOT .. 'lib/'
 
 return function(options, core)
 	if not options then options = {} end
@@ -10,8 +10,8 @@ return function(options, core)
 	if core then
 		-- Files
 		files {
-			DIR_UNET .. 'include/Unet/Services/ServiceSteam.h',
-			DIR_UNET .. 'src/Services/ServiceSteam.cpp',
+			DIR_ROOT .. 'include/Unet/Services/ServiceSteam.h',
+			DIR_ROOT .. 'src/Services/ServiceSteam.cpp',
 		}
 	end
 

@@ -8,4 +8,4 @@ if not ["%errorlevel%"]==["0"] (
 	exit /b %errorlevel%
 )
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.exe" projects/vs2017/UniversalNetworking.sln
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.exe" projects/vs2017/Unet.sln

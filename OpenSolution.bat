@@ -8,4 +8,4 @@ if not ["%errorlevel%"]==["0"] (
 	exit /b %errorlevel%
 )
 
-start projects/vs2017/UniversalNetworking.sln
+start projects/vs2017/Unet.sln
