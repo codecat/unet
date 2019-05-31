@@ -16,7 +16,6 @@
 
 #include <Unet/LobbyPacket.h>
 
-#define XXH_INLINE_ALL
 #include <Unet/xxhash.h>
 
 Unet::Internal::Context::Context(int numChannels)

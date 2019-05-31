@@ -103,10 +103,6 @@ static void* XXH_memcpy(void* dest, const void* src, size_t size) { return memcp
 #include <assert.h>   /* assert */
 
 #define XXH_STATIC_LINKING_ONLY
-//TODO: Hack.. UGH
-#ifdef WIN32
-#undef WIN32
-#endif
 #include <Unet/xxhash.h>
 
 

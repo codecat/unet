@@ -28,6 +28,10 @@ function unet_project(options)
 			DIR_ROOT .. 'include/**.h',
 		}
 
+		-- Remove xxhash.cpp because we're using it with XXH_INLINE_ALL
+		removefiles { DIR_ROOT .. 'src/xxhash.cpp' }
+		defines { 'XXH_INLINE_ALL' }
+
 		-- System sources
 		if os.get() == 'windows' then
 			files {
