@@ -75,6 +75,10 @@ namespace Unet
 		// Kick a member from the lobby. We must be the host in order to kick someone.
 		virtual void KickMember(LobbyMember* member) = 0;
 
+		// Check if we're currently hosting. Returns false if we're a client or if we're not currently in
+		// a lobby.
+		virtual bool IsHosting() = 0;
+
 		// Get the lobby that the we're currently in.
 		virtual Lobby* CurrentLobby() = 0;
 

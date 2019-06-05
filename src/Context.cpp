@@ -456,6 +456,15 @@ void Unet::Internal::Context::KickMember(LobbyMember* member)
 	InternalSendTo(member, js);
 }
 
+bool Unet::Internal::Context::IsHosting()
+{
+	if (m_currentLobby == nullptr) {
+		return false;
+	}
+
+	return m_currentLobby->GetInfo().IsHosting;
+}
+
 Unet::Lobby* Unet::Internal::Context::CurrentLobby()
 {
 	return m_currentLobby;

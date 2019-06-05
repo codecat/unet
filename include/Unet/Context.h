@@ -44,6 +44,7 @@ namespace Unet
 
 			virtual void KickMember(LobbyMember* member) override;
 
+			virtual bool IsHosting() override;
 			virtual Lobby* CurrentLobby() override;
 			virtual int GetLocalPeer() override;
 
