@@ -35,6 +35,9 @@ namespace Unet
 		// using EnableService.
 		virtual void SetPrimaryService(ServiceType service) = 0;
 
+		// Gets the currently set primary service.
+		virtual ServiceType GetPrimaryService() = 0;
+
 		// Enable a service.
 		virtual void EnableService(ServiceType service) = 0;
 

@@ -267,6 +267,11 @@ void Unet::Internal::Context::SetPrimaryService(ServiceType service)
 	m_personaName = s->GetUserName();
 }
 
+Unet::ServiceType Unet::Internal::Context::GetPrimaryService()
+{
+	return m_primaryService;
+}
+
 void Unet::Internal::Context::EnableService(ServiceType service)
 {
 	Service* newService = nullptr;

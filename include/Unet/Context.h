@@ -32,6 +32,7 @@ namespace Unet
 			virtual void RunCallbacks() override;
 
 			virtual void SetPrimaryService(ServiceType service) override;
+			virtual ServiceType GetPrimaryService() override;
 			virtual void EnableService(ServiceType service) override;
 			virtual int ServiceCount() override;
 			virtual void SimulateServiceOutage(ServiceType service) override;
