@@ -44,5 +44,8 @@ namespace Unet
 		// Lobby file data receiving
 		virtual void OnLobbyFileDataReceiveProgress(const LobbyMember* sender, const LobbyFile* file) {}
 		virtual void OnLobbyFileDataReceiveFinished(const LobbyMember* sender, const LobbyFile* file, bool isValid) {}
+
+		// Lobby chat
+		virtual void OnLobbyChat(const LobbyMember* sender, const char* text) {}
 	};
 }

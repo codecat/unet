@@ -557,6 +557,32 @@ void Unet::Internal::Context::RequestFile(LobbyMember* member, LobbyFile* file)
 	InternalSendTo(member, js);
 }
 
+void Unet::Internal::Context::SendChat(const char* message)
+{
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	if (m_callbacks != nullptr) {
+		auto localMember = m_currentLobby->GetMember(m_localGuid);
+		m_callbacks->OnLobbyChat(localMember, message);
+	}
+
+	if (m_currentLobby->m_info.IsHosting) {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyChatMessage;
+		js["guid"] = m_localGuid.str();
+		js["text"] = message;
+		InternalSendToAll(js);
+
+	} else {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyChatMessage;
+		js["text"] = message;
+		InternalSendToHost(js);
+	}
+}
+
 bool Unet::Internal::Context::IsMessageAvailable(int channel)
 {
 	if (channel < 0) {

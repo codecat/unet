@@ -47,5 +47,9 @@ namespace Unet
 		LobbyFileRequested,
 		// Sent by the client to respond to a client's request for a file
 		LobbyFileData,
+
+		// Sent by the client to announce a chat message they wrote
+		// Sent by the server to announce a chat message was sent by a client
+		LobbyChatMessage,
 	};
 }

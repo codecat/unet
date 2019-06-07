@@ -410,6 +410,30 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			file->SaveToCache();
 		}
 
+	} else if (type == LobbyPacketType::LobbyChatMessage) {
+		auto text = js["text"].get<std::string>();
+
+		if (m_info.IsHosting) {
+			m_ctx->GetCallbacks()->OnLobbyChat(peerMember, text.c_str());
+
+			js = json::object();
+			js["t"] = (uint8_t)LobbyPacketType::LobbyChatMessage;
+			js["guid"] = peerMember->UnetGuid.str();
+			js["text"] = text;
+			m_ctx->InternalSendToAllExcept(peerMember, js);
+
+		} else {
+			xg::Guid guid(js["guid"].get<std::string>());
+
+			auto member = GetMember(guid);
+			assert(member != nullptr);
+			if (member == nullptr) {
+				return;
+			}
+
+			m_ctx->GetCallbacks()->OnLobbyChat(member, text.c_str());
+		}
+
 	} else {
 		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("P2P packet type was not recognized: %d", (int)type));
 	}

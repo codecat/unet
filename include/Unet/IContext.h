@@ -113,6 +113,10 @@ namespace Unet
 		// between server and client.
 		virtual void RequestFile(LobbyMember* member, LobbyFile* file) = 0;
 
+		// Sends a chat message to the lobby. This will also immediately trigger OnLobbyChat in the callbacks
+		// for the local chat message.
+		virtual void SendChat(const char* message) = 0;
+
 		// Checks if a message is available on the given channel.
 		virtual bool IsMessageAvailable(int channel) = 0;
 

@@ -202,6 +202,15 @@ public:
 	{
 		LOG_FROM_CALLBACK("Completed receiving file \"%s\" from %s! Valid: %s", file->m_filename.c_str(), sender->Name.c_str(), isValid ? "yes" : "no");
 	}
+
+	virtual void OnLobbyChat(const Unet::LobbyMember* sender, const char* text) override
+	{
+		if (sender == nullptr) {
+			LOG_FROM_CALLBACK("> %s", text);
+		} else {
+			LOG_FROM_CALLBACK("> %s: %s", sender->Name.c_str(), text);
+		}
+	}
 };
 
 static void RunCallbacks()
@@ -410,6 +419,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  setmemberdata <peer> <name> <value> - Sets member lobby data (only available on the host and the local peer)");
 		LOG_INFO("  remmemberdata <peer> <name> - Removes member lobby data (only available on the host and the local peer)");
 		LOG_INFO("  kick <peer>         - Kicks the given peer with an optional reason");
+		LOG_INFO("  chat <message>      - Sends a chat message to the lobby");
 		LOG_INFO("");
 		LOG_INFO("  addfile <filename>  - Adds a file to the available lobby files for the local member");
 		LOG_INFO("  delfile <filename>  - Removes a file from the available lobby files for the local member");
@@ -860,6 +870,9 @@ static void HandleCommand(const s2::string &line)
 		}
 
 		g_ctx->KickMember(member);
+
+	} else if (parse[0] == "chat" && parse.len() == 2) {
+		g_ctx->SendChat(parse[1]);
 
 	} else if (parse[0] == "send" && parse.len() == 3) {
 		int peer = atoi(parse[1]);

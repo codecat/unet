@@ -58,6 +58,8 @@ namespace Unet
 			virtual void RequestFile(LobbyMember* member, const char* filename) override;
 			virtual void RequestFile(LobbyMember* member, LobbyFile* file) override;
 
+			virtual void SendChat(const char* message) override;
+
 			virtual bool IsMessageAvailable(int channel) override;
 			virtual NetworkMessageRef ReadMessage(int channel) override;
 
