@@ -66,6 +66,28 @@ void Unet::ServiceSteam::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	m_callLobbyCreated.Set(call, this, &ServiceSteam::OnLobbyCreated);
 }
 
+void Unet::ServiceSteam::SetLobbyPrivacy(LobbyPrivacy privacy)
+{
+	ELobbyType type = k_ELobbyTypePublic;
+	switch (privacy) {
+	case LobbyPrivacy::Public: type = k_ELobbyTypePublic; break;
+	case LobbyPrivacy::Private: type = k_ELobbyTypePrivate; break;
+	}
+
+	auto lobby = m_ctx->CurrentLobby();
+	if (lobby == nullptr) {
+		return;
+	}
+
+	auto &lobbyInfo = lobby->GetInfo();
+	auto entryPoint = lobbyInfo.GetEntryPoint(Unet::ServiceType::Steam);
+	if (entryPoint == nullptr) {
+		return;
+	}
+
+	SteamMatchmaking()->SetLobbyType((uint64)entryPoint->ID, type);
+}
+
 void Unet::ServiceSteam::GetLobbyList()
 {
 	SteamAPICall_t call = SteamMatchmaking()->RequestLobbyList();

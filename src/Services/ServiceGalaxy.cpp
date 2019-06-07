@@ -146,6 +146,32 @@ void Unet::ServiceGalaxy::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	}
 }
 
+void Unet::ServiceGalaxy::SetLobbyPrivacy(LobbyPrivacy privacy)
+{
+	galaxy::api::LobbyType type = galaxy::api::LOBBY_TYPE_PUBLIC;
+	switch (privacy) {
+	case LobbyPrivacy::Public: type = galaxy::api::LOBBY_TYPE_PUBLIC; break;
+	case LobbyPrivacy::Private: type = galaxy::api::LOBBY_TYPE_PRIVATE; break;
+	}
+
+	auto lobby = m_ctx->CurrentLobby();
+	if (lobby == nullptr) {
+		return;
+	}
+
+	auto &lobbyInfo = lobby->GetInfo();
+	auto entryPoint = lobbyInfo.GetEntryPoint(Unet::ServiceType::Galaxy);
+	if (entryPoint == nullptr) {
+		return;
+	}
+
+	try {
+		galaxy::api::Matchmaking()->SetLobbyType(entryPoint->ID, type);
+	} catch (const galaxy::api::IError &error) {
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to set lobby privacy: %s", error.GetMsg()));
+	}
+}
+
 void Unet::ServiceGalaxy::GetLobbyList()
 {
 	m_requestLobbyList = m_ctx->m_callbackLobbyList.AddServiceRequest(this);

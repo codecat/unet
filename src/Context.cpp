@@ -353,6 +353,11 @@ void Unet::Internal::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, 
 	}
 }
 
+void Unet::Internal::Context::SetLobbyPrivacy(LobbyPrivacy privacy)
+{
+
+}
+
 void Unet::Internal::Context::GetLobbyList(const LobbyListFilter &filter)
 {
 	m_callbackLobbyList.Begin();

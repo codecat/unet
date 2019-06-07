@@ -33,11 +33,14 @@ namespace Unet
 
 			virtual void SetPrimaryService(ServiceType service) override;
 			virtual ServiceType GetPrimaryService() override;
+
 			virtual void EnableService(ServiceType service) override;
 			virtual int ServiceCount() override;
 			virtual void SimulateServiceOutage(ServiceType service) override;
 
 			virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name = nullptr) override;
+			virtual void SetLobbyPrivacy(LobbyPrivacy privacy) override;
+
 			virtual void GetLobbyList(const LobbyListFilter &filter) override;
 			virtual void JoinLobby(const LobbyInfo &lobbyInfo) override;
 			virtual void JoinLobby(const ServiceID &id) override;

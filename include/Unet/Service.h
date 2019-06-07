@@ -27,6 +27,8 @@ namespace Unet
 		virtual std::string GetUserName() = 0;
 
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) = 0;
+		virtual void SetLobbyPrivacy(LobbyPrivacy privacy) = 0;
+
 		virtual void GetLobbyList() = 0;
 		virtual void JoinLobby(const ServiceID &id) = 0;
 		virtual void LeaveLobby() = 0;

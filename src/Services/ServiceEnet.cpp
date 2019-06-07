@@ -196,6 +196,10 @@ void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	req->Code = Result::OK;
 }
 
+void Unet::ServiceEnet::SetLobbyPrivacy(LobbyPrivacy privacy)
+{
+}
+
 void Unet::ServiceEnet::GetLobbyList()
 {
 	//TODO: Broadcast to LAN
