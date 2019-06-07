@@ -59,7 +59,7 @@ namespace Unet
 		// within the lobby info.
 		//
 		// The callback OnLobbyJoined will be called with a LobbyJoinResult object.
-		virtual void JoinLobby(LobbyInfo &lobbyInfo) = 0;
+		virtual void JoinLobby(const LobbyInfo &lobbyInfo) = 0;
 
 		// Joins a lobby by a service entry point ID. This will only connect to that service, so it is
 		// not recommended to use this function if you're not connecting directly via IP.

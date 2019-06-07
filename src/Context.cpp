@@ -63,6 +63,9 @@ Unet::ContextStatus Unet::Internal::Context::GetStatus()
 
 void Unet::Internal::Context::SetCallbacks(ICallbacks* callbacks)
 {
+	if (m_callbacks != nullptr) {
+		delete m_callbacks;
+	}
 	m_callbacks = callbacks;
 }
 
@@ -358,7 +361,7 @@ void Unet::Internal::Context::GetLobbyList(const LobbyListFilter &filter)
 	}
 }
 
-void Unet::Internal::Context::JoinLobby(LobbyInfo &lobbyInfo)
+void Unet::Internal::Context::JoinLobby(const LobbyInfo &lobbyInfo)
 {
 	if (m_status != ContextStatus::Idle) {
 		m_callbacks->OnLogWarn("Can't join new lobby while still in a lobby!");

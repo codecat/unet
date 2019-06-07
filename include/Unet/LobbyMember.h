@@ -28,6 +28,9 @@ namespace Unet
 		std::vector<ServiceID> IDs;
 		std::vector<LobbyFile*> Files;
 
+		// Userdata field which can be set to anything and can be used for anything
+		void* Userdata = nullptr;
+
 	public:
 		LobbyMember(Internal::Context* ctx);
 		~LobbyMember();
@@ -50,6 +53,9 @@ namespace Unet
 		void AddFile(LobbyFile* file);
 		void RemoveFile(const std::string &filename);
 		void InternalRemoveFile(const std::string &filename);
+
+		template<typename T> inline void SetUserData(T* p) { Userdata = (void*)p; }
+		template<typename T> inline T* GetUserData() { return (T*)Userdata; }
 	};
 
 	typedef std::unique_ptr<LobbyMember> LobbyMemberRef;
