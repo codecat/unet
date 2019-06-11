@@ -996,11 +996,6 @@ void Unet::Internal::Context::OnLobbyLeft(const LobbyLeftResult &result)
 	m_status = ContextStatus::Idle;
 	m_localPeer = -1;
 
-	if (m_currentLobby != nullptr) {
-		delete m_currentLobby;
-		m_currentLobby = nullptr;
-	}
-
 	for (auto &channel : m_queuedMessages) {
 		while (channel.size() > 0) {
 			delete channel.front();
@@ -1009,6 +1004,11 @@ void Unet::Internal::Context::OnLobbyLeft(const LobbyLeftResult &result)
 	}
 
 	m_callbacks->OnLobbyLeft(result);
+
+	if (m_currentLobby != nullptr) {
+		delete m_currentLobby;
+		m_currentLobby = nullptr;
+	}
 }
 
 void Unet::Internal::Context::OnLobbyPlayerLeft(const LobbyMember* member)
