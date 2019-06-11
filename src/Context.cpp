@@ -1011,7 +1011,7 @@ void Unet::Internal::Context::OnLobbyLeft(const LobbyLeftResult &result)
 	}
 }
 
-void Unet::Internal::Context::OnLobbyPlayerLeft(const LobbyMember* member)
+void Unet::Internal::Context::OnLobbyPlayerLeft(LobbyMember* member)
 {
 	if (!member->Valid) {
 		return;

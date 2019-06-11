@@ -90,7 +90,7 @@ namespace Unet
 			void OnLobbyJoined(const LobbyJoinResult &result);
 			void OnLobbyLeft(const LobbyLeftResult &result);
 
-			void OnLobbyPlayerLeft(const LobbyMember* member);
+			void OnLobbyPlayerLeft(LobbyMember* member);
 
 			void PrepareReceiveBuffer(size_t size);
 			void PrepareSendBuffer(size_t size);

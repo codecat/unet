@@ -125,12 +125,12 @@ public:
 		LOG_FROM_CALLBACK("Left lobby: %s", reasonStr);
 	}
 
-	virtual void OnLobbyPlayerJoined(const Unet::LobbyMember* member) override
+	virtual void OnLobbyPlayerJoined(Unet::LobbyMember* member) override
 	{
 		LOG_FROM_CALLBACK("Player joined: %s", member->Name.c_str());
 	}
 
-	virtual void OnLobbyPlayerLeft(const Unet::LobbyMember* member) override
+	virtual void OnLobbyPlayerLeft(Unet::LobbyMember* member) override
 	{
 		LOG_FROM_CALLBACK("Player left: %s", member->Name.c_str());
 	}
@@ -156,17 +156,17 @@ public:
 		}
 	}
 
-	virtual void OnLobbyFileAdded(const Unet::LobbyMember* member, const Unet::LobbyFile* file) override
+	virtual void OnLobbyFileAdded(Unet::LobbyMember* member, const Unet::LobbyFile* file) override
 	{
 		LOG_FROM_CALLBACK("%s added file \"%s\"", member->Name.c_str(), file->m_filename.c_str());
 	}
 
-	virtual void OnLobbyFileRemoved(const Unet::LobbyMember* member, const std::string &filename) override
+	virtual void OnLobbyFileRemoved(Unet::LobbyMember* member, const std::string &filename) override
 	{
 		LOG_FROM_CALLBACK("%s removed file \"%s\"", member->Name.c_str(), filename.c_str());
 	}
 
-	virtual void OnLobbyFileRequested(const Unet::LobbyMember* receiver, const Unet::LobbyFile* file) override
+	virtual void OnLobbyFileRequested(Unet::LobbyMember* receiver, const Unet::LobbyFile* file) override
 	{
 		LOG_FROM_CALLBACK("%s requested our file \"%s\" for download", receiver->Name.c_str(), file->m_filename.c_str());
 	}
@@ -193,17 +193,17 @@ public:
 		LOG_FROM_CALLBACK("Completed sending file \"%s\" to %s!", file->m_filename.c_str(), receiver->Name.c_str());
 	}
 
-	virtual void OnLobbyFileDataReceiveProgress(const Unet::LobbyMember* sender, const Unet::LobbyFile* file) override
+	virtual void OnLobbyFileDataReceiveProgress(Unet::LobbyMember* sender, const Unet::LobbyFile* file) override
 	{
 		LOG_FROM_CALLBACK("Receiving file \"%s\" from %s: %.1f%%", file->m_filename.c_str(), sender->Name.c_str(), file->GetPercentage() * 100.0);
 	}
 
-	virtual void OnLobbyFileDataReceiveFinished(const Unet::LobbyMember* sender, const Unet::LobbyFile* file, bool isValid) override
+	virtual void OnLobbyFileDataReceiveFinished(Unet::LobbyMember* sender, const Unet::LobbyFile* file, bool isValid) override
 	{
 		LOG_FROM_CALLBACK("Completed receiving file \"%s\" from %s! Valid: %s", file->m_filename.c_str(), sender->Name.c_str(), isValid ? "yes" : "no");
 	}
 
-	virtual void OnLobbyChat(const Unet::LobbyMember* sender, const char* text) override
+	virtual void OnLobbyChat(Unet::LobbyMember* sender, const char* text) override
 	{
 		if (sender == nullptr) {
 			LOG_FROM_CALLBACK("> %s", text);

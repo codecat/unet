@@ -588,7 +588,7 @@ void Unet::Lobby::RemoveMemberService(const ServiceID &id)
 	}
 }
 
-void Unet::Lobby::RemoveMember(const LobbyMember* member)
+void Unet::Lobby::RemoveMember(LobbyMember* member)
 {
 	auto it = std::find(m_members.begin(), m_members.end(), member);
 	assert(it != m_members.end());

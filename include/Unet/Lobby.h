@@ -42,7 +42,7 @@ namespace Unet
 
 		LobbyMember* AddMemberService(const xg::Guid &guid, const ServiceID &id);
 		void RemoveMemberService(const ServiceID &id);
-		void RemoveMember(const LobbyMember* member);
+		void RemoveMember(LobbyMember* member);
 
 		virtual void SetData(const std::string &name, const std::string &value) override;
 		virtual std::string GetData(const std::string &name) const override;
