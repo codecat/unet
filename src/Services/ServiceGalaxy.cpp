@@ -221,18 +221,18 @@ void Unet::ServiceGalaxy::LeaveLobby()
 	}
 }
 
+void Unet::ServiceGalaxy::SetLobbyMaxPlayers(const ServiceID &lobbyId, int amount)
+{
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
+	galaxy::api::Matchmaking()->SetMaxNumLobbyMembers(lobbyId.ID, amount);
+}
+
 int Unet::ServiceGalaxy::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 {
 	assert(lobbyId.Service == ServiceType::Galaxy);
 
 	return (int)galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(lobbyId.ID);
-}
-
-Unet::ServiceID Unet::ServiceGalaxy::GetLobbyHost(const ServiceID &lobbyId)
-{
-	assert(lobbyId.Service == ServiceType::Galaxy);
-
-	return ServiceID(ServiceType::Galaxy, galaxy::api::Matchmaking()->GetLobbyOwner(lobbyId.ID).ToUint64());
 }
 
 std::string Unet::ServiceGalaxy::GetLobbyData(const ServiceID &lobbyId, const char* name)
@@ -263,6 +263,13 @@ Unet::LobbyData Unet::ServiceGalaxy::GetLobbyData(const ServiceID &lobbyId, int 
 	}
 
 	return ret;
+}
+
+Unet::ServiceID Unet::ServiceGalaxy::GetLobbyHost(const ServiceID &lobbyId)
+{
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
+	return ServiceID(ServiceType::Galaxy, galaxy::api::Matchmaking()->GetLobbyOwner(lobbyId.ID).ToUint64());
 }
 
 void Unet::ServiceGalaxy::SetLobbyData(const ServiceID &lobbyId, const char* name, const char* value)

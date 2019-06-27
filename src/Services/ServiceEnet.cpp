@@ -254,15 +254,15 @@ void Unet::ServiceEnet::LeaveLobby()
 	}
 }
 
+void Unet::ServiceEnet::SetLobbyMaxPlayers(const ServiceID &lobbyId, int amount)
+{
+	//TODO
+}
+
 int Unet::ServiceEnet::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 {
 	//TODO
 	return (int)m_host->peerCount;
-}
-
-Unet::ServiceID Unet::ServiceEnet::GetLobbyHost(const ServiceID &lobbyId)
-{
-	return AddressToID(m_peerHost->address);
 }
 
 std::string Unet::ServiceEnet::GetLobbyData(const ServiceID &lobbyId, const char* name)
@@ -278,6 +278,11 @@ int Unet::ServiceEnet::GetLobbyDataCount(const ServiceID &lobbyId)
 Unet::LobbyData Unet::ServiceEnet::GetLobbyData(const ServiceID &lobbyId, int index)
 {
 	return LobbyData();
+}
+
+Unet::ServiceID Unet::ServiceEnet::GetLobbyHost(const ServiceID &lobbyId)
+{
+	return AddressToID(m_peerHost->address);
 }
 
 void Unet::ServiceEnet::SetLobbyData(const ServiceID &lobbyId, const char* name, const char* value)

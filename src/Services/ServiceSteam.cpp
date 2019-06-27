@@ -126,18 +126,18 @@ void Unet::ServiceSteam::LeaveLobby()
 	serviceRequest->Code = Result::OK;
 }
 
+void Unet::ServiceSteam::SetLobbyMaxPlayers(const ServiceID &lobbyId, int amount)
+{
+	assert(lobbyId.Service == ServiceType::Steam);
+
+	SteamMatchmaking()->SetLobbyMemberLimit((uint64)lobbyId.ID, amount);
+}
+
 int Unet::ServiceSteam::GetLobbyMaxPlayers(const ServiceID &lobbyId)
 {
 	assert(lobbyId.Service == ServiceType::Steam);
 
 	return SteamMatchmaking()->GetLobbyMemberLimit((uint64)lobbyId.ID);
-}
-
-Unet::ServiceID Unet::ServiceSteam::GetLobbyHost(const ServiceID &lobbyId)
-{
-	assert(lobbyId.Service == ServiceType::Steam);
-
-	return ServiceID(ServiceType::Steam, SteamMatchmaking()->GetLobbyOwner((uint64)lobbyId.ID).ConvertToUint64());
 }
 
 std::string Unet::ServiceSteam::GetLobbyData(const ServiceID &lobbyId, const char* name)
@@ -168,6 +168,13 @@ Unet::LobbyData Unet::ServiceSteam::GetLobbyData(const ServiceID &lobbyId, int i
 	}
 
 	return ret;
+}
+
+Unet::ServiceID Unet::ServiceSteam::GetLobbyHost(const ServiceID &lobbyId)
+{
+	assert(lobbyId.Service == ServiceType::Steam);
+
+	return ServiceID(ServiceType::Steam, SteamMatchmaking()->GetLobbyOwner((uint64)lobbyId.ID).ConvertToUint64());
 }
 
 void Unet::ServiceSteam::SetLobbyData(const ServiceID &lobbyId, const char* name, const char* value)

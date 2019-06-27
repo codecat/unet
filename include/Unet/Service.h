@@ -34,6 +34,7 @@ namespace Unet
 		virtual void JoinLobby(const ServiceID &id) = 0;
 		virtual void LeaveLobby() = 0;
 
+		virtual void SetLobbyMaxPlayers(const ServiceID &lobbyId, int amount) = 0;
 		virtual int GetLobbyMaxPlayers(const ServiceID &lobbyId) = 0;
 
 		virtual std::string GetLobbyData(const ServiceID &lobbyId, const char* name) = 0;
