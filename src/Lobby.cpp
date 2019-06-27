@@ -617,9 +617,11 @@ void Unet::Lobby::SetJoinable(bool joinable)
 	}
 }
 
-void Unet::Lobby::SetData(const std::string &name, const std::string &value)
+bool Unet::Lobby::SetData(const std::string &name, const std::string &value)
 {
-	LobbyDataContainer::SetData(name, value);
+	if (!LobbyDataContainer::SetData(name, value)) {
+		return false;
+	}
 
 	if (m_info.IsHosting) {
 		for (auto &entry : m_info.EntryPoints) {
@@ -635,6 +637,7 @@ void Unet::Lobby::SetData(const std::string &name, const std::string &value)
 		js["value"] = value;
 		m_ctx->InternalSendToAll(js);
 	}
+	return true;
 }
 
 std::string Unet::Lobby::GetData(const std::string &name) const
@@ -674,9 +677,11 @@ std::string Unet::Lobby::GetData(const std::string &name) const
 	return ret;
 }
 
-void Unet::Lobby::RemoveData(const std::string &name)
+bool Unet::Lobby::RemoveData(const std::string &name)
 {
-	LobbyDataContainer::RemoveData(name);
+	if (!LobbyDataContainer::RemoveData(name)) {
+		return false;
+	}
 
 	if (m_info.IsHosting) {
 		for (auto &entry : m_info.EntryPoints) {
@@ -691,6 +696,8 @@ void Unet::Lobby::RemoveData(const std::string &name)
 		js["name"] = name;
 		m_ctx->InternalSendToAll(js);
 	}
+
+	return true;
 }
 
 int Unet::Lobby::GetNextAvailablePeer()

@@ -47,9 +47,9 @@ namespace Unet
 		void SetPrivacy(LobbyPrivacy privacy);
 		void SetJoinable(bool joinable);
 
-		virtual void SetData(const std::string &name, const std::string &value) override;
+		virtual bool SetData(const std::string &name, const std::string &value) override;
 		virtual std::string GetData(const std::string &name) const override;
-		virtual void RemoveData(const std::string &name) override;
+		virtual bool RemoveData(const std::string &name) override;
 
 	private:
 		int GetNextAvailablePeer();

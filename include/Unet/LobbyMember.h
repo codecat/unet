@@ -42,8 +42,8 @@ namespace Unet
 		json Serialize() const;
 		void Deserialize(const json &js);
 
-		virtual void SetData(const std::string &name, const std::string &value) override;
-		virtual void RemoveData(const std::string &name) override;
+		virtual bool SetData(const std::string &name, const std::string &value) override;
+		virtual bool RemoveData(const std::string &name) override;
 
 		LobbyFile* GetFile(const std::string &filename);
 		LobbyFile* GetFile(uint64_t hash);

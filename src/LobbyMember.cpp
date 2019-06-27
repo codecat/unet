@@ -105,9 +105,11 @@ void Unet::LobbyMember::Deserialize(const json &js)
 	}
 }
 
-void Unet::LobbyMember::SetData(const std::string &name, const std::string &value)
+bool Unet::LobbyMember::SetData(const std::string &name, const std::string &value)
 {
-	LobbyDataContainer::SetData(name, value);
+	if (!LobbyDataContainer::SetData(name, value)) {
+		return false;
+	}
 
 	auto currentLobby = m_ctx->CurrentLobby();
 	assert(currentLobby != nullptr);
@@ -126,11 +128,15 @@ void Unet::LobbyMember::SetData(const std::string &name, const std::string &valu
 		js["value"] = value;
 		m_ctx->InternalSendToHost(js);
 	}
+
+	return true;
 }
 
-void Unet::LobbyMember::RemoveData(const std::string &name)
+bool Unet::LobbyMember::RemoveData(const std::string &name)
 {
-	LobbyDataContainer::RemoveData(name);
+	if (!LobbyDataContainer::RemoveData(name)) {
+		return false;
+	}
 
 	auto currentLobby = m_ctx->CurrentLobby();
 	assert(currentLobby != nullptr);
@@ -147,6 +153,8 @@ void Unet::LobbyMember::RemoveData(const std::string &name)
 		js["name"] = name;
 		m_ctx->InternalSendToHost(js);
 	}
+
+	return true;
 }
 
 Unet::LobbyFile* Unet::LobbyMember::GetFile(const std::string &filename)
