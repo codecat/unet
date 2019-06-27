@@ -229,6 +229,14 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 
 		AddMemberService(guid, id);
 
+	} else if (type == LobbyPacketType::LobbyMaxPlayers) {
+		if (m_info.IsHosting) {
+			return;
+		}
+
+		auto amount = js["amount"].get<int>();
+		SetMaxPlayers(amount);
+
 	} else if (type == LobbyPacketType::LobbyData) {
 		if (m_info.IsHosting) {
 			return;
@@ -597,6 +605,28 @@ void Unet::Lobby::RemoveMember(LobbyMember* member)
 
 	m_ctx->OnLobbyPlayerLeft(member);
 	delete member;
+}
+
+void Unet::Lobby::SetMaxPlayers(int amount)
+{
+	if (m_info.MaxPlayers == amount) {
+		return;
+	}
+
+	m_info.MaxPlayers = amount;
+
+	if (m_info.IsHosting) {
+		for (auto &entryPoint : m_info.EntryPoints) {
+			auto service = m_ctx->GetService(entryPoint.Service);
+			assert(service != nullptr);
+			service->SetLobbyMaxPlayers(entryPoint, amount);
+		}
+
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyMaxPlayers;
+		js["amount"] = amount;
+		m_ctx->InternalSendToAll(js);
+	}
 }
 
 void Unet::Lobby::SetPrivacy(LobbyPrivacy privacy)
