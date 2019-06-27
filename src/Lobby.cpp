@@ -599,6 +599,24 @@ void Unet::Lobby::RemoveMember(LobbyMember* member)
 	delete member;
 }
 
+void Unet::Lobby::SetPrivacy(LobbyPrivacy privacy)
+{
+	for (auto &entryPoint : m_info.EntryPoints) {
+		auto service = m_ctx->GetService(entryPoint.Service);
+		assert(service != nullptr);
+		service->SetLobbyPrivacy(entryPoint, privacy);
+	}
+}
+
+void Unet::Lobby::SetJoinable(bool joinable)
+{
+	for (auto &entryPoint : m_info.EntryPoints) {
+		auto service = m_ctx->GetService(entryPoint.Service);
+		assert(service != nullptr);
+		service->SetLobbyJoinable(entryPoint, joinable);
+	}
+}
+
 void Unet::Lobby::SetData(const std::string &name, const std::string &value)
 {
 	LobbyDataContainer::SetData(name, value);

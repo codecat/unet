@@ -146,7 +146,7 @@ void Unet::ServiceGalaxy::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	}
 }
 
-void Unet::ServiceGalaxy::SetLobbyPrivacy(LobbyPrivacy privacy)
+void Unet::ServiceGalaxy::SetLobbyPrivacy(const ServiceID &lobbyId, LobbyPrivacy privacy)
 {
 	galaxy::api::LobbyType type = galaxy::api::LOBBY_TYPE_PUBLIC;
 	switch (privacy) {
@@ -154,21 +154,21 @@ void Unet::ServiceGalaxy::SetLobbyPrivacy(LobbyPrivacy privacy)
 	case LobbyPrivacy::Private: type = galaxy::api::LOBBY_TYPE_PRIVATE; break;
 	}
 
-	auto lobby = m_ctx->CurrentLobby();
-	if (lobby == nullptr) {
-		return;
-	}
-
-	auto &lobbyInfo = lobby->GetInfo();
-	auto entryPoint = lobbyInfo.GetEntryPoint(Unet::ServiceType::Galaxy);
-	if (entryPoint == nullptr) {
-		return;
-	}
-
+	assert(lobbyId.Service == ServiceType::Galaxy);
 	try {
-		galaxy::api::Matchmaking()->SetLobbyType(entryPoint->ID, type);
+		galaxy::api::Matchmaking()->SetLobbyType(lobbyId.ID, type);
 	} catch (const galaxy::api::IError &error) {
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to set lobby privacy: %s", error.GetMsg()));
+	}
+}
+
+void Unet::ServiceGalaxy::SetLobbyJoinable(const ServiceID &lobbyId, bool joinable)
+{
+	assert(lobbyId.Service == ServiceType::Galaxy);
+	try {
+		galaxy::api::Matchmaking()->SetLobbyJoinable(lobbyId.ID, joinable);
+	} catch (const galaxy::api::IError &error) {
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to make lobby joinable: %s", error.GetMsg()));
 	}
 }
 

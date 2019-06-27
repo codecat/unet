@@ -42,7 +42,8 @@ namespace Unet
 		virtual std::string GetUserName() override;
 
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) override;
-		virtual void SetLobbyPrivacy(LobbyPrivacy privacy) override;
+		virtual void SetLobbyPrivacy(const ServiceID &lobbyId, LobbyPrivacy privacy) override;
+		virtual void SetLobbyJoinable(const ServiceID &lobbyId, bool joinable) override;
 
 		virtual void GetLobbyList() override;
 		virtual void JoinLobby(const ServiceID &id) override;

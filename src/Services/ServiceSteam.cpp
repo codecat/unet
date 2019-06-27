@@ -66,7 +66,7 @@ void Unet::ServiceSteam::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	m_callLobbyCreated.Set(call, this, &ServiceSteam::OnLobbyCreated);
 }
 
-void Unet::ServiceSteam::SetLobbyPrivacy(LobbyPrivacy privacy)
+void Unet::ServiceSteam::SetLobbyPrivacy(const ServiceID &lobbyId, LobbyPrivacy privacy)
 {
 	ELobbyType type = k_ELobbyTypePublic;
 	switch (privacy) {
@@ -74,18 +74,14 @@ void Unet::ServiceSteam::SetLobbyPrivacy(LobbyPrivacy privacy)
 	case LobbyPrivacy::Private: type = k_ELobbyTypePrivate; break;
 	}
 
-	auto lobby = m_ctx->CurrentLobby();
-	if (lobby == nullptr) {
-		return;
-	}
+	assert(lobbyId.Service == ServiceType::Steam);
+	SteamMatchmaking()->SetLobbyType((uint64)lobbyId.ID, type);
+}
 
-	auto &lobbyInfo = lobby->GetInfo();
-	auto entryPoint = lobbyInfo.GetEntryPoint(Unet::ServiceType::Steam);
-	if (entryPoint == nullptr) {
-		return;
-	}
-
-	SteamMatchmaking()->SetLobbyType((uint64)entryPoint->ID, type);
+void Unet::ServiceSteam::SetLobbyJoinable(const ServiceID &lobbyId, bool joinable)
+{
+	assert(lobbyId.Service == ServiceType::Steam);
+	SteamMatchmaking()->SetLobbyJoinable((uint64)lobbyId.ID, joinable);
 }
 
 void Unet::ServiceSteam::GetLobbyList()

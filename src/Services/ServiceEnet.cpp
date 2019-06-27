@@ -196,7 +196,11 @@ void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 	req->Code = Result::OK;
 }
 
-void Unet::ServiceEnet::SetLobbyPrivacy(LobbyPrivacy privacy)
+void Unet::ServiceEnet::SetLobbyPrivacy(const ServiceID &lobbyId, LobbyPrivacy privacy)
+{
+}
+
+void Unet::ServiceEnet::SetLobbyJoinable(const ServiceID &lobbyId, bool joinable)
 {
 }
 

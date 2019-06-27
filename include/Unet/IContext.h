@@ -52,9 +52,6 @@ namespace Unet
 		// The callback OnLobbyCreated will be called with a CreateLobbyResult object.
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name = nullptr) = 0;
 
-		// Sets the privacy for the current lobby. Can only be done by the host.
-		virtual void SetLobbyPrivacy(LobbyPrivacy privacy) = 0;
-
 		// Request a list of valid Unet lobbies, scattered across all enabled services.
 		// Note that only valid Unet lobbies will be listed, non-Unet lobbies are ignored.
 		//
