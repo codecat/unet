@@ -6,6 +6,8 @@
 Unet::LobbyMember::LobbyMember(Internal::Context* ctx)
 {
 	m_ctx = ctx;
+
+	SetNextPingRequest();
 }
 
 Unet::LobbyMember::~LobbyMember()
@@ -248,4 +250,21 @@ void Unet::LobbyMember::InternalRemoveFile(const std::string &filename)
 
 	delete *it;
 	Files.erase(it);
+}
+
+void Unet::LobbyMember::SendPing()
+{
+	json js;
+	js["t"] = (uint8_t)LobbyPacketType::Ping;
+	m_ctx->InternalSendTo(this, js);
+
+	m_ctx->GetCallbacks()->OnLogDebug(strPrintF("Sent ping to %d", UnetPeer));
+
+	LastPingRequest = std::chrono::high_resolution_clock::now();
+	SetNextPingRequest();
+}
+
+void Unet::LobbyMember::SetNextPingRequest()
+{
+	NextPingRequest = std::chrono::system_clock::now() + std::chrono::milliseconds(800 + (rand() % 400));
 }

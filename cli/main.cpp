@@ -542,6 +542,8 @@ static void HandleCommand(const s2::string &line)
 				auto memberGuid = member->UnetGuid.str();
 				LOG_INFO("    %d: \"%s\" (%s) (%s)", member->UnetPeer, member->Name.c_str(), member->Valid ? "Valid" : "Invalid", memberGuid.c_str());
 
+				LOG_INFO("      Ping: %d", member->Ping);
+
 				LOG_INFO("      %d datas", (int)member->m_data.size());
 
 				LOG_INFO("      %d IDs:", (int)member->IDs.size());

@@ -123,6 +123,20 @@ void Unet::Internal::Context::RunCallbacks()
 			result.Code = Result::OK;
 			result.Reason = LeaveReason::Disconnected;
 			OnLobbyLeft(result);
+
+		} else {
+			auto now = std::chrono::system_clock::now();
+			for (auto member : m_currentLobby->m_members) {
+				if (member->UnetPeer == m_localPeer) {
+					continue;
+				}
+
+				if (now < member->NextPingRequest) {
+					continue;
+				}
+
+				member->SendPing();
+			}
 		}
 	}
 

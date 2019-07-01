@@ -160,6 +160,20 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 		// Run callback
 		m_ctx->GetCallbacks()->OnLobbyPlayerJoined(member);
 
+	} else if (type == LobbyPacketType::Ping) {
+		js = json::object();
+		js["t"] = (uint8_t)LobbyPacketType::Pong;
+		m_ctx->InternalSendTo(peer, js);
+
+	} else if (type == LobbyPacketType::Pong) {
+		auto member = GetMember(peer);
+		if (member->UnetPeer != m_ctx->m_localPeer && member->LastPingRequest.time_since_epoch().count() > 0) {
+			auto now = std::chrono::high_resolution_clock::now();
+			auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(now - member->LastPingRequest);
+			member->Ping = dt.count();
+			member->LastPingRequest = std::chrono::high_resolution_clock::time_point();
+		}
+
 	} else if (type == LobbyPacketType::LobbyInfo) {
 		if (m_info.IsHosting) {
 			return;

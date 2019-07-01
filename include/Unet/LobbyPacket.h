@@ -12,6 +12,11 @@ namespace Unet
 		// Sent by the client via the primary service to announce basic member data such as the player name
 		Hello,
 
+		// Sent by a peer to another peer to determine ping time
+		Ping,
+		// Sent by a peer as a response to Ping
+		Pong,
+
 		// Sent by the server to give basic lobby information, which readies the client
 		LobbyInfo,
 

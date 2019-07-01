@@ -21,6 +21,10 @@ namespace Unet
 		xg::Guid UnetGuid;
 		int UnetPeer = -1;
 
+		int Ping = -1;
+		std::chrono::high_resolution_clock::time_point LastPingRequest;
+		std::chrono::system_clock::time_point NextPingRequest;
+
 		// The primary service this member uses to communicate (this is decided by which service the Hello packet is sent through)
 		ServiceType UnetPrimaryService = ServiceType::None;
 
@@ -53,6 +57,9 @@ namespace Unet
 		void AddFile(LobbyFile* file);
 		void RemoveFile(const std::string &filename);
 		void InternalRemoveFile(const std::string &filename);
+
+		void SendPing();
+		void SetNextPingRequest();
 
 		template<typename T> inline void SetUserData(T* p) { Userdata = (void*)p; }
 		template<typename T> inline T* GetUserData() { return (T*)Userdata; }
