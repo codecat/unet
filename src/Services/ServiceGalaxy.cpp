@@ -221,6 +221,13 @@ void Unet::ServiceGalaxy::LeaveLobby()
 	}
 }
 
+int Unet::ServiceGalaxy::GetLobbyPlayerCount(const ServiceID &lobbyId)
+{
+	assert(lobbyId.Service == ServiceType::Galaxy);
+
+	return galaxy::api::Matchmaking()->GetNumLobbyMembers(lobbyId.ID);
+}
+
 void Unet::ServiceGalaxy::SetLobbyMaxPlayers(const ServiceID &lobbyId, int amount)
 {
 	assert(lobbyId.Service == ServiceType::Galaxy);

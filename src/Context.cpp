@@ -355,6 +355,7 @@ void Unet::Internal::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, 
 	LobbyInfo newLobbyInfo;
 	newLobbyInfo.IsHosting = true;
 	newLobbyInfo.Privacy = privacy;
+	newLobbyInfo.NumPlayers = 1;
 	newLobbyInfo.MaxPlayers = maxPlayers;
 	newLobbyInfo.UnetGuid = m_localGuid;
 	if (name != nullptr) {
@@ -934,6 +935,7 @@ void Unet::Internal::Context::OnLobbyCreated(const CreateLobbyResult &result)
 			newMember->IDs.emplace_back(service->GetUserID());
 		}
 		m_currentLobby->m_members.emplace_back(newMember);
+		m_currentLobby->m_info.NumPlayers++;
 	}
 
 	if (m_callbacks != nullptr) {
@@ -970,6 +972,7 @@ void Unet::Internal::Context::OnLobbyList(const LobbyListResult &result)
 			continue;
 		}
 
+		lobbyInfo.NumPlayers = result.GetLobbyNumPlayers(lobbyInfo);
 		lobbyInfo.MaxPlayers = result.GetLobbyMaxPlayers(lobbyInfo);
 		lobbyInfo.Name = result.GetLobbyData(lobbyInfo, "unet-name");
 	}

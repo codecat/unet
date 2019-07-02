@@ -126,6 +126,13 @@ void Unet::ServiceSteam::LeaveLobby()
 	serviceRequest->Code = Result::OK;
 }
 
+int Unet::ServiceSteam::GetLobbyPlayerCount(const ServiceID &lobbyId)
+{
+	assert(lobbyId.Service == ServiceType::Steam);
+
+	return SteamMatchmaking()->GetNumLobbyMembers((uint64)lobbyId.ID);
+}
+
 void Unet::ServiceSteam::SetLobbyMaxPlayers(const ServiceID &lobbyId, int amount)
 {
 	assert(lobbyId.Service == ServiceType::Steam);

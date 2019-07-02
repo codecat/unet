@@ -15,6 +15,8 @@ namespace Unet
 	{
 		bool IsHosting = false;
 		LobbyPrivacy Privacy = LobbyPrivacy::Public;
+
+		int NumPlayers = 0;
 		int MaxPlayers = 0;
 
 		xg::Guid UnetGuid;

@@ -551,6 +551,7 @@ Unet::LobbyMember* Unet::Lobby::AddMemberService(const xg::Guid &guid, const Ser
 			));
 
 			m_members.erase(m_members.begin() + i);
+			m_info.NumPlayers--;
 			foundMember = true;
 			break;
 		}
@@ -581,6 +582,7 @@ Unet::LobbyMember* Unet::Lobby::AddMemberService(const xg::Guid &guid, const Ser
 	newMember->UnetPeer = GetNextAvailablePeer();
 	newMember->IDs.emplace_back(id);
 	m_members.emplace_back(newMember);
+	m_info.NumPlayers++;
 
 	return newMember;
 }
@@ -603,6 +605,7 @@ void Unet::Lobby::RemoveMemberService(const ServiceID &id)
 		auto itMember = std::find(m_members.begin(), m_members.end(), member);
 		if (itMember != m_members.end()) {
 			m_members.erase(itMember);
+			m_info.NumPlayers--;
 		}
 
 		m_ctx->OnLobbyPlayerLeft(member);
@@ -616,6 +619,7 @@ void Unet::Lobby::RemoveMember(LobbyMember* member)
 	assert(it != m_members.end());
 
 	m_members.erase(it);
+	m_info.NumPlayers--;
 
 	m_ctx->OnLobbyPlayerLeft(member);
 	delete member;

@@ -26,6 +26,8 @@ namespace Unet
 		// Adds an entry point to an existing lobby by Guid, or if the lobby doesn't exist, adds a new lobby to the list.
 		LobbyInfo* AddEntryPoint(const xg::Guid &guid, const ServiceID &newEntryPoint);
 
+		// Get the number of players currently in the lobby as reported by services.
+		int GetLobbyNumPlayers(const LobbyInfo &lobbyInfo) const;
 		// Get maximum number of players as reported by services.
 		int GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo) const;
 		// Get lobby data as reported by services.

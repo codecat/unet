@@ -254,6 +254,12 @@ void Unet::ServiceEnet::LeaveLobby()
 	}
 }
 
+int Unet::ServiceEnet::GetLobbyPlayerCount(const ServiceID &lobbyId)
+{
+	//TODO
+	return m_host->connectedPeers;
+}
+
 void Unet::ServiceEnet::SetLobbyMaxPlayers(const ServiceID &lobbyId, int amount)
 {
 	//TODO

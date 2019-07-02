@@ -26,6 +26,40 @@ Unet::LobbyInfo* Unet::LobbyListResult::AddEntryPoint(const xg::Guid &guid, cons
 	return &Lobbies[Lobbies.size() - 1];
 }
 
+int Unet::LobbyListResult::GetLobbyNumPlayers(const LobbyInfo &lobbyInfo) const
+{
+	std::vector<std::pair<ServiceType, int>> items;
+
+	for (auto service : Ctx->m_services) {
+		auto entry = lobbyInfo.GetEntryPoint(service->GetType());
+		if (entry == nullptr) {
+			continue;
+		}
+
+		int numPlayers = service->GetLobbyPlayerCount(*entry);
+		items.emplace_back(std::make_pair(entry->Service, numPlayers));
+	}
+
+	ServiceType highestService = ServiceType::None;
+	int highest = -1;
+
+	for (auto &pair : items) {
+		if (highest >= 0 && pair.second != highest) {
+			Ctx->GetCallbacks()->OnLogWarn(strPrintF("Number of players is different between service %s and %s! (%d and %d)",
+				GetServiceNameByType(highestService), GetServiceNameByType(pair.first),
+				highest, pair.second
+			));
+		}
+
+		if (highest == -1 || pair.second > highest) {
+			highestService = pair.first;
+			highest = pair.second;
+		}
+	}
+
+	return highest;
+}
+
 int Unet::LobbyListResult::GetLobbyMaxPlayers(const LobbyInfo &lobbyInfo) const
 {
 	std::vector<std::pair<ServiceType, int>> items;

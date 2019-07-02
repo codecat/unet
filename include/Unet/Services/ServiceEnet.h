@@ -55,6 +55,7 @@ namespace Unet
 		virtual void JoinLobby(const ServiceID &id) override;
 		virtual void LeaveLobby() override;
 
+		virtual int GetLobbyPlayerCount(const ServiceID &lobbyId) override;
 		virtual void SetLobbyMaxPlayers(const ServiceID &lobbyId, int amount) override;
 		virtual int GetLobbyMaxPlayers(const ServiceID &lobbyId) override;
 
