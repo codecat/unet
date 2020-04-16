@@ -362,7 +362,7 @@ void Unet::Internal::Context::CreateLobby(LobbyPrivacy privacy, int maxPlayers, 
 	newLobbyInfo.Privacy = privacy;
 	newLobbyInfo.NumPlayers = 1;
 	newLobbyInfo.MaxPlayers = maxPlayers;
-	newLobbyInfo.UnetGuid = m_localGuid;
+	newLobbyInfo.UnetGuid = xg::newGuid();
 	if (name != nullptr) {
 		newLobbyInfo.Name = name;
 	}
@@ -936,7 +936,7 @@ void Unet::Internal::Context::OnLobbyCreated(const CreateLobbyResult &result)
 		m_currentLobby->SetData("unet-name", lobbyInfo.Name.c_str());
 
 		auto newMember = new LobbyMember(this);
-		newMember->UnetGuid = xg::newGuid();
+		newMember->UnetGuid = m_localGuid;
 		newMember->UnetPeer = 0;
 		newMember->UnetPrimaryService = m_primaryService;
 		newMember->Name = m_personaName;
