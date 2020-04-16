@@ -684,6 +684,8 @@ bool Unet::Lobby::SetData(const std::string &name, const std::string &value)
 		js["name"] = name;
 		js["value"] = value;
 		m_ctx->InternalSendToAll(js);
+
+		m_ctx->GetCallbacks()->OnLobbyDataChanged(name);
 	}
 	return true;
 }
