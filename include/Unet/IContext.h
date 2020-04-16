@@ -90,6 +90,9 @@ namespace Unet
 		// Get our own peer number.
 		virtual int GetLocalPeer() = 0;
 
+		// Get our own Guid.
+		virtual xg::Guid GetLocalGuid() = 0;
+
 		// Sets our name, which will be shown to other players. Typically you don't have to call this,
 		// as the persona name will automatically be set to the name of the first service you enable. For
 		// example, enabling the Steam service will automatically set the persona name to your Steam name.

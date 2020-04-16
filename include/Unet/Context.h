@@ -50,6 +50,7 @@ namespace Unet
 			virtual bool IsHosting() override;
 			virtual Lobby* CurrentLobby() override;
 			virtual int GetLocalPeer() override;
+			virtual xg::Guid GetLocalGuid() override;
 
 			virtual void SetPersonaName(const char* str) override;
 			virtual const char* GetPersonaName() override;

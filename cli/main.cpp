@@ -518,6 +518,11 @@ static void HandleCommand(const s2::string &line)
 		case Unet::ContextStatus::Connected: statusStr = "Connected"; break;
 		}
 
+		LOG_INFO("Local peer: %d", g_ctx->GetLocalPeer());
+
+		auto localGuid = g_ctx->GetLocalGuid().str();
+		LOG_INFO("Local Guid: %s", localGuid.c_str());
+
 		LOG_INFO("Status: %s", statusStr);
 
 		auto currentLobby = g_ctx->CurrentLobby();

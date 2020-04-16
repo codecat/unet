@@ -503,6 +503,11 @@ int Unet::Internal::Context::GetLocalPeer()
 	return m_localPeer;
 }
 
+xg::Guid Unet::Internal::Context::GetLocalGuid()
+{
+	return m_localGuid;
+}
+
 void Unet::Internal::Context::SetPersonaName(const char* str)
 {
 	m_personaName = str;
