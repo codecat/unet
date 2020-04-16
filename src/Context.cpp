@@ -710,7 +710,11 @@ void Unet::Internal::Context::SendTo_Impl(LobbyMember* member, uint8_t* data, si
 void Unet::Internal::Context::SendTo(LobbyMember* member, uint8_t* data, size_t size, PacketType type, uint8_t channel)
 {
 	auto id = member->GetDataServiceID();
+
 	auto service = GetService(id.Service);
+	if (service == nullptr) {
+		return;
+	}
 
 	size_t sizeLimit = service->ReliablePacketLimit();
 
