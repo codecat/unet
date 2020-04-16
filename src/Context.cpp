@@ -309,7 +309,9 @@ void Unet::Internal::Context::EnableService(ServiceType service)
 	}
 
 	if (newService == nullptr) {
-		m_callbacks->OnLogError(strPrintF("Couldn't make new \"%s\" service!", GetServiceNameByType(service)));
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLogError(strPrintF("Couldn't make new \"%s\" service!", GetServiceNameByType(service)));
+		}
 		return;
 	}
 
