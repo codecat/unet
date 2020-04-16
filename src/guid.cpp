@@ -390,5 +390,16 @@ Guid newGuid()
 }
 #endif
 
+#ifdef GUID_GENERIC
+Guid newGuid()
+{
+	std::array<unsigned char, 16> data;
+	static_assert(std::is_same<unsigned char[16], uuid_t>::value, "Wrong type!");
+	static std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> rnd;
+	std::generate(data.begin(), data.end(), std::ref(rnd));
+	return Guid{std::move(data)};
+}
+#endif
+
 
 END_XG_NAMESPACE

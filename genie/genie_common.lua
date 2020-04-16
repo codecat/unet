@@ -54,6 +54,8 @@ function unet_guid()
 		defines { 'GUID_LIBUUID' }
 	elseif os.get() == 'macosx' then
 		defines { 'GUID_CFUUID' }
+	else
+		defines { 'GUID_GENERIC' }
 	end
 
 	-- Guid links
