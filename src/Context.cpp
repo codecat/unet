@@ -570,7 +570,7 @@ void Unet::Internal::Context::RequestFile(LobbyMember* member, const char* filen
 void Unet::Internal::Context::RequestFile(LobbyMember* member, LobbyFile* file)
 {
 	if (file->IsValid()) {
-		m_callbacks->OnLogError(strPrintF("Attempted requesting file \"%s\" from member, but the file is already valid!"));
+		m_callbacks->OnLogError(strPrintF("Attempted requesting file \"%s\" from member, but the file is already valid!", file->m_filename.c_str()));
 		return;
 	}
 
