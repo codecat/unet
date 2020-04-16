@@ -35,6 +35,9 @@ namespace Unet
 		bool m_waitingForPeers = false;
 
 	public:
+		static Unet::ServiceID AddressToID(const ENetAddress &addr);
+
+	public:
 		ServiceEnet(Internal::Context* ctx, int numChannels);
 		virtual ~ServiceEnet();
 

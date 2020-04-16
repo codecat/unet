@@ -15,9 +15,12 @@ static uint64_t AddressToInt(const ENetAddress &addr)
 	return *(uint64_t*)& addr & UNET_ID_MASK;
 }
 
-static Unet::ServiceID AddressToID(const ENetAddress &addr)
+namespace Unet
 {
-	return Unet::ServiceID(Unet::ServiceType::Enet, AddressToInt(addr));
+	Unet::ServiceID ServiceEnet::AddressToID(const ENetAddress &addr)
+	{
+		return Unet::ServiceID(Unet::ServiceType::Enet, AddressToInt(addr));
+	}
 }
 
 static ENetAddress IDToAddress(const Unet::ServiceID &id)
