@@ -117,7 +117,9 @@ void Unet::Internal::Context::RunCallbacks()
 
 	if (m_status == ContextStatus::Connected && m_currentLobby != nullptr) {
 		if (!m_currentLobby->IsConnected()) {
-			m_callbacks->OnLogError("Connection to lobby was lost");
+			if (m_callbacks != nullptr) {
+				m_callbacks->OnLogError("Connection to lobby was lost");
+			}
 
 			LobbyLeftResult result;
 			result.Code = Result::OK;
@@ -191,7 +193,9 @@ void Unet::Internal::Context::RunCallbacks()
 
 					auto recipientMember = m_currentLobby->GetMember((int)peerRecipient);
 					if (recipientMember == nullptr) {
-						m_callbacks->OnLogError(strPrintF("Tried relaying packet of %d bytes to unknown peer %d!", (int)packetSize, (int)peerRecipient));
+						if (m_callbacks != nullptr) {
+							m_callbacks->OnLogError(strPrintF("Tried relaying packet of %d bytes to unknown peer %d!", (int)packetSize, (int)peerRecipient));
+						}
 						continue;
 					}
 
@@ -222,14 +226,18 @@ void Unet::Internal::Context::RunCallbacks()
 					packetSize -= 2;
 
 					if (channel >= (uint8_t)m_queuedMessages.size()) {
-						m_callbacks->OnLogError(strPrintF("Invalid channel index in relay packet: %d", (int)channel));
+						if (m_callbacks != nullptr) {
+							m_callbacks->OnLogError(strPrintF("Invalid channel index in relay packet: %d", (int)channel));
+						}
 						continue;
 					}
 
 					auto memberSender = m_currentLobby->GetMember(peerSender);
 					assert(memberSender != nullptr);
 					if (memberSender == nullptr) {
-						m_callbacks->OnLogError(strPrintF("Received a relay packet from unknown peer %d", (int)peerSender));
+						if (m_callbacks != nullptr) {
+							m_callbacks->OnLogError(strPrintF("Received a relay packet from unknown peer %d", (int)peerSender));
+						}
 						continue;
 					}
 
@@ -272,7 +280,9 @@ void Unet::Internal::Context::SetPrimaryService(ServiceType service)
 {
 	auto s = GetService(service);
 	if (s == nullptr) {
-		m_callbacks->OnLogError(strPrintF("Service %s is not enabled, so it can't be set as the primary service!", GetServiceNameByType(service)));
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLogError(strPrintF("Service %s is not enabled, so it can't be set as the primary service!", GetServiceNameByType(service)));
+		}
 		return;
 	}
 
@@ -389,7 +399,9 @@ void Unet::Internal::Context::GetLobbyList(const LobbyListFilter &filter)
 void Unet::Internal::Context::JoinLobby(const LobbyInfo &lobbyInfo)
 {
 	if (m_status != ContextStatus::Idle) {
-		m_callbacks->OnLogWarn("Can't join new lobby while still in a lobby!");
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLogWarn("Can't join new lobby while still in a lobby!");
+		}
 		return;
 	}
 
@@ -422,13 +434,17 @@ void Unet::Internal::Context::JoinLobby(const LobbyInfo &lobbyInfo)
 void Unet::Internal::Context::JoinLobby(const ServiceID &id)
 {
 	if (m_status != ContextStatus::Idle) {
-		m_callbacks->OnLogError("Can't join new lobby while still in a lobby!");
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLogError("Can't join new lobby while still in a lobby!");
+		}
 		return;
 	}
 
 	auto service = GetService(id.Service);
 	if (service == nullptr) {
-		m_callbacks->OnLogError(strPrintF("Can't join lobby with service ID for %d, service is not enabled!", GetServiceNameByType(id.Service)));
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLogError(strPrintF("Can't join lobby with service ID for %d, service is not enabled!", GetServiceNameByType(id.Service)));
+		}
 		return;
 	}
 
@@ -475,7 +491,9 @@ void Unet::Internal::Context::LeaveLobby(LeaveReason reason)
 void Unet::Internal::Context::KickMember(LobbyMember* member)
 {
 	if (!m_currentLobby->m_info.IsHosting) {
-		m_callbacks->OnLogError("Can't kick members when not hosting!");
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLogError("Can't kick members when not hosting!");
+		}
 		return;
 	}
 
@@ -567,7 +585,9 @@ void Unet::Internal::Context::RequestFile(LobbyMember* member, const char* filen
 {
 	auto file = member->GetFile(filename);
 	if (file == nullptr) {
-		m_callbacks->OnLogError(strPrintF("Couldn't find file \"%s\" on member!", filename));
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLogError(strPrintF("Couldn't find file \"%s\" on member!", filename));
+		}
 		return;
 	}
 
@@ -577,7 +597,9 @@ void Unet::Internal::Context::RequestFile(LobbyMember* member, const char* filen
 void Unet::Internal::Context::RequestFile(LobbyMember* member, LobbyFile* file)
 {
 	if (file->IsValid()) {
-		m_callbacks->OnLogError(strPrintF("Attempted requesting file \"%s\" from member, but the file is already valid!", file->m_filename.c_str()));
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLogError(strPrintF("Attempted requesting file \"%s\" from member, but the file is already valid!", file->m_filename.c_str()));
+		}
 		return;
 	}
 
@@ -595,7 +617,9 @@ void Unet::Internal::Context::SendChat(const char* message)
 
 	if (m_callbacks != nullptr) {
 		auto localMember = m_currentLobby->GetMember(m_localGuid);
-		m_callbacks->OnLobbyChat(localMember, message);
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLobbyChat(localMember, message);
+		}
 	}
 
 	if (m_currentLobby->m_info.IsHosting) {
@@ -1002,7 +1026,9 @@ void Unet::Internal::Context::OnLobbyJoined(const LobbyJoinResult &result)
 		m_status = ContextStatus::Idle;
 		LeaveLobby();
 
-		m_callbacks->OnLobbyJoined(result);
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLobbyJoined(result);
+		}
 		return;
 
 	} else {
@@ -1014,7 +1040,9 @@ void Unet::Internal::Context::OnLobbyJoined(const LobbyJoinResult &result)
 	js["name"] = m_personaName;
 	InternalSendToHost(js);
 
-	m_callbacks->OnLogDebug("Hello sent");
+	if (m_callbacks != nullptr) {
+		m_callbacks->OnLogDebug("Hello sent");
+	}
 }
 
 void Unet::Internal::Context::OnLobbyLeft(const LobbyLeftResult &result)
@@ -1029,7 +1057,9 @@ void Unet::Internal::Context::OnLobbyLeft(const LobbyLeftResult &result)
 		}
 	}
 
-	m_callbacks->OnLobbyLeft(result);
+	if (m_callbacks != nullptr) {
+		m_callbacks->OnLobbyLeft(result);
+	}
 
 	if (m_currentLobby != nullptr) {
 		delete m_currentLobby;
@@ -1050,7 +1080,9 @@ void Unet::Internal::Context::OnLobbyPlayerLeft(LobbyMember* member)
 		InternalSendToAll(js);
 	}
 
-	m_callbacks->OnLobbyPlayerLeft(member);
+	if (m_callbacks != nullptr) {
+		m_callbacks->OnLobbyPlayerLeft(member);
+	}
 }
 
 void Unet::Internal::Context::PrepareReceiveBuffer(size_t size)
