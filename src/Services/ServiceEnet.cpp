@@ -165,7 +165,7 @@ Unet::ServiceType Unet::ServiceEnet::GetType()
 
 Unet::ServiceID Unet::ServiceEnet::GetUserID()
 {
-	//TODO: Use local IP or something?
+	//TODO: Use local Mac address or something
 	return ServiceID(ServiceType::Enet, 0);
 }
 
