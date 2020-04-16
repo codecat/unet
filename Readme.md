@@ -29,13 +29,13 @@ int main()
 	// Create the Unet context
 	Unet::IContext* ctx = Unet::CreateContext();
 
+	// Prepare context callbacks
+	ctx->SetCallbacks(new MyCallbacks);
+
 	// Initialize the services we'll be using (the first EnableService call will be the "primary" service)
 	ctx->EnableService(Unet::ServiceType::Steam);
 	ctx->EnableService(Unet::ServiceType::Galaxy);
 	ctx->EnableService(Unet::ServiceType::Enet);
-
-	// Prepare context callbacks
-	ctx->SetCallbacks(new MyCallbacks);
 
 	// Create a lobby
 	ctx->CreateLobby(Unet::LobbyPrivacy::Public);
