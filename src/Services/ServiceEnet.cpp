@@ -117,7 +117,7 @@ void Unet::ServiceEnet::RunCallbacks()
 
 				auto it = std::find(m_peers.begin(), m_peers.end(), ev.peer);
 				if (it == m_peers.end()) {
-					m_ctx->GetCallbacks()->OnLogWarn(strPrintF("[Enet] Couldn't find peer in list of connected peers!"));
+					m_ctx->GetCallbacks()->OnLogWarn("[Enet] Couldn't find peer in list of connected peers!");
 				} else {
 					m_peers.erase(it);
 				}
