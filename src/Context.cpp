@@ -278,7 +278,10 @@ void Unet::Internal::Context::SetPrimaryService(ServiceType service)
 
 	m_primaryService = service;
 
-	m_personaName = s->GetUserName();
+	auto newName = s->GetUserName();
+	if (!newName.empty()) {
+		m_personaName = newName;
+	}
 }
 
 Unet::ServiceType Unet::Internal::Context::GetPrimaryService()

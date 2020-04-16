@@ -33,6 +33,8 @@ namespace Unet
 
 		// Set the primary service to the given service type. The service type must already be enabled
 		// using EnableService.
+		//
+		// This also automatically sets the persona name to the name reported by the service, if any.
 		virtual void SetPrimaryService(ServiceType service) = 0;
 
 		// Gets the currently set primary service.
