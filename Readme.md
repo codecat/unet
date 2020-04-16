@@ -87,7 +87,9 @@ unet_project({
 Notice that Steam, Galaxy, and Enet are **modules**. You may decide to include them or leave them, if you don't support them. You must pass the path in which the SDK for the service is in `dir`, and specify in `link` whether we should link to the SDK or not.
 
 ## Games that use Unet
-There are currently no games known that use this library. If you're using Unet, let me know, and I'll add you to this list!
+* [Heroes of Hammerwatch](https://store.steampowered.com/app/677120/Heroes_of_Hammerwatch/)
+
+If you're using Unet, let me know, and I'll add you to this list!
 
 ## Technical info
 Internally, each service sends packets on 3 or more separate channels.
