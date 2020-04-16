@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
+#include <cinttypes>
 
 #include <string>
 #include <vector>
