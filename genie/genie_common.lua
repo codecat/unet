@@ -37,7 +37,10 @@ function unet_modules(modules, core)
 		local f = dofile(DIR_GENIE .. 'genie_service_' .. k .. '.lua')
 		if f then
 			f(v, core)
+			configuration {}
 			defines { 'UNET_MODULE_' .. k:upper() }
+		else
+			error('Unable to find service module ' .. k .. '!')
 		end
 	end
 end
