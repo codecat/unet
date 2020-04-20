@@ -1,11 +1,11 @@
 @echo off
 
 cd genie
-genie vs2017
+genie vs2019
 
 if not ["%errorlevel%"]==["0"] (
 	pause
 	exit /b %errorlevel%
 )
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.exe" projects/vs2017/Unet.sln
+start projects/vs2019/Unet.sln

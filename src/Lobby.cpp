@@ -170,7 +170,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 		if (member->UnetPeer != m_ctx->m_localPeer && member->LastPingRequest.time_since_epoch().count() > 0) {
 			auto now = std::chrono::high_resolution_clock::now();
 			auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(now - member->LastPingRequest);
-			member->Ping = dt.count();
+			member->Ping = (int)dt.count();
 			member->LastPingRequest = std::chrono::high_resolution_clock::time_point();
 		}
 
