@@ -46,4 +46,9 @@ function unet_cli_project(options)
 		elseif os.get() == 'macosx' then
 			linkoptions { '-Wl,-rpath,"@loader_path",-rpath,.' }
 		end
+
+		-- On Windows, disable permissive compiling for more healthy Windows errors
+		if os.get() == 'windows' then
+			buildoptions { '/permissive-' }
+		end
 end

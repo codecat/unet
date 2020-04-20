@@ -46,4 +46,9 @@ function unet_project(options)
 				DIR_ROOT .. 'src/System/SystemMacOS.mm',
 			}
 		end
+
+		-- On Windows, disable permissive compiling for more healthy Windows errors
+		if os.get() == 'windows' then
+			buildoptions { '/permissive-' }
+		end
 end
