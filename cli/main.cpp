@@ -408,6 +408,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  create [name]       - Creates a public lobby");
 		LOG_INFO("  list                - Requests all available lobbies");
 		LOG_INFO("  join <num>          - Joins a lobby by the number in the list");
+		LOG_INFO("  joinleave <num>     - Joins a lobby and immediately leaves it (for cancelation testing)");
 		LOG_INFO("  connect <ip> [port] - Connect to a server directly by IP address (if enet is enabled)");
 		LOG_INFO("  leave               - Leaves the current lobby with all services");
 		LOG_INFO("  outage <service>    - Simulates a service outage");
@@ -814,6 +815,24 @@ static void HandleCommand(const s2::string &line)
 		while (g_ctx->GetStatus() == Unet::ContextStatus::Connecting) {
 			RunCallbacks();
 		}
+
+	} else if (parse[0] == "joinleave" && parse.len() == 2) {
+		if (g_lastLobbyList.Code != Unet::Result::OK) {
+			LOG_ERROR("Previous lobby list request failed! Use the \"list\" command again.");
+			return;
+		}
+
+		int num = atoi(parse[1]);
+		if (num < 0 || num >= (int)g_lastLobbyList.Lobbies.size()) {
+			LOG_INFO("Number %d is out of range of last lobby list!", num);
+			return;
+		}
+
+		auto lobbyInfo = g_lastLobbyList.Lobbies[num];
+
+		LOG_INFO("Join-leaving \"%s\"", lobbyInfo.Name.c_str());
+		g_ctx->JoinLobby(lobbyInfo);
+		g_ctx->LeaveLobby();
 
 	} else if (parse[0] == "connect" && parse.len() >= 2) {
 		if (!g_enetEnabled) {
