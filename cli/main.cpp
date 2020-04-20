@@ -619,14 +619,13 @@ static void HandleCommand(const s2::string &line)
 		auto serviceName = parse[1];
 		auto serviceType = Unet::GetServiceTypeByName(serviceName);
 
-		uint64_t id;
-		if (parse[2].startswith("0x")) {
-			id = strtoll(parse[1].c_str() + 2, nullptr, 16);
-		} else {
-			id = atoll(parse[1]);
-		}
+		uint64_t id = strtoll(parse[2].c_str(), nullptr, 0);
 
-		g_ctx->FetchLobbyInfo(Unet::ServiceID(serviceType, id));
+		LOG_DEBUG("Fetching 0x%016lx", id);
+
+		if (!g_ctx->FetchLobbyInfo(Unet::ServiceID(serviceType, id))) {
+			LOG_ERROR("Unable to begin fetching lobby info.");
+		}
 
 	} else if (parse[0] == "list") {
 		Unet::LobbyListFilter filter;
