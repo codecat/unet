@@ -6,7 +6,7 @@ void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::Lobb
 {
 	m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Lobby list received (%d)", (int)lobbyCount));
 
-	m_dataFetch.clear();
+	m_listDataFetch.clear();
 
 	if (result != galaxy::api::LOBBY_LIST_RESULT_SUCCESS) {
 		m_self->m_requestLobbyList->Code = Result::Error;
@@ -27,29 +27,29 @@ void Unet::LobbyListListener::OnLobbyList(uint32_t lobbyCount, galaxy::api::Lobb
 
 		try {
 			galaxy::api::Matchmaking()->RequestLobbyData(lobbyId, this);
-			m_dataFetch.emplace_back(lobbyId);
+			m_listDataFetch.emplace_back(lobbyId);
 		} catch (const galaxy::api::IError &error) {
 			m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Couldn't get lobby data: %s", error.GetMsg()));
 		}
 	}
 
-	if (m_dataFetch.size() == 0) {
+	if (m_listDataFetch.size() == 0) {
 		m_self->m_requestLobbyList->Code = Result::Error;
 	}
 }
 
 void Unet::LobbyListListener::LobbyDataUpdated()
 {
-	if (m_dataFetch.size() == 0) {
+	if (m_listDataFetch.size() == 0) {
 		m_self->m_requestLobbyList->Code = Result::OK;
 	}
 }
 
 void Unet::LobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::GalaxyID& lobbyID)
 {
-	auto it = std::find(m_dataFetch.begin(), m_dataFetch.end(), lobbyID);
-	if (it != m_dataFetch.end()) {
-		m_dataFetch.erase(it);
+	auto it = std::find(m_listDataFetch.begin(), m_listDataFetch.end(), lobbyID);
+	if (it != m_listDataFetch.end()) {
+		m_listDataFetch.erase(it);
 	}
 
 	xg::Guid unetGuid(galaxy::api::Matchmaking()->GetLobbyData(lobbyID, "unet-guid"));
@@ -69,9 +69,9 @@ void Unet::LobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Gala
 
 void Unet::LobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::GalaxyID& lobbyID, FailureReason failureReason)
 {
-	auto it = std::find(m_dataFetch.begin(), m_dataFetch.end(), lobbyID);
-	if (it != m_dataFetch.end()) {
-		m_dataFetch.erase(it);
+	auto it = std::find(m_listDataFetch.begin(), m_listDataFetch.end(), lobbyID);
+	if (it != m_listDataFetch.end()) {
+		m_listDataFetch.erase(it);
 	}
 
 	m_self->m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to retrieve lobby data, error %d", (int)failureReason));
@@ -181,6 +181,20 @@ void Unet::ServiceGalaxy::GetLobbyList()
 	} catch (const galaxy::api::IError &error) {
 		m_requestLobbyList->Code = Result::Error;
 		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to list lobbies: %s", error.GetMsg()));
+	}
+}
+
+bool Unet::ServiceGalaxy::FetchLobbyInfo(const ServiceID &id)
+{
+	assert(id.Service == ServiceType::Galaxy);
+
+	try {
+		galaxy::api::Matchmaking()->RequestLobbyData(id.ID, this);
+		m_dataFetch.emplace_back(id.ID);
+		return true;
+	} catch (const galaxy::api::IError &error) {
+		m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to fetch lobby info: %s", error.GetMsg()));
+		return false;
 	}
 }
 
@@ -426,4 +440,47 @@ void Unet::ServiceGalaxy::OnLobbyMemberStateChanged(const galaxy::api::GalaxyID&
 
 		currentLobby->RemoveMemberService(ServiceID(ServiceType::Galaxy, memberID.ToUint64()));
 	}
+}
+
+void Unet::ServiceGalaxy::OnLobbyDataRetrieveSuccess(const galaxy::api::GalaxyID& lobbyID)
+{
+	auto it = std::find(m_dataFetch.begin(), m_dataFetch.end(), lobbyID);
+	if (it == m_dataFetch.end()) {
+		m_ctx->GetCallbacks()->OnLogWarn("[Galaxy] Received an unexpected lobby data retrieval callback!");
+		return;
+	}
+	m_dataFetch.erase(it);
+
+	LobbyInfoFetchResult res;
+	res.ID = ServiceID(ServiceType::Galaxy, lobbyID.ToUint64());
+
+	xg::Guid unetGuid(galaxy::api::Matchmaking()->GetLobbyData(lobbyID, "unet-guid"));
+	if (!unetGuid.isValid()) {
+		m_ctx->GetCallbacks()->OnLogDebug("[Galaxy] unet-guid is not valid!");
+
+		res.Code = Result::Error;
+		m_ctx->GetCallbacks()->OnLobbyInfoFetched(res);
+		return;
+	}
+
+	res.Info.IsHosting = galaxy::api::Matchmaking()->GetLobbyOwner(lobbyID) == galaxy::api::User()->GetGalaxyID();
+	res.Info.Privacy = (LobbyPrivacy)atoi(galaxy::api::Matchmaking()->GetLobbyData(lobbyID, "unet-privacy"));
+	res.Info.NumPlayers = galaxy::api::Matchmaking()->GetNumLobbyMembers(lobbyID);
+	res.Info.MaxPlayers = galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(lobbyID);
+	res.Info.UnetGuid = unetGuid;
+	res.Info.Name = galaxy::api::Matchmaking()->GetLobbyData(lobbyID, "unet-name");
+	res.Info.EntryPoints.emplace_back(ServiceID(ServiceType::Galaxy, lobbyID.ToUint64()));
+
+	res.Code = Result::OK;
+	m_ctx->GetCallbacks()->OnLobbyInfoFetched(res);
+}
+
+void Unet::ServiceGalaxy::OnLobbyDataRetrieveFailure(const galaxy::api::GalaxyID& lobbyID, FailureReason failureReason)
+{
+	m_ctx->GetCallbacks()->OnLogDebug(strPrintF("[Galaxy] Failed to retrieve lobby data, error %d", (int)failureReason));
+
+	LobbyInfoFetchResult res;
+	res.ID = ServiceID(ServiceType::Galaxy, lobbyID.ToUint64());
+	res.Code = Result::Error;
+	m_ctx->GetCallbacks()->OnLobbyInfoFetched(res);
 }

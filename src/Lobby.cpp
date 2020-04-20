@@ -183,6 +183,9 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 		m_info.Name = GetData("unet-name");
 		m_info.UnetGuid = xg::Guid(GetData("unet-guid"));
 
+		std::string strPrivacy = GetData("unet-privacy");
+		m_info.Privacy = (LobbyPrivacy)atoi(strPrivacy.c_str());
+
 		for (auto &member : js["members"]) {
 			DeserializeMember(member);
 		}

@@ -12,6 +12,7 @@ namespace Unet
 	{
 	private:
 		std::vector<uint64_t> m_listDataFetch;
+		std::vector<uint64_t> m_dataFetch;
 
 		MultiCallback<CreateLobbyResult>::ServiceRequest* m_requestLobbyCreated = nullptr;
 		CCallResult<ServiceSteam, LobbyCreated_t> m_callLobbyCreated;
@@ -46,6 +47,7 @@ namespace Unet
 		virtual void SetLobbyJoinable(const ServiceID &lobbyId, bool joinable) override;
 
 		virtual void GetLobbyList() override;
+		virtual bool FetchLobbyInfo(const ServiceID &id) override;
 		virtual void JoinLobby(const ServiceID &id) override;
 		virtual void LeaveLobby() override;
 

@@ -65,6 +65,12 @@ namespace Unet
 		// The callback OnLobbyList will be called with a LobbyListResult object.
 		virtual void GetLobbyList(const LobbyListFilter &filter) = 0;
 
+		// Request information about a lobby by its entry point ID. This will only return with the entry
+		// point to that service.
+		//
+		// The callback OnLobbyInfoFetched will be called with a LobbyInfoFetchResult object.
+		virtual bool FetchLobbyInfo(const ServiceID &id) = 0;
+
 		// Joins a lobby by the lobby info. This will connect to all entry points that are contained
 		// within the lobby info.
 		//

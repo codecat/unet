@@ -103,6 +103,26 @@ public:
 		}
 	}
 
+	virtual void OnLobbyInfoFetched(const Unet::LobbyInfoFetchResult &result) override
+	{
+		if (result.Code != Unet::Result::OK) {
+			LOG_ERROR("Couldn't fetch lobby info!");
+			return;
+		}
+
+		LOG_FROM_CALLBACK("Fetched lobby info:");
+		LOG_FROM_CALLBACK("    Is hosting: %s", result.Info.IsHosting ? "yes" : "no");
+		LOG_FROM_CALLBACK("       Privacy: %s", result.Info.Privacy == Unet::LobbyPrivacy::Public ? "public" : "private");
+		LOG_FROM_CALLBACK("       Players: %d / %d", result.Info.NumPlayers, result.Info.MaxPlayers);
+		std::string lobbyGuid = result.Info.UnetGuid.str();
+		LOG_FROM_CALLBACK("          Guid: %s", lobbyGuid.c_str());
+		LOG_FROM_CALLBACK("          Name: \"%s\"", result.Info.Name.c_str());
+		LOG_FROM_CALLBACK("  Entry points: %d", (int)result.Info.EntryPoints.size());
+		for (auto& entry : result.Info.EntryPoints) {
+			LOG_FROM_CALLBACK("    %s (0x%016" PRIx64 ")", Unet::GetServiceNameByType(entry.Service), entry.ID);
+		}
+	}
+
 	virtual void OnLobbyJoined(const Unet::LobbyJoinResult &result) override
 	{
 		if (result.Code != Unet::Result::OK) {
@@ -406,6 +426,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  wait                - Keeps running callbacks until a key is pressed or when disconnected");
 		LOG_INFO("");
 		LOG_INFO("  create [name]       - Creates a public lobby");
+		LOG_INFO("  fetch <service> <id> - Fetches lobby info for an ID for a service");
 		LOG_INFO("  list                - Requests all available lobbies");
 		LOG_INFO("  join <num>          - Joins a lobby by the number in the list");
 		LOG_INFO("  joinleave <num>     - Joins a lobby and immediately leaves it (for cancelation testing)");
@@ -593,6 +614,19 @@ static void HandleCommand(const s2::string &line)
 		while (g_ctx->GetStatus() == Unet::ContextStatus::Connecting) {
 			RunCallbacks();
 		}
+
+	} else if (parse[0] == "fetch" && parse.len() == 3) {
+		auto serviceName = parse[1];
+		auto serviceType = Unet::GetServiceTypeByName(serviceName);
+
+		uint64_t id;
+		if (parse[2].startswith("0x")) {
+			id = strtoll(parse[1].c_str() + 2, nullptr, 16);
+		} else {
+			id = atoll(parse[1]);
+		}
+
+		g_ctx->FetchLobbyInfo(Unet::ServiceID(serviceType, id));
 
 	} else if (parse[0] == "list") {
 		Unet::LobbyListFilter filter;

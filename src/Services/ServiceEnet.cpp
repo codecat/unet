@@ -215,6 +215,12 @@ void Unet::ServiceEnet::GetLobbyList()
 	req->Code = Result::OK;
 }
 
+bool Unet::ServiceEnet::FetchLobbyInfo(const ServiceID &id)
+{
+	//TODO: Maybe this is possible somehow
+	return false;
+}
+
 void Unet::ServiceEnet::JoinLobby(const ServiceID &id)
 {
 	assert(id.Service == ServiceType::Enet);

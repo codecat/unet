@@ -31,6 +31,7 @@ namespace Unet
 		virtual void SetLobbyJoinable(const ServiceID &lobbyId, bool joinable) = 0;
 
 		virtual void GetLobbyList() = 0;
+		virtual bool FetchLobbyInfo(const ServiceID &id) = 0;
 		virtual void JoinLobby(const ServiceID &id) = 0;
 		virtual void LeaveLobby() = 0;
 

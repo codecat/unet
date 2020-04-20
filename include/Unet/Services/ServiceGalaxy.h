@@ -17,7 +17,7 @@ namespace Unet
 	class LobbyListListener : public GalaxyListener, public galaxy::api::ILobbyListListener, public galaxy::api::ILobbyDataRetrieveListener
 	{
 	private:
-		std::vector<galaxy::api::GalaxyID> m_dataFetch;
+		std::vector<galaxy::api::GalaxyID> m_listDataFetch;
 
 	public:
 		LobbyListListener(ServiceGalaxy* self) { m_self = self; }
@@ -31,10 +31,12 @@ namespace Unet
 		galaxy::api::ILobbyCreatedListener,
 		galaxy::api::ILobbyEnteredListener,
 		galaxy::api::ILobbyLeftListener,
-		galaxy::api::ILobbyMemberStateListener
+		galaxy::api::ILobbyMemberStateListener,
+		galaxy::api::ILobbyDataRetrieveListener
 	{
 	private:
 		LobbyListListener m_lobbyListListener;
+		std::vector<galaxy::api::GalaxyID> m_dataFetch;
 
 	public:
 		MultiCallback<CreateLobbyResult>::ServiceRequest* m_requestLobbyCreated = nullptr;
@@ -58,6 +60,7 @@ namespace Unet
 		virtual void SetLobbyJoinable(const ServiceID &lobbyId, bool joinable) override;
 
 		virtual void GetLobbyList() override;
+		virtual bool FetchLobbyInfo(const ServiceID &id) override;
 		virtual void JoinLobby(const ServiceID &id) override;
 		virtual void LeaveLobby() override;
 
@@ -85,5 +88,7 @@ namespace Unet
 		virtual void OnLobbyEntered(const galaxy::api::GalaxyID& lobbyID, galaxy::api::LobbyEnterResult result) override;
 		virtual void OnLobbyLeft(const galaxy::api::GalaxyID& lobbyID, LobbyLeaveReason leaveReason) override;
 		virtual void OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& lobbyID, const galaxy::api::GalaxyID& memberID, galaxy::api::LobbyMemberStateChange memberStateChange) override;
+		virtual void OnLobbyDataRetrieveSuccess(const galaxy::api::GalaxyID& lobbyID) override;
+		virtual void OnLobbyDataRetrieveFailure(const galaxy::api::GalaxyID& lobbyID, FailureReason failureReason) override;
 	};
 }

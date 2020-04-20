@@ -396,6 +396,19 @@ void Unet::Internal::Context::GetLobbyList(const LobbyListFilter &filter)
 	}
 }
 
+bool Unet::Internal::Context::FetchLobbyInfo(const ServiceID &id)
+{
+	auto service = GetService(id.Service);
+	if (service == nullptr) {
+		if (m_callbacks != nullptr) {
+			m_callbacks->OnLogError(strPrintF("Can't fetch info for lobby with service ID for %s, service is not enabled!", GetServiceNameByType(id.Service)));
+		}
+		return false;
+	}
+
+	return service->FetchLobbyInfo(id);
+}
+
 void Unet::Internal::Context::JoinLobby(const LobbyInfo &lobbyInfo)
 {
 	if (m_status != ContextStatus::Idle) {
@@ -443,7 +456,7 @@ void Unet::Internal::Context::JoinLobby(const ServiceID &id)
 	auto service = GetService(id.Service);
 	if (service == nullptr) {
 		if (m_callbacks != nullptr) {
-			m_callbacks->OnLogError(strPrintF("Can't join lobby with service ID for %d, service is not enabled!", GetServiceNameByType(id.Service)));
+			m_callbacks->OnLogError(strPrintF("Can't join lobby with service ID for %s, service is not enabled!", GetServiceNameByType(id.Service)));
 		}
 		return;
 	}
@@ -963,6 +976,7 @@ void Unet::Internal::Context::OnLobbyCreated(const CreateLobbyResult &result)
 
 		m_currentLobby->SetData("unet-guid", unetGuid.c_str());
 		m_currentLobby->SetData("unet-name", lobbyInfo.Name.c_str());
+		m_currentLobby->SetData("unet-privacy", strPrintF("%d", (int)lobbyInfo.Privacy));
 
 		auto newMember = new LobbyMember(this);
 		newMember->UnetGuid = m_localGuid;

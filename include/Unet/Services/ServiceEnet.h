@@ -55,6 +55,7 @@ namespace Unet
 		virtual void SetLobbyJoinable(const ServiceID &lobbyId, bool joinable) override;
 
 		virtual void GetLobbyList() override;
+		virtual bool FetchLobbyInfo(const ServiceID &id) override;
 		virtual void JoinLobby(const ServiceID &id) override;
 		virtual void LeaveLobby() override;
 

@@ -91,6 +91,18 @@ void Unet::ServiceSteam::GetLobbyList()
 	m_callLobbyList.Set(call, this, &ServiceSteam::OnLobbyList);
 }
 
+bool Unet::ServiceSteam::FetchLobbyInfo(const ServiceID &id)
+{
+	assert(id.Service == ServiceType::Steam);
+
+	if (SteamMatchmaking()->RequestLobbyData((uint64)id.ID)) {
+		m_dataFetch.emplace_back(id.ID);
+		return true;
+	}
+
+	return false;
+}
+
 void Unet::ServiceSteam::JoinLobby(const ServiceID &id)
 {
 	assert(id.Service == ServiceType::Steam);
@@ -342,10 +354,10 @@ void Unet::ServiceSteam::OnLobbyDataUpdate(LobbyDataUpdate_t* result)
 	if (result->m_ulSteamIDMember == result->m_ulSteamIDLobby) {
 		// Lobby data
 
-		auto it = std::find(m_listDataFetch.begin(), m_listDataFetch.end(), result->m_ulSteamIDLobby);
-		if (it != m_listDataFetch.end()) {
+		auto itListDataFetch = std::find(m_listDataFetch.begin(), m_listDataFetch.end(), result->m_ulSteamIDLobby);
+		if (itListDataFetch != m_listDataFetch.end()) {
 			// Server list data request
-			m_listDataFetch.erase(it);
+			m_listDataFetch.erase(itListDataFetch);
 
 			xg::Guid unetGuid(SteamMatchmaking()->GetLobbyData(result->m_ulSteamIDLobby, "unet-guid"));
 			if (!unetGuid.isValid()) {
@@ -360,11 +372,38 @@ void Unet::ServiceSteam::OnLobbyDataUpdate(LobbyDataUpdate_t* result)
 			m_requestLobbyList->Data->AddEntryPoint(unetGuid, newEntryPoint);
 
 			LobbyListDataUpdated();
-
-		} else {
-			// Regular lobby data update
-
 		}
+
+		auto itDataFetch = std::find(m_dataFetch.begin(), m_dataFetch.end(), result->m_ulSteamIDLobby);
+		if (itDataFetch != m_dataFetch.end()) {
+			// Fetch LobbyInfo data request
+			m_dataFetch.erase(itDataFetch);
+
+			LobbyInfoFetchResult res;
+			res.ID = ServiceID(ServiceType::Steam, result->m_ulSteamIDLobby);
+
+			xg::Guid unetGuid(SteamMatchmaking()->GetLobbyData(result->m_ulSteamIDLobby, "unet-guid"));
+			if (!unetGuid.isValid()) {
+				m_ctx->GetCallbacks()->OnLogDebug("[Steam] unet-guid is not valid!");
+
+				res.Code = Result::Error;
+				m_ctx->GetCallbacks()->OnLobbyInfoFetched(res);
+				return;
+			}
+
+			res.Info.IsHosting = SteamMatchmaking()->GetLobbyOwner(result->m_ulSteamIDLobby) == SteamUser()->GetSteamID();
+			res.Info.Privacy = (LobbyPrivacy)atoi(SteamMatchmaking()->GetLobbyData(result->m_ulSteamIDLobby, "unet-privacy"));
+			res.Info.NumPlayers = SteamMatchmaking()->GetNumLobbyMembers(result->m_ulSteamIDLobby);
+			res.Info.MaxPlayers = SteamMatchmaking()->GetLobbyMemberLimit(result->m_ulSteamIDLobby);
+			res.Info.UnetGuid = unetGuid;
+			res.Info.Name = SteamMatchmaking()->GetLobbyData(result->m_ulSteamIDLobby, "unet-name");
+			res.Info.EntryPoints.emplace_back(ServiceID(ServiceType::Steam, result->m_ulSteamIDLobby));
+
+			res.Code = Result::OK;
+			m_ctx->GetCallbacks()->OnLobbyInfoFetched(res);
+		}
+
+		// Regular lobby data update
 
 	} else {
 		// Member data

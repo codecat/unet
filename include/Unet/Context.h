@@ -41,6 +41,7 @@ namespace Unet
 			virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers, const char* name = nullptr) override;
 
 			virtual void GetLobbyList(const LobbyListFilter &filter) override;
+			virtual bool FetchLobbyInfo(const ServiceID &id) override;
 			virtual void JoinLobby(const LobbyInfo &lobbyInfo) override;
 			virtual void JoinLobby(const ServiceID &id) override;
 			virtual void LeaveLobby(LeaveReason reason = LeaveReason::UserLeave) override;
