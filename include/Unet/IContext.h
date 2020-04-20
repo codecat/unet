@@ -9,8 +9,13 @@ namespace Unet
 {
 	enum class ContextStatus
 	{
+		// Not connected to anything and ready to connect.
 		Idle,
+
+		// Busy connecting to a host or creating a lobby.
 		Connecting,
+
+		// Currently in a lobby.
 		Connected,
 	};
 
