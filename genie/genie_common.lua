@@ -7,6 +7,28 @@ function unet_verify_options(options)
 	return options
 end
 
+function unet_merge_config(cfg, filter)
+	local ret = {}
+
+	if type(cfg) == 'table' then
+		for _, v in ipairs(cfg) do
+			table.insert(ret, v)
+		end
+	else
+		table.insert(ret, cfg)
+	end
+
+	if type(filter) == 'table' then
+		for _, v in ipairs(filter) do
+			table.insert(ret, v)
+		end
+	else
+		table.insert(ret, filter)
+	end
+
+	return ret
+end
+
 -- Include the standard defines for Unet.
 function unet_defines()
 	if os.get() == 'windows' then
@@ -37,7 +59,7 @@ function unet_modules(modules, core)
 		local f = dofile(DIR_GENIE .. 'genie_service_' .. k .. '.lua')
 		if f then
 			f(v, core)
-			configuration {}
+			configuration(v.config or {})
 			defines { 'UNET_MODULE_' .. k:upper() }
 		else
 			error('Unable to find service module ' .. k .. '!')

@@ -4,8 +4,9 @@ local DIR_LIB = DIR_ROOT .. 'lib/'
 return function(options, core)
 	if not options then options = {} end
 	if not options.dir then options.dir = DIR_LIB .. 'galaxy/' end
+	if not options.config then options.config = {} end
 
-	configuration {}
+	configuration(options.config)
 
 	if core then
 		-- Files
@@ -28,12 +29,12 @@ return function(options, core)
 
 		-- Link
 		if os.get() == 'linux' then
-			configuration 'x64'
+			configuration(unet_merge_config(options.config, 'x64'))
 				links { 'Galaxy64' }
-			configuration 'x32'
+			configuration(unet_merge_config(options.config, 'x32'))
 				links { 'Galaxy' }
 		else
-			configuration {}
+			configuration(options.config)
 				links { 'Galaxy' }
 		end
 	end

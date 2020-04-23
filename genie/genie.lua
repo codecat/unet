@@ -12,6 +12,8 @@ solution 'Unet'
 	configurations {
 		'Debug',
 		'Release',
+		'SteamDebug',
+		'SteamRelease',
 	}
 
 	-- Platforms
@@ -31,18 +33,28 @@ solution 'Unet'
 		'Symbols',
 	}
 
-	configuration 'Debug'
-		targetdir(DIR_ROOT .. 'bin/debug/')
+	configuration '*Debug'
 		removeflags { 'Optimize' }
 
+	configuration '*Release'
+		flags { 'OptimizeSpeed' }
+
+	configuration 'Debug'
+		targetdir(DIR_ROOT .. 'bin/debug/')
 	configuration 'Release'
 		targetdir(DIR_ROOT .. 'bin/release/')
-		flags { 'OptimizeSpeed' }
+	configuration 'SteamDebug'
+		targetdir(DIR_ROOT .. 'bin/steamdebug/')
+	configuration 'SteamRelease'
+		targetdir(DIR_ROOT .. 'bin/steamrelease/')
 
 	-- Projects
 	options = {
 		modules = {
-			steam = { link = true },
+			steam = {
+				config = 'Steam*',
+				link = true
+			},
 			galaxy = { link = true },
 			enet = { link = true },
 		}
