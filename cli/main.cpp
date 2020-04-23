@@ -353,9 +353,11 @@ static void InitializeGalaxy(const char* clientId, const char* clientSecret)
 	g_galaxyEnabled = true;
 
 	if (g_steamEnabled) {
+#if defined(UNET_MODULE_STEAM)
 		uint32 secretData = 0;
 		SteamAPICall_t hSteamAPICall = SteamUser()->RequestEncryptedAppTicket(&secretData, sizeof(secretData));
 		g_steamTicketCallback.m_callback.Set(hSteamAPICall, &g_steamTicketCallback, &SteamTicketCallback::OnCallback);
+#endif
 	} else {
 		try {
 			galaxy::api::User()->SignInGalaxy(true);
@@ -1120,6 +1122,16 @@ static s2::string ReadLine()
 int main(int argc, const char* argv[])
 {
 	srand((unsigned int)time(nullptr));
+
+#if defined(UNET_MODULE_STEAM)
+	LOG_INFO("Enabled module: Steam");
+#endif
+#if defined(UNET_MODULE_GALAXY)
+	LOG_INFO("Enabled module: Galaxy");
+#endif
+#if defined(UNET_MODULE_ENET)
+	LOG_INFO("Enabled module: Enet");
+#endif
 
 	g_ctx = Unet::CreateContext();
 	g_ctx->SetCallbacks(new TestCallbacks);
