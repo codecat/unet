@@ -61,6 +61,7 @@ function unet_modules(modules, core)
 			f(v, core)
 			configuration(v.config or {})
 			defines { 'UNET_MODULE_' .. k:upper() }
+			configuration {}
 		else
 			error('Unable to find service module ' .. k .. '!')
 		end
