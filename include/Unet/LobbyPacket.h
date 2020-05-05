@@ -30,6 +30,8 @@ namespace Unet
 		// Sent by the server to announce that a member has connected with a new service ID
 		MemberNewService,
 
+		// Sent by the server to announce a new lobby name
+		LobbyName,
 		// Sent by the server to announce a new maximum player count
 		LobbyMaxPlayers,
 

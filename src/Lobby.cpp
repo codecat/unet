@@ -246,6 +246,14 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 
 		AddMemberService(guid, id);
 
+	} else if (type == LobbyPacketType::LobbyName) {
+		if (m_info.IsHosting) {
+			return;
+		}
+
+		auto name = js["name"].get<std::string>();
+		SetName(name);
+
 	} else if (type == LobbyPacketType::LobbyMaxPlayers) {
 		if (m_info.IsHosting) {
 			return;
@@ -628,12 +636,38 @@ void Unet::Lobby::RemoveMember(LobbyMember* member)
 	delete member;
 }
 
+void Unet::Lobby::SetName(const std::string &name)
+{
+	if (m_info.Name == name) {
+		return;
+	}
+
+	std::string oldname = m_info.Name;
+	m_info.Name = name;
+
+	if (m_info.IsHosting) {
+		for (auto &entryPoint : m_info.EntryPoints) {
+			auto service = m_ctx->GetService(entryPoint.Service);
+			assert(service != nullptr);
+			service->SetLobbyData(entryPoint, "unet-name", name.c_str());
+		}
+
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyName;
+		js["name"] = name;
+		m_ctx->InternalSendToAll(js);
+	}
+
+	m_ctx->GetCallbacks()->OnLobbyNameChanged(oldname, name);
+}
+
 void Unet::Lobby::SetMaxPlayers(int amount)
 {
 	if (m_info.MaxPlayers == amount) {
 		return;
 	}
 
+	int oldamount = m_info.MaxPlayers;
 	m_info.MaxPlayers = amount;
 
 	if (m_info.IsHosting) {
@@ -648,6 +682,8 @@ void Unet::Lobby::SetMaxPlayers(int amount)
 		js["amount"] = amount;
 		m_ctx->InternalSendToAll(js);
 	}
+
+	m_ctx->GetCallbacks()->OnLobbyMaxPlayersChanged(oldamount, amount);
 }
 
 void Unet::Lobby::SetPrivacy(LobbyPrivacy privacy)

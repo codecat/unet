@@ -145,6 +145,16 @@ public:
 		LOG_FROM_CALLBACK("Left lobby: %s", reasonStr);
 	}
 
+	virtual void OnLobbyNameChanged(const std::string &oldname, const std::string &newname) override
+	{
+		LOG_FROM_CALLBACK("Lobby name changed: \"%s\" => \"%s\"", oldname.c_str(), newname.c_str());
+	}
+
+	virtual void OnLobbyMaxPlayersChanged(int oldamount, int newamount) override
+	{
+		LOG_FROM_CALLBACK("Max players changed: %d => %d", oldamount, newamount);
+	}
+
 	virtual void OnLobbyPlayerJoined(Unet::LobbyMember* member) override
 	{
 		LOG_FROM_CALLBACK("Player joined: %s", member->Name.c_str());
@@ -436,6 +446,7 @@ static void HandleCommand(const s2::string &line)
 		LOG_INFO("  leave               - Leaves the current lobby with all services");
 		LOG_INFO("  outage <service>    - Simulates a service outage");
 		LOG_INFO("");
+		LOG_INFO("  setname <name>      - Sets the lobby name (only available on the host)");
 		LOG_INFO("  data [num]          - Shows all lobby data by the number in the list, or the current lobby");
 		LOG_INFO("  memberdata [peer]   - Shows all lobby member data for the given peer, or the local member");
 		LOG_INFO("  setdata <name> <value> - Sets lobby data (only available on the host)");
@@ -632,6 +643,15 @@ static void HandleCommand(const s2::string &line)
 	} else if (parse[0] == "list") {
 		Unet::LobbyListFilter filter;
 		g_ctx->GetLobbyList(filter);
+
+	} else if (parse[0] == "setname" && parse.len() == 2) {
+		auto currentLobby = g_ctx->CurrentLobby();
+		if (currentLobby == nullptr) {
+			LOG_ERROR("Not in a lobby");
+			return;
+		}
+
+		currentLobby->SetName(parse[1].c_str());
 
 	} else if (parse[0] == "data") {
 		std::vector<Unet::LobbyData> lobbyData;

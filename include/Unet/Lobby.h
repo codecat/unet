@@ -44,8 +44,8 @@ namespace Unet
 		void RemoveMemberService(const ServiceID &id);
 		void RemoveMember(LobbyMember* member);
 
+		void SetName(const std::string &name);
 		void SetMaxPlayers(int amount);
-
 		void SetPrivacy(LobbyPrivacy privacy);
 		void SetJoinable(bool joinable);
 
