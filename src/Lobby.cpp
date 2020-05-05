@@ -322,7 +322,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
 			js["guid"] = peerMember->UnetGuid.str();
 			js["name"] = name;
-			m_ctx->InternalSendToAllExcept(peerMember, js);
+			m_ctx->InternalSendToAll(js);
 
 			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(peerMember, name);
 
