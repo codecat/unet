@@ -186,6 +186,11 @@ public:
 		}
 	}
 
+	virtual void OnLobbyMemberNameChanged(Unet::LobbyMember* member, const std::string &oldname) override
+	{
+		LOG_FROM_CALLBACK("Lobby member changed their name: \"%s\" => \"%s\"", oldname.c_str(), member->Name.c_str());
+	}
+
 	virtual void OnLobbyFileAdded(Unet::LobbyMember* member, const Unet::LobbyFile* file) override
 	{
 		LOG_FROM_CALLBACK("%s added file \"%s\"", member->Name.c_str(), file->m_filename.c_str());

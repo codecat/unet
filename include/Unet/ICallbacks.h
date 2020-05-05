@@ -38,6 +38,9 @@ namespace Unet
 		virtual void OnLobbyDataChanged(const std::string &name) {}
 		virtual void OnLobbyMemberDataChanged(LobbyMember* member, const std::string &name) {}
 
+		// Lobby member info events
+		virtual void OnLobbyMemberNameChanged(LobbyMember* member, const std::string &oldname) {}
+
 		// Lobby file events
 		virtual void OnLobbyFileAdded(LobbyMember* member, const LobbyFile* file) {}
 		virtual void OnLobbyFileRemoved(LobbyMember* member, const std::string &filename) {}

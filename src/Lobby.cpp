@@ -339,6 +339,35 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(member, name);
 		}
 
+	} else if (type == LobbyPacketType::LobbyMemberNameChanged) {
+		auto name = js["name"].get<std::string>();
+
+		if (m_info.IsHosting) {
+			std::string oldname = peerMember->Name;
+			peerMember->Name = name;
+
+			js = json::object();
+			js["t"] = (uint8_t)LobbyPacketType::LobbyMemberNameChanged;
+			js["guid"] = peerMember->UnetGuid.str();
+			js["name"] = name;
+			m_ctx->InternalSendToAllExcept(peerMember, js);
+
+			m_ctx->GetCallbacks()->OnLobbyMemberNameChanged(peerMember, oldname);
+
+		} else {
+			xg::Guid guid(js["guid"].get<std::string>());
+
+			auto member = GetMember(guid);
+			assert(member != nullptr);
+			if (member == nullptr) {
+				return;
+			}
+
+			std::string oldname = member->Name;
+			member->Name = name;
+			m_ctx->GetCallbacks()->OnLobbyMemberNameChanged(member, oldname);
+		}
+
 	} else if (type == LobbyPacketType::LobbyFileAdded) {
 		auto filename = js["filename"].get<std::string>();
 		auto size = js["size"].get<size_t>();

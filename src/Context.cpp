@@ -542,6 +542,24 @@ xg::Guid Unet::Internal::Context::GetLocalGuid()
 void Unet::Internal::Context::SetPersonaName(const char* str)
 {
 	m_personaName = str;
+
+	if (m_currentLobby == nullptr) {
+		return;
+	}
+
+	if (m_currentLobby->m_info.IsHosting) {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberNameChanged;
+		js["guid"] = m_localGuid.str();
+		js["name"] = str;
+		InternalSendToAll(js);
+
+	} else {
+		json js;
+		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberNameChanged;
+		js["name"] = str;
+		InternalSendToHost(js);
+	}
 }
 
 const char* Unet::Internal::Context::GetPersonaName()

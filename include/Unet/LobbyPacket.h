@@ -46,6 +46,10 @@ namespace Unet
 		// Sent by the server to announce removed member lobby data
 		LobbyMemberDataRemoved,
 
+		// Sent by the client to announce that a member's name has changed
+		// Sent by the server to announce that a member's name has changed
+		LobbyMemberNameChanged,
+
 		// Sent by the client to announce that they've added a file available for download
 		// Sent by the server to announce that a new file is available for download by a client
 		LobbyFileAdded,
