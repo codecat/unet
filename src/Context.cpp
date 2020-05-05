@@ -543,22 +543,26 @@ void Unet::Internal::Context::SetPersonaName(const char* str)
 {
 	m_personaName = str;
 
-	if (m_currentLobby == nullptr) {
-		return;
-	}
+	if (m_currentLobby != nullptr) {
+		auto localMember = m_currentLobby->GetMember(m_localPeer);
+		assert(localMember != nullptr);
+		if (localMember != nullptr) {
+			localMember->Name = str;
+		}
 
-	if (m_currentLobby->m_info.IsHosting) {
-		json js;
-		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberNameChanged;
-		js["guid"] = m_localGuid.str();
-		js["name"] = str;
-		InternalSendToAll(js);
+		if (m_currentLobby->m_info.IsHosting) {
+			json js;
+			js["t"] = (uint8_t)LobbyPacketType::LobbyMemberNameChanged;
+			js["guid"] = m_localGuid.str();
+			js["name"] = str;
+			InternalSendToAll(js);
 
-	} else {
-		json js;
-		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberNameChanged;
-		js["name"] = str;
-		InternalSendToHost(js);
+		} else {
+			json js;
+			js["t"] = (uint8_t)LobbyPacketType::LobbyMemberNameChanged;
+			js["name"] = str;
+			InternalSendToHost(js);
+		}
 	}
 }
 
