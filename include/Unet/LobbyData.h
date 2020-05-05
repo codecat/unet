@@ -21,15 +21,15 @@ namespace Unet
 		std::vector<LobbyData> m_data;
 
 	public:
-		virtual bool SetData(const std::string &name, const std::string &value);
+		virtual void SetData(const std::string &name, const std::string &value);
 		virtual std::string GetData(const std::string &name) const;
-		virtual bool RemoveData(const std::string &name);
+		virtual void RemoveData(const std::string &name);
 
 		virtual json SerializeData() const;
 		virtual void DeserializeData(const json &js);
 
 	protected:
-		bool InternalSetData(const std::string &name, const std::string &value);
-		bool InternalRemoveData(const std::string &name);
+		void InternalSetData(const std::string &name, const std::string &value);
+		void InternalRemoveData(const std::string &name);
 	};
 }

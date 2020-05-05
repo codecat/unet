@@ -12,7 +12,7 @@ Unet::LobbyData::LobbyData(const std::string &name, const std::string &value)
 	Value = value;
 }
 
-bool Unet::LobbyDataContainer::SetData(const std::string &name, const std::string &value)
+void Unet::LobbyDataContainer::SetData(const std::string &name, const std::string &value)
 {
 	return InternalSetData(name, value);
 }
@@ -27,7 +27,7 @@ std::string Unet::LobbyDataContainer::GetData(const std::string &name) const
 	return "";
 }
 
-bool Unet::LobbyDataContainer::RemoveData(const std::string &name)
+void Unet::LobbyDataContainer::RemoveData(const std::string &name)
 {
 	return InternalRemoveData(name);
 }
@@ -59,15 +59,15 @@ void Unet::LobbyDataContainer::DeserializeData(const json &js)
 	}
 }
 
-bool Unet::LobbyDataContainer::InternalSetData(const std::string &name, const std::string &value)
+void Unet::LobbyDataContainer::InternalSetData(const std::string &name, const std::string &value)
 {
 	for (auto &data : m_data) {
 		if (data.Name == name) {
 			if (data.Value == value) {
-				return false;
+				return;
 			}
 			data.Value = value;
-			return true;
+			return;
 		}
 	}
 
@@ -75,19 +75,15 @@ bool Unet::LobbyDataContainer::InternalSetData(const std::string &name, const st
 	newData.Name = name;
 	newData.Value = value;
 	m_data.emplace_back(newData);
-	return true;
 }
 
-bool Unet::LobbyDataContainer::InternalRemoveData(const std::string &name)
+void Unet::LobbyDataContainer::InternalRemoveData(const std::string &name)
 {
 	auto it = std::find_if(m_data.begin(), m_data.end(), [&name](const LobbyData & pair) {
 		return pair.Name == name;
 	});
 
-	if (it == m_data.end()) {
-		return false;
+	if (it != m_data.end()) {
+		m_data.erase(it);
 	}
-
-	m_data.erase(it);
-	return true;
 }

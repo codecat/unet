@@ -295,7 +295,7 @@ void Unet::Lobby::HandleMessage(const ServiceID &peer, uint8_t* data, size_t siz
 			js["guid"] = peerMember->UnetGuid.str();
 			js["name"] = name;
 			js["value"] = value;
-			m_ctx->InternalSendToAllExcept(peerMember, js);
+			m_ctx->InternalSendToAll(js);
 
 			m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(peerMember, name);
 
@@ -733,11 +733,9 @@ void Unet::Lobby::SetJoinable(bool joinable)
 	}
 }
 
-bool Unet::Lobby::SetData(const std::string &name, const std::string &value)
+void Unet::Lobby::SetData(const std::string &name, const std::string &value)
 {
-	if (!LobbyDataContainer::SetData(name, value)) {
-		return false;
-	}
+	LobbyDataContainer::SetData(name, value);
 
 	if (m_info.IsHosting) {
 		for (auto &entry : m_info.EntryPoints) {
@@ -755,7 +753,6 @@ bool Unet::Lobby::SetData(const std::string &name, const std::string &value)
 
 		m_ctx->GetCallbacks()->OnLobbyDataChanged(name);
 	}
-	return true;
 }
 
 std::string Unet::Lobby::GetData(const std::string &name) const
@@ -795,11 +792,9 @@ std::string Unet::Lobby::GetData(const std::string &name) const
 	return ret;
 }
 
-bool Unet::Lobby::RemoveData(const std::string &name)
+void Unet::Lobby::RemoveData(const std::string &name)
 {
-	if (!LobbyDataContainer::RemoveData(name)) {
-		return false;
-	}
+	LobbyDataContainer::RemoveData(name);
 
 	if (m_info.IsHosting) {
 		for (auto &entry : m_info.EntryPoints) {
@@ -814,8 +809,6 @@ bool Unet::Lobby::RemoveData(const std::string &name)
 		js["name"] = name;
 		m_ctx->InternalSendToAll(js);
 	}
-
-	return true;
 }
 
 int Unet::Lobby::GetNextAvailablePeer()

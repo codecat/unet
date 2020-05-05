@@ -107,11 +107,9 @@ void Unet::LobbyMember::Deserialize(const json &js)
 	}
 }
 
-bool Unet::LobbyMember::SetData(const std::string &name, const std::string &value)
+void Unet::LobbyMember::SetData(const std::string &name, const std::string &value)
 {
-	if (!LobbyDataContainer::SetData(name, value)) {
-		return false;
-	}
+	LobbyDataContainer::SetData(name, value);
 
 	auto currentLobby = m_ctx->CurrentLobby();
 	assert(currentLobby != nullptr);
@@ -123,6 +121,8 @@ bool Unet::LobbyMember::SetData(const std::string &name, const std::string &valu
 		js["value"] = value;
 		m_ctx->InternalSendToAll(js);
 
+		m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(this, name);
+
 	} else if (UnetPeer == m_ctx->m_localPeer) {
 		json js;
 		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberData;
@@ -130,15 +130,11 @@ bool Unet::LobbyMember::SetData(const std::string &name, const std::string &valu
 		js["value"] = value;
 		m_ctx->InternalSendToHost(js);
 	}
-
-	return true;
 }
 
-bool Unet::LobbyMember::RemoveData(const std::string &name)
+void Unet::LobbyMember::RemoveData(const std::string &name)
 {
-	if (!LobbyDataContainer::RemoveData(name)) {
-		return false;
-	}
+	LobbyDataContainer::RemoveData(name);
 
 	auto currentLobby = m_ctx->CurrentLobby();
 	assert(currentLobby != nullptr);
@@ -149,14 +145,14 @@ bool Unet::LobbyMember::RemoveData(const std::string &name)
 		js["name"] = name;
 		m_ctx->InternalSendToAll(js);
 
+		m_ctx->GetCallbacks()->OnLobbyMemberDataChanged(this, name);
+
 	} else if (UnetPeer == m_ctx->m_localPeer) {
 		json js;
 		js["t"] = (uint8_t)LobbyPacketType::LobbyMemberDataRemoved;
 		js["name"] = name;
 		m_ctx->InternalSendToHost(js);
 	}
-
-	return true;
 }
 
 Unet::LobbyFile* Unet::LobbyMember::GetFile(const std::string &filename)
