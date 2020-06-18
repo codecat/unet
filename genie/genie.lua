@@ -12,8 +12,6 @@ solution 'Unet'
 	configurations {
 		'Debug',
 		'Release',
-		'SteamDebug',
-		'SteamRelease',
 	}
 
 	-- Platforms
@@ -51,10 +49,7 @@ solution 'Unet'
 	-- Projects
 	options = {
 		modules = {
-			steam = {
-				config = 'Steam*',
-				link = true
-			},
+			steam = { link = true },
 			galaxy = { link = true },
 			enet = { link = true },
 		}
