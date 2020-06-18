@@ -1219,6 +1219,9 @@ int main(int argc, const char* argv[])
 	delayedCommands.clear();
 
 	while (g_keepRunning) {
+		if (feof(stdin)) {
+			break;
+		}
 		HandleCommand(ReadLine());
 		RunCallbacks();
 		printf("\n");
