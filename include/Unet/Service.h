@@ -26,6 +26,8 @@ namespace Unet
 		virtual ServiceID GetUserID() = 0;
 		virtual std::string GetUserName() = 0;
 
+		virtual void SetRichPresence(const char* key, const char* value) = 0;
+
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) = 0;
 		virtual void SetLobbyPrivacy(const ServiceID &lobbyId, LobbyPrivacy privacy) = 0;
 		virtual void SetLobbyJoinable(const ServiceID &lobbyId, bool joinable) = 0;

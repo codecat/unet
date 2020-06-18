@@ -53,6 +53,11 @@ std::string Unet::ServiceSteam::GetUserName()
 	return SteamFriends()->GetPersonaName();
 }
 
+void Unet::ServiceSteam::SetRichPresence(const char* key, const char* value)
+{
+	SteamFriends()->SetRichPresence(key, value);
+}
+
 void Unet::ServiceSteam::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 {
 	ELobbyType type = k_ELobbyTypePublic;

@@ -178,6 +178,10 @@ std::string Unet::ServiceEnet::GetUserName()
 	return "";
 }
 
+void Unet::ServiceEnet::SetRichPresence(const char* key, const char* value)
+{
+}
+
 void Unet::ServiceEnet::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 {
 	ENetAddress addr;

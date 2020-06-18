@@ -1010,6 +1010,8 @@ void Unet::Internal::Context::OnLobbyCreated(const CreateLobbyResult &result)
 		}
 		m_currentLobby->m_members.emplace_back(newMember);
 		m_currentLobby->m_info.NumPlayers++;
+
+		m_currentLobby->SetRichPresence();
 	}
 
 	if (m_callbacks != nullptr) {
@@ -1069,6 +1071,7 @@ void Unet::Internal::Context::OnLobbyJoined(const LobbyJoinResult &result)
 
 	} else {
 		m_currentLobby = result.JoinedLobby;
+		m_currentLobby->SetRichPresence();
 	}
 
 	json js;

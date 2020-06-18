@@ -128,6 +128,11 @@ std::string Unet::ServiceGalaxy::GetUserName()
 	return galaxy::api::Friends()->GetPersonaName();
 }
 
+void Unet::ServiceGalaxy::SetRichPresence(const char* key, const char* value)
+{
+	galaxy::api::Friends()->SetRichPresence(key, value);
+}
+
 void Unet::ServiceGalaxy::CreateLobby(LobbyPrivacy privacy, int maxPlayers)
 {
 	galaxy::api::LobbyType type = galaxy::api::LOBBY_TYPE_PUBLIC;

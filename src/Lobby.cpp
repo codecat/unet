@@ -557,6 +557,7 @@ void Unet::Lobby::ServiceDisconnected(ServiceType service)
 
 	if (IsConnected()) {
 		m_ctx->GetCallbacks()->OnLogWarn(strPrintF("Lost connection to entry point %s (%d points still open)", GetServiceNameByType(service), (int)m_info.EntryPoints.size()));
+		SetRichPresence();
 	} else {
 		m_ctx->GetCallbacks()->OnLogError("Lost connection to all entry points!");
 
@@ -730,6 +731,26 @@ void Unet::Lobby::SetJoinable(bool joinable)
 		auto service = m_ctx->GetService(entryPoint.Service);
 		assert(service != nullptr);
 		service->SetLobbyJoinable(entryPoint, joinable);
+	}
+}
+
+void Unet::Lobby::SetRichPresence()
+{
+	json js;
+	for (auto& entryPoint : m_info.EntryPoints) {
+		const char* serviceName = GetServiceNameByType(entryPoint.Service);
+		js[serviceName] = entryPoint.ID;
+	}
+	std::string connectionString = js.dump();
+
+	// steam = 256 bytes
+	// galaxy = 4096 bytes
+	assert(connectionString.length() <= 256);
+
+	for (auto& entry : m_info.EntryPoints) {
+		auto service = m_ctx->GetService(entry.Service);
+		assert(service != nullptr);
+		service->SetRichPresence("connect", connectionString.c_str());
 	}
 }
 

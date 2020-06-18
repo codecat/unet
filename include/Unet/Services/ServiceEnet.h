@@ -50,6 +50,8 @@ namespace Unet
 		virtual ServiceID GetUserID() override;
 		virtual std::string GetUserName() override;
 
+		virtual void SetRichPresence(const char* key, const char* value) override;
+
 		virtual void CreateLobby(LobbyPrivacy privacy, int maxPlayers) override;
 		virtual void SetLobbyPrivacy(const ServiceID &lobbyId, LobbyPrivacy privacy) override;
 		virtual void SetLobbyJoinable(const ServiceID &lobbyId, bool joinable) override;
