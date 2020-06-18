@@ -639,7 +639,7 @@ static void HandleCommand(const s2::string &line)
 
 		uint64_t id = strtoll(parse[2].c_str(), nullptr, 0);
 
-		LOG_DEBUG("Fetching 0x%016lx", id);
+		LOG_DEBUG("Fetching 0x%016" PRIx64, id);
 
 		if (!g_ctx->FetchLobbyInfo(Unet::ServiceID(serviceType, id))) {
 			LOG_ERROR("Unable to begin fetching lobby info.");
