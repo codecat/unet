@@ -96,6 +96,9 @@ specify in `link` whether we should link to the SDK or not.
 
 ## Games that use Unet
 * [Heroes of Hammerwatch](https://store.steampowered.com/app/677120/Heroes_of_Hammerwatch/)
+* [Hammerwatch 2](https://store.steampowered.com/app/1538970/Hammerwatch_II/)
+* [Heroes of Hammerwatch 2](https://store.steampowered.com/app/619820/Heroes_of_Hammerwatch_II/)
+* [Cross The World](https://store.steampowered.com/app/2965140/Cross_The_World/)
 
 If you're using Unet, let me know, and I'll add you to this list!
 
